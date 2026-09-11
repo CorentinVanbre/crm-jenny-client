@@ -240,15 +240,6 @@ export default function SiteDetail() {
       ...prev,
       adress: { formatted: e.target.value }
     }));
-	if (name === 'noms' && value !== originalNom) {
-  checkSiteNameExists(value, site?.id).then(exists => {
-    if (exists) {
-      setFormErrors(prev => ({ ...prev, noms: 'Ce nom de site existe déjà' }));
-    } else {
-      setFormErrors(prev => ({ ...prev, noms: '' }));
-    }
-  });
-}
     setIsModified(true);
   };
 
