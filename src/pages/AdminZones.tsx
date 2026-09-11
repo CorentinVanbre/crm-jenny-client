@@ -1,0 +1,345 @@
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../supabaseClient';
+import { CONTINENTS } from '../lib/countries';
+
+interface Profile {
+  id: string;
+  email: string;
+}
+
+export default function AdminZones() {
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [initial, setInitial] = useState<Set<string>>(new Set());
+  const [msg, setMsg] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Charger la liste des utilisateurs (non admin)
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, role')
+        .order('email', { ascending: true });
+
+      if (error) {
+        setMsg({ text: `Erreur: ${error.message}`, isSuccess: false });
+        setLoadingUsers(false);
+        return;
+      }
+      setUsers((data || []).filter((u: Profile & { role: string }) => u.role !== 'admin'));
+      setLoadingUsers(false);
+    })();
+  }, []);
+
+  // Quand on choisit un utilisateur -> charger ses zones
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelected(new Set());
+      setInitial(new Set());
+      setMsg(null);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('user_zones')
+        .select('pays')
+        .eq('user_id', selectedUserId);
+
+      if (error) {
+        setMsg({ text: `Erreur: ${error.message}`, isSuccess: false });
+        return;
+      }
+      const pays = new Set<string>((data || []).map(r => r.pays));
+      setSelected(pays);
+      setInitial(pays);
+      setMsg(null);
+    })();
+  }, [selectedUserId]);
+
+  const hasChanges = useMemo(() => {
+    if (selected.size !== initial.size) return true;
+    for (const p of selected) if (!initial.has(p)) return true;
+    return false;
+  }, [selected, initial]);
+
+  const toggleCountry = (pays: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(pays)) next.delete(pays);
+      else next.add(pays);
+      return next;
+    });
+  };
+
+  const continentState = (pays: string[]): 'all' | 'none' | 'partial' => {
+    const count = pays.filter(p => selected.has(p)).length;
+    if (count === 0) return 'none';
+    if (count === pays.length) return 'all';
+    return 'partial';
+  };
+
+  const toggleContinent = (pays: string[]) => {
+    const state = continentState(pays);
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (state === 'all') {
+        pays.forEach(p => next.delete(p));
+      } else {
+        pays.forEach(p => next.add(p));
+      }
+      return next;
+    });
+  };
+
+  const handleSave = async () => {
+    if (!selectedUserId || !hasChanges) return;
+    setSaving(true);
+    setMsg(null);
+
+    const toAdd: string[] = [];
+    const toRemove: string[] = [];
+
+    selected.forEach(p => { if (!initial.has(p)) toAdd.push(p); });
+    initial.forEach(p => { if (!selected.has(p)) toRemove.push(p); });
+
+    try {
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('user_zones')
+          .delete()
+          .eq('user_id', selectedUserId)
+          .in('pays', toRemove);
+        if (error) throw error;
+      }
+      if (toAdd.length > 0) {
+        const rows = toAdd.map(pays => ({ user_id: selectedUserId, pays }));
+        const { error } = await supabase.from('user_zones').insert(rows);
+        if (error) throw error;
+      }
+      setInitial(new Set(selected));
+      setMsg({ text: 'Zones enregistrées avec succès.', isSuccess: true });
+    } catch (err: any) {
+      setMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setSelected(new Set());
+    setInitial(new Set());
+    setSelectedUserId('');
+    setMsg(null);
+  };
+
+  return (
+    <div style={containerStyle}>
+      <h1 style={titleStyle}>Gestion des zones par utilisateur</h1>
+
+      {/* Sélecteur d'utilisateur */}
+      <div style={cardStyle}>
+        <label style={labelStyle}>Utilisateur</label>
+        <select
+          value={selectedUserId}
+          onChange={e => setSelectedUserId(e.target.value)}
+          style={inputStyle}
+          disabled={loadingUsers}
+        >
+          <option value="">-- Choisir un utilisateur --</option>
+          {users.map(u => (
+            <option key={u.id} value={u.id}>{u.email}</option>
+          ))}
+        </select>
+        {loadingUsers && <p style={mutedStyle}>Chargement des utilisateurs...</p>}
+      </div>
+
+      {msg && <div style={messageStyle(msg.isSuccess)}>{msg.text}</div>}
+
+      {/* Pays par continent */}
+      {selectedUserId && (
+        <div style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Pays autorisés</h2>
+          {CONTINENTS.map(({ continent, pays }) => {
+            const state = continentState(pays);
+            return (
+              <div key={continent} style={continentBlockStyle}>
+                <div style={continentHeaderStyle}>
+                  <input
+                    type="checkbox"
+                    ref={el => { if (el) el.indeterminate = state === 'partial'; }}
+                    checked={state === 'all'}
+                    onChange={() => toggleContinent(pays)}
+                    style={{ marginRight: '8px', cursor: 'pointer' }}
+                  />
+                  <strong>{continent}</strong>
+                  <span style={countStyle}>
+                    ({pays.filter(p => selected.has(p)).length}/{pays.length})
+                  </span>
+                </div>
+                <div style={countriesGridStyle}>
+                  {pays.map(p => (
+                    <label key={p} style={countryLabelStyle}>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(p)}
+                        onChange={() => toggleCountry(p)}
+                        style={{ marginRight: '6px', cursor: 'pointer' }}
+                      />
+                      {p}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Boutons */}
+          <div style={buttonsStyle}>
+            <button onClick={handleSave} disabled={!hasChanges || saving} style={hasChanges && !saving ? buttonStyle : disabledButtonStyle}>
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+            <button onClick={handleCancel} style={buttonStyle}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Styles (thème du site)
+const containerStyle: React.CSSProperties = {
+  padding: '20px',
+  maxWidth: '900px',
+  margin: '0 auto',
+  fontFamily: 'Barlow, sans-serif',
+};
+
+const titleStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+  fontSize: '24px',
+  marginBottom: '20px',
+  textAlign: 'center',
+};
+
+const cardStyle: React.CSSProperties = {
+  backgroundColor: '#fff',
+  border: '1px solid #ddd',
+  borderRadius: '8px',
+  padding: '20px',
+  marginBottom: '20px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontWeight: 'bold',
+  fontSize: '18px',
+  marginBottom: '15px',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  fontSize: '14px',
+  marginBottom: '5px',
+};
+
+const inputStyle: React.CSSProperties = {
+  padding: '10px',
+  border: '1px solid #ddd',
+  borderRadius: '4px',
+  fontSize: '14px',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  width: '100%',
+  boxSizing: 'border-box',
+};
+
+const mutedStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#666',
+  marginTop: '5px',
+};
+
+const continentBlockStyle: React.CSSProperties = {
+  marginBottom: '20px',
+  paddingBottom: '15px',
+  borderBottom: '1px solid #eee',
+};
+
+const continentHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  marginBottom: '10px',
+  fontSize: '15px',
+};
+
+const countStyle: React.CSSProperties = {
+  marginLeft: '10px',
+  fontSize: '13px',
+  color: '#666',
+  fontWeight: 200,
+};
+
+const countriesGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: '8px',
+  marginLeft: '24px',
+};
+
+const countryLabelStyle: React.CSSProperties = {
+  fontSize: '14px',
+  fontWeight: 200,
+  fontFamily: 'Barlow, sans-serif',
+  display: 'flex',
+  alignItems: 'center',
+  cursor: 'pointer',
+};
+
+const buttonsStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  justifyContent: 'flex-end',
+  marginTop: '15px',
+};
+
+const baseButton: React.CSSProperties = {
+  padding: '10px 20px',
+  border: '1px solid black',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '14px',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  backgroundColor: '#E5E5E4',
+  color: 'black',
+};
+
+const buttonStyle: React.CSSProperties = { ...baseButton };
+
+const disabledButtonStyle: React.CSSProperties = {
+  ...baseButton,
+  backgroundColor: '#f5f5f5',
+  opacity: 0.5,
+  cursor: 'not-allowed',
+};
+
+const messageStyle = (isSuccess: boolean): React.CSSProperties => ({
+  padding: '10px',
+  marginBottom: '15px',
+  borderRadius: '4px',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  fontSize: '14px',
+  backgroundColor: isSuccess ? '#d4edda' : '#f8d7da',
+  color: isSuccess ? '#155724' : '#721c24',
+  border: `1px solid ${isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+  textAlign: 'center',
+});

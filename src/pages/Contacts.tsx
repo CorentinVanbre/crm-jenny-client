@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
+import { useUserZones } from '../lib/userZones';
 
 // Types
 interface Site {
   id: string;
   noms: string;
   groupe: string;
+  pays: string;
 }
 
 interface Groupe {
@@ -64,6 +66,11 @@ export default function Contacts() {
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [useAIMode, setUseAIMode] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const { allowedCountries, loadingZones } = useUserZones();
+
+  // Map site (nom) -> pays, pour filtrer les contacts par zone
+  const sitePaysMap: Record<string, string> = {};
+  allSites.forEach(s => { sitePaysMap[s.noms] = s.pays; });
 
   // États pour le mode édition
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
@@ -252,8 +259,14 @@ export default function Contacts() {
     }
   };
 
-  // Fonction de recherche pour les cartes
+    // Fonction de recherche pour les cartes
   const matchesSearch = (contact: Contact) => {
+    // Filtre par pays autorisés (zones de l'utilisateur)
+    if (allowedCountries) {
+      const pays = sitePaysMap[contact.site];
+      if (!allowedCountries.includes(pays)) return false;
+    }
+
     if (showOnlyActive && !contact.contact_actif) {
       return false;
     }
@@ -282,7 +295,7 @@ export default function Contacts() {
         setUser(currentUser);
 
         const [sitesData, groupesData, contactsData] = await Promise.all([
-          supabase.from('sites').select('id, noms, groupe').order('noms', { ascending: true }),
+          supabase.from('sites').select('id, noms, groupe, pays').order('noms', { ascending: true }),
           supabase.from('groupes').select('ID, nom_groupe').order('nom_groupe', { ascending: true }),
           fetchAllContacts() // ✅ Utilisation de la pagination
         ]);
@@ -860,7 +873,7 @@ export default function Contacts() {
           </label>
         </div>
 
-        {loading ? (
+        {loading || loadingZones ? (
           <p>Chargement...</p>
         ) : contacts.length === 0 ? (
           <p>Aucun contact trouvé.</p>

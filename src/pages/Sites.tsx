@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
 import { supabase } from '../supabaseClient';
+import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 
 // Types
@@ -60,6 +61,7 @@ export default function Sites() {
   const [searchText, setSearchText] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>(['Non visités', 'Visités', 'Visités il y a +18mois', 'A visiter', 'Fermés']);
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['Ciment', 'Mineralurgie', 'Platre', 'Papeterie', 'Fertilisant', 'Autre']);
+  const { allowedCountries, loadingZones } = useUserZones();
   const initialMapCenter = { lat: 46.8, lng: 1.5 };
   const [selectedSites, setSelectedSites] = useState<Site[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -414,6 +416,8 @@ export default function Sites() {
 
   // Fonction de filtrage
   const matchesFilters = (site: Site) => {
+    // Filtre par pays autorisés (zones de l'utilisateur)
+    if (allowedCountries && !allowedCountries.includes(site.pays)) return false;
     if (searchText) {
       const lowerSearch = searchText.toLowerCase();
       const textMatch = (
@@ -748,7 +752,7 @@ export default function Sites() {
 
       {/* Fiches de sites */}
       <div style={{ width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-        {loading ? (
+        {loading || loadingZones ? (
           <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Chargement des sites...</p>
         ) : allSites.filter(matchesFilters).length === 0 ? (
           <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Aucun site trouvé.</p>

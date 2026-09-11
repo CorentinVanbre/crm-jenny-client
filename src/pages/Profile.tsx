@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import ZonesMap from '../components/ZonesMap';   // ← AJOUT
+
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userZones, setUserZones] = useState<string[]>([]);
+  const [loadingZones, setLoadingZones] = useState(true);
 
   // Email
   const [emailForm, setEmailForm] = useState('');
@@ -21,7 +26,8 @@ export default function Profile() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
       setLoading(false);
     });
   }, []);
@@ -31,6 +37,25 @@ export default function Profile() {
     if (user) {
       setEmailForm(user.email ?? '');
       setLangue((user.user_metadata?.langue as string) || 'fr');
+      const admin = (user.user_metadata as Record<string, unknown>)?.role === 'admin';
+      setIsAdmin(admin);
+
+      // Charger les zones (sauf admin)
+      if (!admin) {
+        (async () => {
+          const { data, error } = await supabase
+            .from('user_zones')
+            .select('pays')
+            .eq('user_id', user.id)
+            .order('pays', { ascending: true });
+          if (!error) {
+            setUserZones((data || []).map(r => r.pays));
+          }
+          setLoadingZones(false);
+        })();
+      } else {
+        setLoadingZones(false);
+      }
     }
   }, [user]);
 
@@ -104,6 +129,29 @@ export default function Profile() {
         <p style={textStyle}><strong>ID :</strong> {user.id}</p>
         <p style={textStyle}><small>Créé le : {new Date(user.created_at).toLocaleDateString()}</small></p>
       </div>
+
+            {/* Pays attribués (uniquement pour les non-admin) */}
+      {!isAdmin && (
+        <div style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Pays attribués</h2>
+          {loadingZones ? (
+            <p style={textStyle}>Chargement des zones...</p>
+          ) : userZones.length === 0 ? (
+            <p style={textStyle}>Aucun pays ne vous a été affecté pour le moment. Contactez l'administrateur.</p>
+          ) : (
+            <>
+              <div style={zonesListStyle}>
+                {userZones.map(pays => (
+                  <span key={pays} style={zoneChipStyle}>{pays}</span>
+                ))}
+              </div>
+              <div style={{ marginTop: '15px' }}>
+                <ZonesMap allowedCountries={userZones} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Modification email */}
       <div style={cardStyle}>
@@ -209,6 +257,23 @@ const textStyle: React.CSSProperties = {
   fontSize: '14px',
   fontWeight: 200,
   margin: '5px 0',
+};
+
+const zonesListStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '8px',
+};
+
+const zoneChipStyle: React.CSSProperties = {
+  display: 'inline-block',
+  padding: '6px 12px',
+  borderRadius: '4px',
+  border: '1px solid #ddd',
+  backgroundColor: '#f0f0f0',
+  fontFamily: 'Barlow, sans-serif',
+  fontSize: '14px',
+  fontWeight: 200,
 };
 
 const formFieldStyle: React.CSSProperties = {
