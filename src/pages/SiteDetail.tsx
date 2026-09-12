@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { Autocomplete } from '@react-google-maps/api';
 
@@ -46,6 +47,7 @@ interface Contact {
 export default function SiteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [site, setSite] = useState<Site | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -312,7 +314,7 @@ export default function SiteDetail() {
         setIsEditing(false);
       }
 
-      setSaveMessage({ text: 'Modifications enregistrées avec succès!', isSuccess: true });
+      setSaveMessage({ text: t('siteDetail.saveSuccess'), isSuccess: true });
     } catch (err: any) {
       setSaveMessage({ text: `Erreur: ${err.message}`, isSuccess: false });
     }
@@ -345,45 +347,45 @@ export default function SiteDetail() {
   };
 
   // Copier les emails dans le presse-papiers (uniquement contacts actifs)
-const handleCopyEmails = async () => {
-  const activeContacts = contacts.filter(c => c.contact_actif && c.email);
-  const emails = activeContacts.map(contact => contact.email);
+  const handleCopyEmails = async () => {
+    const activeContacts = contacts.filter(c => c.contact_actif && c.email);
+    const emails = activeContacts.map(contact => contact.email);
 
-  if (emails.length === 0) {
-    setCopyMessage('Aucun email de contact actif trouvé.');
-    setTimeout(() => setCopyMessage(null), 2000);
-    return;
-  }
+    if (emails.length === 0) {
+      setCopyMessage(t('siteDetail.noActiveEmail'));
+      setTimeout(() => setCopyMessage(null), 2000);
+      return;
+    }
 
-  const emailsString = emails.join(' ; ');
+    const emailsString = emails.join(' ; ');
 
-  try {
-    await navigator.clipboard.writeText(emailsString);
-    setCopyMessage('Emails copiés dans le presse-papiers!');
-    setTimeout(() => setCopyMessage(null), 2000);
-  } catch (err) {
-    setCopyMessage('Erreur lors de la copie des emails');
-    setTimeout(() => setCopyMessage(null), 2000);
-  }
-};
+    try {
+      await navigator.clipboard.writeText(emailsString);
+      setCopyMessage(t('siteDetail.emailsCopied'));
+      setTimeout(() => setCopyMessage(null), 2000);
+    } catch (err) {
+      setCopyMessage(t('siteDetail.copyError'));
+      setTimeout(() => setCopyMessage(null), 2000);
+    }
+  };
 
-// Vérifier si le nom du site existe déjà
-const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string): Promise<boolean> => {
-  if (!nom.trim()) return false;
+  // Vérifier si le nom du site existe déjà
+  const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string): Promise<boolean> => {
+    if (!nom.trim()) return false;
 
-  const { data, error } = await supabase
-    .from('sites')
-    .select('id')
-    .ilike('noms', nom.trim())
-    .neq('id', excludeId || '')
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from('sites')
+      .select('id')
+      .ilike('noms', nom.trim())
+      .neq('id', excludeId || '')
+      .maybeSingle();
 
-  return !!data;
-}, []);
+    return !!data;
+  }, []);
 
   // Formatage de la date
   const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return "Jamais";
+    if (!dateString) return t('siteDetail.never');
     try {
       const [year, month, day] = dateString.split('-');
       return `${day}/${month}/${year}`;
@@ -392,9 +394,9 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
     }
   };
 
-  if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>Chargement...</div>;
+  if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.loading')}</div>;
   if (error) return <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>{error}</div>;
-  if (!site) return <div style={{ padding: '20px', textAlign: 'center' }}>Site non trouvé</div>;
+  if (!site) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.notFound')}</div>;
 
   // Styles
   const containerStyle = {
@@ -611,7 +613,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
       {/* En-tête avec boutons et titre centré */}
       <div style={headerStyle}>
         <Link to="/sites" style={buttonStyle}>
-          Retour aux sites
+          {t('siteDetail.backToSites')}
         </Link>
 
         <div style={titleContainerStyle}>
@@ -621,11 +623,11 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
         <div style={buttonContainerStyle}>
           {isEditing ? (
             <button onClick={handleCancelEdit} style={buttonStyle}>
-              Annuler
+              {t('siteDetail.cancel')}
             </button>
           ) : (
             <button onClick={handleEdit} style={buttonStyle}>
-              Modifier
+              {t('siteDetail.edit')}
             </button>
           )}
           <button
@@ -633,7 +635,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
             disabled={!isModified}
             style={isModified ? buttonStyle : disabledButtonStyle}
           >
-            Enregistrer
+            {t('siteDetail.save')}
           </button>
         </div>
       </div>
@@ -649,7 +651,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
       <div style={formContainerStyle}>
         <div style={formRowStyle}>
           <div style={formFieldStyle}>
-            <label style={labelStyle}>Nom</label>
+            <label style={labelStyle}>{t('siteDetail.name')}</label>
             <input
               type="text"
               name="noms"
@@ -661,7 +663,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
           </div>
 
           <div style={{ ...formFieldStyle, position: 'relative' }}>
-            <label style={labelStyle}>Groupe</label>
+            <label style={labelStyle}>{t('siteDetail.group')}</label>
             <input
               type="text"
               value={formData.groupe}
@@ -675,7 +677,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
                 ...inputStyle,
                 backgroundColor: isEditing ? '#fff' : '#f5f5f5'
               }}
-              placeholder="Rechercher un groupe..."
+              placeholder={t('siteDetail.groupSearchPlaceholder')}
             />
             {isEditing && showGroupDropdown && filteredGroupes.length > 0 && (
               <div style={dropdownStyle} onMouseDown={e => e.preventDefault()}>
@@ -698,7 +700,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
 
         <div style={formRowStyle}>
           <div style={formFieldStyle}>
-            <label style={labelStyle}>Domaine</label>
+            <label style={labelStyle}>{t('siteDetail.domain')}</label>
             <select
               name="domaine"
               value={formData.domaine}
@@ -707,13 +709,13 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
               style={selectStyle}
             >
               {domainOptions.map(option => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{t('siteDetail.domains.' + option)}</option>
               ))}
             </select>
           </div>
 
           <div style={formFieldStyle}>
-            <label style={labelStyle}>Couleur</label>
+            <label style={labelStyle}>{t('siteDetail.color')}</label>
             <select
               name="couleur"
               value={formData.couleur}
@@ -721,7 +723,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
               style={selectStyle}
             >
               {colorOptions.map(option => (
-                <option key={option} value={option}>{option}</option>
+                <option key={option} value={option}>{t('siteDetail.colors.' + option)}</option>
               ))}
             </select>
           </div>
@@ -729,7 +731,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
 
         <div style={formRowStyle}>
           <div style={formFieldStyle}>
-            <label style={labelStyle}>Pays</label>
+            <label style={labelStyle}>{t('siteDetail.country')}</label>
             <input
               type="text"
               name="pays"
@@ -741,7 +743,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
           </div>
 
           <div style={formFieldStyle}>
-            <label style={labelStyle}>Date de visite</label>
+            <label style={labelStyle}>{t('siteDetail.visitDate')}</label>
             <input
               type="date"
               name="datevisite"
@@ -753,7 +755,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
         </div>
 
         <div style={formFieldStyle}>
-          <label style={labelStyle}>Adresse</label>
+          <label style={labelStyle}>{t('siteDetail.address')}</label>
           {isEditing ? (
             <Autocomplete
               onLoad={onLoad}
@@ -764,7 +766,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
                 value={formData.adress.formatted}
                 onChange={handleAddressChange}
                 style={inputStyle}
-                placeholder="Rechercher une adresse..."
+                placeholder={t('siteDetail.addressPlaceholder')}
               />
             </Autocomplete>
           ) : (
@@ -778,7 +780,7 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
         </div>
 
         <div style={formFieldStyle}>
-          <label style={labelStyle}>Observations</label>
+          <label style={labelStyle}>{t('siteDetail.observations')}</label>
           <textarea
             name="observations"
             value={formData.observations}
@@ -789,10 +791,10 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
       </div>
 
       {/* Liste des dates de visite */}
-      {site.dates_visites && site.dates_visites.length > 0 && (
+      {Array.isArray(site.dates_visites) && site.dates_visites.length > 0 && (
         <div style={formContainerStyle}>
           <h2 style={{ fontSize: '18px', marginBottom: '15px', fontWeight: 'bold' }}>
-            Historique des visites
+            {t('siteDetail.visitHistory')}
           </h2>
           <ul style={{
             listStyle: 'none',
@@ -818,13 +820,13 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
             fontSize: '18px',
             margin: 0
           }}>
-            Contacts du site
+            {t('siteDetail.siteContacts')}
           </h2>
           <button
             onClick={handleCopyEmails}
             style={copyButtonStyle}
           >
-            Copier emails
+            {t('siteDetail.copyEmails')}
           </button>
         </div>
       )}
@@ -871,10 +873,10 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
               }}>
                 {contact.prenom} {contact.noms}
               </h3>
-              <p style={cardTextStyle}><strong>Fonction:</strong> {contact.fonction}</p>
-              <p style={cardTextStyle}><strong>Email:</strong> {contact.email}</p>
-              {contact.num_mobile && <p style={cardTextStyle}><strong>Mobile:</strong> {contact.num_mobile}</p>}
-              {contact.num_fixe && <p style={cardTextStyle}><strong>Fixe:</strong> {contact.num_fixe}</p>}
+              <p style={cardTextStyle}><strong>{t('siteDetail.function')}:</strong> {contact.fonction}</p>
+              <p style={cardTextStyle}><strong>{t('siteDetail.email')}:</strong> {contact.email}</p>
+              {contact.num_mobile && <p style={cardTextStyle}><strong>{t('siteDetail.mobile')}:</strong> {contact.num_mobile}</p>}
+              {contact.num_fixe && <p style={cardTextStyle}><strong>{t('siteDetail.fixe')}:</strong> {contact.num_fixe}</p>}
 
               <div style={{
                 marginTop: 'auto',
@@ -889,9 +891,9 @@ const checkSiteNameExists = useCallback(async (nom: string, excludeId?: string):
                   color: contact.contact_actif ? '#008000' : '#FF0000',
                   margin: 0
                 }}>
-                  <strong>Statut:</strong> {contact.contact_actif ? 'Actif' : 'Inactif'}
+                  <strong>{t('siteDetail.status')}:</strong> {contact.contact_actif ? t('siteDetail.active') : t('siteDetail.inactive')}
                 </p>
-                <button style={modifyButtonStyle}>Modifier</button>
+                <button style={modifyButtonStyle}>{t('siteDetail.edit')}</button>
               </div>
             </div>
           ))}

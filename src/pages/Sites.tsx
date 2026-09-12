@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
@@ -45,7 +46,7 @@ const colorTagColors: Record<string, { background: string; text: string }> = {
 
 // Formatage de date
 const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return "Jamais";
+  if (!dateString) return "";
   try {
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
@@ -54,6 +55,8 @@ const formatDate = (dateString: string | undefined): string => {
   }
 };
 
+const DEFAULT_MAP_CENTER = { lat: 46.8, lng: 1.5 };
+
 export default function Sites() {
   // États principaux
   const [allSites, setAllSites] = useState<Site[]>([]);
@@ -61,8 +64,9 @@ export default function Sites() {
   const [searchText, setSearchText] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>(['Non visités', 'Visités', 'Visités il y a +18mois', 'A visiter', 'Fermés']);
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['Ciment', 'Mineralurgie', 'Platre', 'Papeterie', 'Fertilisant', 'Autre']);
+  const { t } = useTranslation();
   const { allowedCountries, loadingZones } = useUserZones();
-  const initialMapCenter = { lat: 46.8, lng: 1.5 };
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(DEFAULT_MAP_CENTER);
   const [selectedSites, setSelectedSites] = useState<Site[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapDimensions, setMapDimensions] = useState({ width: 980, height: 490 });
@@ -223,7 +227,7 @@ export default function Sites() {
     }
 
     const exists = await checkGroupExists(value, currentGroup?.ID);
-    setEditGroupNameError(exists ? 'Ce nom de groupe existe déjà' : '');
+    setEditGroupNameError(exists ? t('sites.groupExists') : '');
   };
 
   // Gestion du changement du nom du site
@@ -235,7 +239,7 @@ export default function Sites() {
       return;
     }
     const exists = await checkSiteExists(value);
-    setSiteNameError(exists ? 'Ce nom de site existe déjà' : '');
+    setSiteNameError(exists ? t('sites.siteExists') : '');
   };
 
   // Gestion de l'ajout d'un groupe
@@ -256,7 +260,7 @@ export default function Sites() {
       }]);
 
       if (error) throw error;
-      setSubmitMessage({ text: 'Groupe ajouté avec succès!', isSuccess: true });
+      setSubmitMessage({ text: t('sites.groupAdded'), isSuccess: true });
       const updatedGroupes = await fetchGroupes();
       setGroupes(updatedGroupes);
       setFilteredGroupes(updatedGroupes);
@@ -307,7 +311,7 @@ export default function Sites() {
         if (sitesError) throw sitesError;
       }
 
-      setEditSubmitMessage({ text: 'Groupe modifié avec succès!', isSuccess: true });
+      setEditSubmitMessage({ text: t('sites.groupEdited'), isSuccess: true });
       const updatedGroupes = await fetchGroupes();
       setGroupes(updatedGroupes);
       setFilteredGroupes(updatedGroupes);
@@ -349,7 +353,7 @@ export default function Sites() {
       }]);
 
       if (error) throw error;
-      setSiteSubmitMessage({ text: 'Site ajouté avec succès!', isSuccess: true });
+      setSiteSubmitMessage({ text: t('sites.siteAdded'), isSuccess: true });
       await fetchSites();
       setTimeout(() => { setShowAddSiteModal(false); resetSiteForm(); }, 1000);
     } catch (error: any) {
@@ -463,6 +467,22 @@ export default function Sites() {
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         if (authError) console.error('Erreur:', authError);
 
+        // Centre de carte défini pour cet utilisateur (depuis profiles)
+        if (session?.user) {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('map_center_lat, map_center_lng')
+            .eq('id', session.user.id)
+            .single();
+          if (!profileError && profile) {
+            const lat = typeof profile.map_center_lat === 'number' ? profile.map_center_lat : parseFloat(profile.map_center_lat);
+            const lng = typeof profile.map_center_lng === 'number' ? profile.map_center_lng : parseFloat(profile.map_center_lng);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setMapCenter({ lat, lng });
+            }
+          }
+        }
+
         const { data: sitesData, error: sitesError } = await supabase
           .from('sites')
           .select('*')
@@ -548,9 +568,9 @@ export default function Sites() {
       <div style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>
         {site.groupe} - {site.noms}
       </div>
-      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{site.nb_contact} contact(s)</div>
-      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>Last visit: {formatDate(site.datevisite)}</div>
-      <div style={{ textAlign: 'center', marginTop: '4px' }}><a href={`/sites/${site.id}`} target="_blank" style={{ fontSize: '13px' }}>See more</a></div>
+      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{site.nb_contact} {t(site.nb_contact > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</div>
+      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{t('sites.lastVisit')}: {formatDate(site.datevisite) || t('common.never')}</div>
+      <div style={{ textAlign: 'center', marginTop: '4px' }}><a href={`/sites/${site.id}`} target="_blank" style={{ fontSize: '13px' }}>{t('sites.seeMore')}</a></div>
     </div>
   );
 
@@ -656,7 +676,7 @@ export default function Sites() {
         <GoogleMap
           mapContainerStyle={{ width: `${mapDimensions.width}px`, height: `${mapDimensions.height}px` }}
           zoom={initialZoom}
-          center={initialMapCenter}
+          center={mapCenter}
           options={{ minZoom: initialZoom - 2, maxZoom: initialZoom + 15, mapTypeControl: true, streetViewControl: false, gestureHandling: "greedy", disableDefaultUI: false }}
         >
           {allSites.filter(matchesFilters).map((site) => (
@@ -672,7 +692,7 @@ export default function Sites() {
             <InfoWindow
               key={site.id}
               position={{ lat: parseFloat(site.latitude), lng: parseFloat(site.longitude) }}
-              options={{ pixelOffset: new google.maps.Size(0, -30) }}
+              options={{ pixelOffset: new google.maps.Size(0, -30), disableAutoPan: true }}
               onCloseClick={() => setSelectedSites(prev => prev.filter(s => s.id !== site.id))}
             >
               {getInfoWindowContent(site)}
@@ -694,9 +714,9 @@ export default function Sites() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
           <div>
-            <button style={buttonStyle} onClick={() => setShowAddGroupModal(true)}>Ajouter Groupe</button>
-            <button style={buttonStyle} onClick={handleOpenEditGroupModal}>Modifier Groupe</button>
-            <button style={buttonStyle} onClick={handleOpenAddSiteModal}>Ajouter Site</button>
+            <button style={buttonStyle} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+            <button style={buttonStyle} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+            <button style={buttonStyle} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
           </div>
           <div style={{ textAlign: 'right' }}>
             {colorTags.map(tag => (
@@ -707,7 +727,7 @@ export default function Sites() {
                 onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
                 onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
               >
-                {tag}
+                {t('sites.colors.' + tag)}
               </span>
             ))}
           </div>
@@ -716,7 +736,7 @@ export default function Sites() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <input
             type="text"
-            placeholder="Rechercher par nom, groupe, pays"
+            placeholder={t('sites.searchPlaceholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{
@@ -732,7 +752,7 @@ export default function Sites() {
             }}
           />
           <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '0 5px' }}>
-            {matchingSitesCount} sites correspondants
+            {t('sites.matchingCount', { count: matchingSitesCount })}
           </div>
           <div style={{ textAlign: 'right' }}>
             {domainTags.map(tag => (
@@ -743,7 +763,7 @@ export default function Sites() {
                 onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
                 onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
               >
-                {tag}
+                {t('sites.domains.' + tag)}
               </span>
             ))}
           </div>
@@ -753,9 +773,9 @@ export default function Sites() {
       {/* Fiches de sites */}
       <div style={{ width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
         {loading || loadingZones ? (
-          <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Chargement des sites...</p>
+          <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>{t('sites.loading')}</p>
         ) : allSites.filter(matchesFilters).length === 0 ? (
-          <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>Aucun site trouvé.</p>
+          <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>{t('sites.noResults')}</p>
         ) : (
           allSites.filter(matchesFilters).slice(0, 20).map((site) => (
             <div
@@ -792,11 +812,11 @@ export default function Sites() {
                 alignItems: 'center',
                 justifyContent: 'space-between'
               }}>
-                <span style={{ fontWeight: 'bold' }}>{site.nb_contact} Contact{site.nb_contact > 1 ? 's' : ''}</span>
+                <span style={{ fontWeight: 'bold' }}>{site.nb_contact} {t(site.nb_contact > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</span>
                 <Link
                   to={`/sites/${site.id}`}
-			target="_blank"          // ✅ Ouvre dans un nouvel onglet
-            rel="noopener noreferrer" // ✅ Sécurité recommandée
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{
                     ...buttonStyle,
                     height: '25px',
@@ -808,7 +828,7 @@ export default function Sites() {
                     color: 'black'
                   }}
                 >
-                  Ouvrir
+                  {t('common.open')}
                 </Link>
               </div>
             </div>
@@ -849,11 +869,11 @@ export default function Sites() {
             onClick={e => e.stopPropagation()}
           >
             <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '20px', textAlign: 'center' }}>
-              Ajouter un nouveau groupe
+              {t('sites.addGroupTitle')}
             </h2>
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Nom du groupe *
+                {t('sites.groupName')}
               </label>
               <input
                 type="text"
@@ -863,23 +883,23 @@ export default function Sites() {
                   setNewGroupData(prev => ({ ...prev, nom_groupe: value }));
                   if (!value.trim()) { setGroupNameError(''); return; }
                   const exists = await checkGroupExists(value);
-                  setGroupNameError(exists ? 'Ce nom de groupe existe déjà' : '');
+                  setGroupNameError(exists ? t('sites.groupExists') : '');
                 }}
                 style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : '#ddd' }}
-                placeholder="Ex: Nouveau Groupe"
+                placeholder={t('sites.groupNamePlaceholder')}
               />
               {groupNameError && <span style={errorStyle}>{groupNameError}</span>}
             </div>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Adresse du site web
+                {t('sites.websiteAddress')}
               </label>
               <input
                 type="url"
                 value={newGroupData.site_web}
                 onChange={(e) => setNewGroupData(prev => ({ ...prev, site_web: e.target.value }))}
                 style={inputStyle}
-                placeholder="Ex: https://exemple.com"
+                placeholder={t('sites.websitePlaceholder')}
               />
             </div>
             {submitMessage && (
@@ -899,7 +919,7 @@ export default function Sites() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={handleCloseGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>Annuler</button>
+              <button type="button" onClick={handleCloseGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
               <button
                 type="button"
                 onClick={handleAddGroup}
@@ -911,7 +931,7 @@ export default function Sites() {
                   cursor: (!newGroupData.nom_groupe.trim() || !!groupNameError || isSubmitting) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                {isSubmitting ? t('sites.saving') : t('common.save')}
               </button>
             </div>
           </div>
@@ -951,11 +971,11 @@ export default function Sites() {
             onClick={e => e.stopPropagation()}
           >
             <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '20px', textAlign: 'center' }}>
-              Modifier un groupe
+              {t('sites.editGroupTitle')}
             </h2>
             <div style={{ marginBottom: '15px', position: 'relative' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Nom du groupe *
+                {t('sites.groupName')}
               </label>
               <input
                 type="text"
@@ -963,7 +983,7 @@ export default function Sites() {
                 onChange={handleEditGroupNameChange}
                 onFocus={() => setShowGroupDropdown(true)}
                 style={{ ...inputStyle, borderColor: editGroupNameError ? '#ff4444' : '#ddd' }}
-                placeholder="Rechercher un groupe..."
+                placeholder={t('sites.groupSearchPlaceholder')}
               />
               {showGroupDropdown && filteredGroupes.length > 0 && (
                 <div style={dropdownStyle} onMouseDown={e => e.preventDefault()}>
@@ -982,14 +1002,14 @@ export default function Sites() {
             </div>
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Adresse du site web
+                {t('sites.websiteAddress')}
               </label>
               <input
                 type="url"
                 value={editGroupData.site_web}
                 onChange={(e) => setEditGroupData(prev => ({ ...prev, site_web: e.target.value }))}
                 style={inputStyle}
-                placeholder="Ex: https://exemple.com"
+                placeholder={t('sites.websitePlaceholder')}
               />
             </div>
             {editSubmitMessage && (
@@ -1009,7 +1029,7 @@ export default function Sites() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={handleCloseEditGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>Annuler</button>
+              <button type="button" onClick={handleCloseEditGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
               <button
                 type="button"
                 onClick={handleUpdateGroup}
@@ -1021,7 +1041,7 @@ export default function Sites() {
                   cursor: (!hasEditFormChanged() || !!editGroupNameError || isEditingSubmitting) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {isEditingSubmitting ? 'Modification...' : 'Modifier'}
+                {isEditingSubmitting ? t('sites.editing') : t('common.edit')}
               </button>
             </div>
           </div>
@@ -1061,21 +1081,21 @@ export default function Sites() {
             onClick={e => e.stopPropagation()}
           >
             <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '20px', textAlign: 'center' }}>
-              Ajouter un nouveau site
+              {t('sites.addSiteTitle')}
             </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
               {/* Nom du site */}
               <div>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                  Nom du site *
+                  {t('sites.siteName')}
                 </label>
                 <input
                   type="text"
                   value={newSiteData.noms}
                   onChange={handleSiteNameChange}
                   style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : '#ddd' }}
-                  placeholder="Ex: Site Principal"
+                  placeholder={t('sites.siteNamePlaceholder')}
                 />
                 {siteNameError && <span style={errorStyle}>{siteNameError}</span>}
               </div>
@@ -1083,7 +1103,7 @@ export default function Sites() {
               {/* Groupe */}
               <div style={{ position: 'relative' }}>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                  Groupe *
+                  {t('sites.group')}
                 </label>
                 <input
                   type="text"
@@ -1094,7 +1114,7 @@ export default function Sites() {
                     setFilteredSiteGroupes(groupes);
                   }}
                   style={inputStyle}
-                  placeholder="Sélectionnez"
+                  placeholder={t('common.select')}
                 />
                 {showSiteGroupDropdown && filteredSiteGroupes.length > 0 && (
                   <div style={dropdownStyle} onMouseDown={e => e.preventDefault()}>
@@ -1114,7 +1134,7 @@ export default function Sites() {
               {/* Domaine */}
               <div>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                  Domaine *
+                  {t('sites.domain')}
                 </label>
                 <select
                   value={newSiteData.domaine}
@@ -1122,7 +1142,7 @@ export default function Sites() {
                   style={inputStyle}
                 >
                   {domainTags.map(tag => (
-                    <option key={tag} value={tag}>{tag}</option>
+                    <option key={tag} value={tag}>{t('sites.domains.' + tag)}</option>
                   ))}
                 </select>
               </div>
@@ -1130,7 +1150,7 @@ export default function Sites() {
               {/* Couleur */}
               <div>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                  Couleur *
+                  {t('sites.color')}
                 </label>
                 <select
                   value={newSiteData.couleur}
@@ -1138,7 +1158,7 @@ export default function Sites() {
                   style={inputStyle}
                 >
                   {colorTags.map(tag => (
-                    <option key={tag} value={tag}>{tag}</option>
+                    <option key={tag} value={tag}>{t('sites.colors.' + tag)}</option>
                   ))}
                 </select>
               </div>
@@ -1147,7 +1167,7 @@ export default function Sites() {
             {/* Adresse avec Autocomplete Google */}
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Adresse *
+                {t('sites.address')}
               </label>
               <Autocomplete
                 onLoad={onLoad}
@@ -1161,7 +1181,7 @@ export default function Sites() {
                     adress: { formatted: e.target.value }
                   }))}
                   style={inputStyle}
-                  placeholder="Rechercher une adresse..."
+                  placeholder={t('sites.addressPlaceholder')}
                 />
               </Autocomplete>
             </div>
@@ -1169,27 +1189,27 @@ export default function Sites() {
             {/* Pays (automatiquement rempli) */}
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Pays *
+                {t('sites.country')}
               </label>
               <input
                 type="text"
                 value={newSiteData.pays}
                 readOnly
                 style={{ ...inputStyle, backgroundColor: '#f5f5f5' }}
-                placeholder="Sélectionnez une adresse pour remplir automatiquement"
+                placeholder={t('sites.countryAutoPlaceholder')}
               />
             </div>
 
             {/* Observations */}
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
-                Observations
+                {t('sites.observations')}
               </label>
               <textarea
                 value={newSiteData.observations}
                 onChange={(e) => setNewSiteData(prev => ({ ...prev, observations: e.target.value }))}
                 style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
-                placeholder="Notes supplémentaires"
+                placeholder={t('sites.observationsPlaceholder')}
               />
             </div>
 
@@ -1212,7 +1232,7 @@ export default function Sites() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button type="button" onClick={handleCloseSiteModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>
-                Annuler
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -1225,7 +1245,7 @@ export default function Sites() {
                   cursor: (!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting) ? 'not-allowed' : 'pointer'
                 }}
               >
-                {isSiteSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                {isSiteSubmitting ? t('sites.saving') : t('common.save')}
               </button>
             </div>
           </div>

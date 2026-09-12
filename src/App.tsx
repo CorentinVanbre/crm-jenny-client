@@ -13,73 +13,34 @@ import { GoogleMapsWrapper } from './components/GoogleMapsWrapper';
 import { UserZonesProvider } from './lib/userZones';
 import AdminRoute from './components/AdminRoute';
 import AdminZones from './pages/AdminZones';
+import LanguageSync from './components/LanguageSync';
 
 export default function App() {
   return (
-    <UserZonesProvider>
-      <Router>
-        <GoogleMapsWrapper>
-          <div style={appContainerStyle}>
-            <Header />
-            <main style={mainStyle}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/sites"
-                  element={
-                    <PrivateRoute>
-                      <Sites />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/sites/:id"
-                  element={
-                    <PrivateRoute>
-                      <SiteDetail />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/contacts"
-                  element={
-                    <PrivateRoute>
-                      <Contacts />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/emails"
-                  element={
-                    <PrivateRoute>
-                      <Emails />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/admin/zones"
-                  element={
-                    <AdminRoute>
-                      <AdminZones />
-                    </AdminRoute>
-                  }
-                />
-              </Routes>
-            </main>
-            <Footer />
-          </div>
-        </GoogleMapsWrapper>
-      </Router>
-    </UserZonesProvider>
+    <LanguageSync>
+      <UserZonesProvider>
+        <Router>
+          <GoogleMapsWrapper>
+            <div style={appContainerStyle}>
+              <Header />
+              <main style={mainStyle}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/sites" element={<PrivateRoute><Sites /></PrivateRoute>} />
+                  <Route path="/sites/:id" element={<PrivateRoute><SiteDetail /></PrivateRoute>} />
+                  <Route path="/contacts" element={<PrivateRoute><Contacts /></PrivateRoute>} />
+                  <Route path="/emails" element={<PrivateRoute><Emails /></PrivateRoute>} />
+                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                  <Route path="/admin/zones" element={<AdminRoute><AdminZones /></AdminRoute>} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </GoogleMapsWrapper>
+        </Router>
+      </UserZonesProvider>
+    </LanguageSync>
   );
 }
 

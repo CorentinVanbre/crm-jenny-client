@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 
@@ -34,6 +35,7 @@ interface Contact {
 }
 
 export default function Contacts() {
+  const { t } = useTranslation();
   // États pour les données
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
@@ -385,15 +387,15 @@ export default function Contacts() {
 
     requiredFields.forEach(field => {
       if (!formData[field as keyof typeof formData]) {
-        newErrors[field] = 'Ce champ est obligatoire';
+        newErrors[field] = t('contacts.required');
       }
     });
 
     if (formData.email) {
       if (!isValidEmail(formData.email)) {
-        newErrors.email = 'Email invalide';
+        newErrors.email = t('contacts.invalidEmail');
       } else if (hasSpecialChars(formData.email)) {
-        newErrors.email = 'Email contient des caractères non autorisés';
+        newErrors.email = t('contacts.emailContainsChars');
       }
     }
 
@@ -432,9 +434,9 @@ export default function Contacts() {
     setFormData({ ...formData, email: value });
 
     if (value && !isValidEmail(value)) {
-      setErrors({ ...errors, email: 'Email invalide' });
+      setErrors({ ...errors, email: t('contacts.invalidEmail') });
     } else if (value && hasSpecialChars(value)) {
-      setErrors({ ...errors, email: 'Caractères non autorisés' });
+      setErrors({ ...errors, email: t('contacts.unauthorizedChars') });
     } else {
       const newErrors = { ...errors };
       delete newErrors.email;
@@ -455,7 +457,7 @@ export default function Contacts() {
     setConfirmationMessage(null);
 
     if (!validateForm()) {
-      setConfirmationMessage({ text: 'Veuillez remplir tous les champs obligatoires', isSuccess: false });
+      setConfirmationMessage({ text: t('contacts.fillAllRequired'), isSuccess: false });
       return;
     }
 
@@ -490,8 +492,8 @@ export default function Contacts() {
         setConfirmationMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
       } else {
         const successMessage = editingContactId
-          ? 'Contact modifié avec succès!'
-          : 'Contact enregistré avec succès!';
+          ? t('contacts.contactEdited')
+          : t('contacts.contactSaved');
         setConfirmationMessage({ text: successMessage, isSuccess: true });
         resetForm();
         // Recharger tous les contacts
@@ -513,7 +515,7 @@ export default function Contacts() {
         {/* En-tête avec titre, contact actif et mode IA */}
         <div style={formHeaderStyle}>
           <h2 style={{...formTitleStyle, fontWeight: 'bold'}}>
-            {editingContactId ? 'Modifier un contact' : 'Ajouter un contact'}
+            {editingContactId ? t('contacts.editTitle') : t('contacts.addTitle')}
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <label style={contactActifLabelStyle}>
@@ -523,7 +525,7 @@ export default function Contacts() {
                 onChange={(e) => setFormData({ ...formData, contact_actif: e.target.checked })}
                 style={checkboxStyle}
               />
-              Contact actif
+              {t('contacts.activeContact')}
             </label>
             <label style={contactActifLabelStyle}>
               <input
@@ -532,7 +534,7 @@ export default function Contacts() {
                 onChange={(e) => setUseAIMode(e.target.checked)}
                 style={checkboxStyle}
               />
-              Mode IA
+              {t('contacts.aiMode')}
             </label>
           </div>
         </div>
@@ -544,7 +546,7 @@ export default function Contacts() {
             {/* Ligne 1: Nom / Prénom */}
             <div style={formRowStyle}>
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Nom *</label>
+                <label style={labelStyle}>{t('contacts.lastName')}</label>
                 <input
                   type="text"
                   value={formData.noms}
@@ -555,11 +557,11 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('noms') && !formData.noms) ? '#ff4444' : '#ddd'
                   }}
                 />
-                {touchedFields.has('noms') && !formData.noms && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('noms') && !formData.noms && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
 
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Prénom *</label>
+                <label style={labelStyle}>{t('contacts.firstName')}</label>
                 <input
                   type="text"
                   value={formData.prenom}
@@ -570,14 +572,14 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('prenom') && !formData.prenom) ? '#ff4444' : '#ddd'
                   }}
                 />
-                {touchedFields.has('prenom') && !formData.prenom && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('prenom') && !formData.prenom && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
             </div>
 
             {/* Ligne 2: Fonction / Genre */}
             <div style={formRowStyle}>
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Fonction *</label>
+                <label style={labelStyle}>{t('contacts.function')}</label>
                 <input
                   type="text"
                   value={formData.fonction}
@@ -588,11 +590,11 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('fonction') && !formData.fonction) ? '#ff4444' : '#ddd'
                   }}
                 />
-                {touchedFields.has('fonction') && !formData.fonction && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('fonction') && !formData.fonction && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
 
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Genre *</label>
+                <label style={labelStyle}>{t('contacts.genre')}</label>
                 <select
                   value={formData.genre}
                   onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
@@ -602,19 +604,19 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('genre') && !formData.genre) ? '#ff4444' : '#ddd'
                   }}
                 >
-                  <option value="">Sélectionnez</option>
-                  <option value="Homme">Homme</option>
-                  <option value="Femme">Femme</option>
-                  <option value="Autre">Autre</option>
+                  <option value="">{t('contacts.select')}</option>
+                  <option value="Homme">{t('contacts.genres.Homme')}</option>
+                  <option value="Femme">{t('contacts.genres.Femme')}</option>
+                  <option value="Autre">{t('contacts.genres.Autre')}</option>
                 </select>
-                {touchedFields.has('genre') && !formData.genre && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('genre') && !formData.genre && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
             </div>
 
             {/* Ligne 3: Groupe / Tel fixe */}
             <div style={formRowStyle}>
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Groupe *</label>
+                <label style={labelStyle}>{t('contacts.group')}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
@@ -647,11 +649,11 @@ export default function Contacts() {
                     </div>
                   )}
                 </div>
-                {touchedFields.has('groupe') && !formData.groupe && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('groupe') && !formData.groupe && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
 
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Tél. fixe</label>
+                <label style={labelStyle}>{t('contacts.fixe')}</label>
                 <input
                   type="tel"
                   value={formData.num_fixe}
@@ -664,7 +666,7 @@ export default function Contacts() {
             {/* Ligne 4: Site / Tel mobile */}
             <div style={formRowStyle}>
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Site *</label>
+                <label style={labelStyle}>{t('contacts.site')}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
@@ -701,11 +703,11 @@ export default function Contacts() {
                     </div>
                   )}
                 </div>
-                {touchedFields.has('site') && !formData.site && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('site') && !formData.site && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
 
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Tél. mobile</label>
+                <label style={labelStyle}>{t('contacts.mobile')}</label>
                 <input
                   type="tel"
                   value={formData.num_mobile}
@@ -718,7 +720,7 @@ export default function Contacts() {
             {/* Ligne 5: Langue / Email */}
             <div style={formRowStyle}>
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Langue *</label>
+                <label style={labelStyle}>{t('contacts.language')}</label>
                 <select
                   value={formData.langue}
                   onChange={(e) => setFormData({ ...formData, langue: e.target.value })}
@@ -728,16 +730,16 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('langue') && !formData.langue) ? '#ff4444' : '#ddd'
                   }}
                 >
-                  <option value="">Sélectionnez</option>
-                  <option value="Français">Français</option>
-                  <option value="Anglais">Anglais</option>
-                  <option value="Espagnol">Espagnol</option>
+                  <option value="">{t('contacts.select')}</option>
+                  <option value="Français">{t('contacts.languages.Français')}</option>
+                  <option value="Anglais">{t('contacts.languages.Anglais')}</option>
+                  <option value="Espagnol">{t('contacts.languages.Espagnol')}</option>
                 </select>
-                {touchedFields.has('langue') && !formData.langue && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('langue') && !formData.langue && <span style={errorStyle}>{t('contacts.required')}</span>}
               </div>
 
               <div style={formFieldStyle}>
-                <label style={labelStyle}>Email *</label>
+                <label style={labelStyle}>{t('contacts.email')}</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -745,9 +747,9 @@ export default function Contacts() {
                   onBlur={async () => {
                     setTouchedFields(prev => new Set(prev).add('email'));
                     if (formData.email && !isValidEmail(formData.email)) {
-                      setErrors({ ...errors, email: 'Email invalide' });
+                      setErrors({ ...errors, email: t('contacts.invalidEmail') });
                     } else if (formData.email && hasSpecialChars(formData.email)) {
-                      setErrors({ ...errors, email: 'Caractères non autorisés' });
+                      setErrors({ ...errors, email: t('contacts.unauthorizedChars') });
                     } else if (formData.email && isValidEmail(formData.email) && !hasSpecialChars(formData.email)) {
                       await checkEmailAvailability(formData.email);
                     }
@@ -757,7 +759,7 @@ export default function Contacts() {
                     borderColor: (touchedFields.has('email') && (!formData.email || errors.email || emailExistsError)) ? '#ff4444' : '#ddd'
                   }}
                 />
-                {touchedFields.has('email') && !formData.email && <span style={errorStyle}>Ce champ est obligatoire</span>}
+                {touchedFields.has('email') && !formData.email && <span style={errorStyle}>{t('contacts.required')}</span>}
                 {errors.email && <span style={errorStyle}>{errors.email}</span>}
                 {emailError && <span style={errorStyle}>{emailError}</span>}
               </div>
@@ -767,7 +769,7 @@ export default function Contacts() {
           {/* Colonne droite: Observations */}
           <div style={rightColumnStyle}>
             <div style={formFieldStyle}>
-              <label style={labelStyle}>Observations</label>
+              <label style={labelStyle}>{t('contacts.observations')}</label>
               <textarea
                 value={formData.observations}
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
@@ -808,10 +810,10 @@ export default function Contacts() {
               }}
               disabled={editingContactId ? !hasFormChanged || !areAllRequiredFieldsFilled() || emailExistsError : !areAllRequiredFieldsFilled() || emailExistsError || isCheckingEmail}
             >
-              {isCheckingEmail ? 'Vérification...' : (editingContactId ? 'Modifier' : 'Enregistrer')}
+              {isCheckingEmail ? t('contacts.checking') : (editingContactId ? t('contacts.edit') : t('contacts.save'))}
             </button>
             {emailExistsError && (
-              <span style={{ color: 'red', fontSize: '14px', fontWeight: 'bold' }}>existe déjà</span>
+              <span style={{ color: 'red', fontSize: '14px', fontWeight: 'bold' }}>{t('contacts.alreadyExists')}</span>
             )}
           </div>
           <button
@@ -819,20 +821,20 @@ export default function Contacts() {
             onClick={resetForm}
             style={buttonStyle}
           >
-            {editingContactId ? 'Annuler' : 'Réinitialiser'}
+            {editingContactId ? t('contacts.cancel') : t('contacts.reset')}
           </button>
         </div>
       </form>
 
       {/* Liste des contacts */}
       <div style={{ marginTop: '30px' }}>
-        <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>Liste des contacts</h2>
+        <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>{t('contacts.listTitle')}</h2>
 
         {/* Barre de recherche avec compteur et filtre actif */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
           <input
             type="text"
-            placeholder="Rechercher un contact..."
+            placeholder={t('contacts.searchPlaceholder')}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             style={{
@@ -852,7 +854,7 @@ export default function Contacts() {
             fontSize: '14px',
             whiteSpace: 'nowrap'
           }}>
-            {matchingContactsCount} contacts correspondants
+            {t('contacts.matchingCount', { count: matchingContactsCount })}
           </span>
           <label style={{
             display: 'flex',
@@ -869,14 +871,14 @@ export default function Contacts() {
               onChange={(e) => setShowOnlyActive(e.target.checked)}
               style={checkboxStyle}
             />
-            Actifs uniquement
+            {t('contacts.activeOnly')}
           </label>
         </div>
 
         {loading || loadingZones ? (
-          <p>Chargement...</p>
+          <p>{t('contacts.loading')}</p>
         ) : contacts.length === 0 ? (
-          <p>Aucun contact trouvé.</p>
+          <p>{t('contacts.noResults')}</p>
         ) : (
           <div style={gridStyle}>
             {contacts.map((contact) => (
@@ -893,12 +895,12 @@ export default function Contacts() {
                 <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '16px', marginBottom: '10px', textAlign: 'center' }}>
                   {contact.prenom} {contact.noms}
                 </h3>
-                <p style={cardTextStyle}><strong>Fonction:</strong> {contact.fonction}</p>
-                <p style={cardTextStyle}><strong>Groupe:</strong> {contact.groupe}</p>
-                <p style={cardTextStyle}><strong>Site:</strong> {contact.site}</p>
-                <p style={cardTextStyle}><strong>Email:</strong> {contact.email}</p>
-                {contact.num_mobile && <p style={cardTextStyle}><strong>Mobile:</strong> {contact.num_mobile}</p>}
-                {contact.num_fixe && <p style={cardTextStyle}><strong>Fixe:</strong> {contact.num_fixe}</p>}
+                <p style={cardTextStyle}><strong>{t('contacts.functionLabel')}:</strong> {contact.fonction}</p>
+                <p style={cardTextStyle}><strong>{t('contacts.groupLabel')}:</strong> {contact.groupe}</p>
+                <p style={cardTextStyle}><strong>{t('contacts.siteLabel')}:</strong> {contact.site}</p>
+                <p style={cardTextStyle}><strong>{t('contacts.emailLabel')}:</strong> {contact.email}</p>
+                {contact.num_mobile && <p style={cardTextStyle}><strong>{t('contacts.mobileLabel')}:</strong> {contact.num_mobile}</p>}
+                {contact.num_fixe && <p style={cardTextStyle}><strong>{t('contacts.fixeLabel')}:</strong> {contact.num_fixe}</p>}
 
                 {/* Ligne blanche avec statut et bouton Modifier */}
                 <div style={{
@@ -914,13 +916,13 @@ export default function Contacts() {
                     color: contact.contact_actif ? '#008000' : '#FF0000',
                     margin: 0
                   }}>
-                    <strong>Statut:</strong> {contact.contact_actif ? 'Actif' : 'Inactif'}
+                    <strong>{t('contacts.statusLabel')}:</strong> {contact.contact_actif ? t('contacts.active') : t('contacts.inactive')}
                   </p>
                   <button
                     onClick={() => handleEditContact(contact)}
                     style={modifyButtonStyle}
                   >
-                    Modifier
+                    {t('contacts.edit')}
                   </button>
                 </div>
               </div>

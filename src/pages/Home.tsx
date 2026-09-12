@@ -1,31 +1,33 @@
+import { useTranslation } from 'react-i18next';
+
 export default function Home() {
+  const { t } = useTranslation();
   return (
     <div style={containerStyle}>
       <div style={contentStyle}>
         <section style={heroStyle}>
-          <h1 style={titleStyle}>Bienvenue sur <span style={jennyStyle}>JENNY</span></h1>
+          <h1 style={titleStyle}>{t('home.welcome')} <span style={jennyStyle}>JENNY</span></h1>
           <p style={subtitleStyle}>
-            Votre partenaire essentiel pour optimiser la performance commerciale.
+            {t('home.subtitle')}
           </p>
         </section>
 
         <section style={featuresStyle}>
-          <h2 style={sectionTitleStyle}>Organisez, planifiez, performez</h2>
+          <h2 style={sectionTitleStyle}>{t('home.organizeTitle')}</h2>
           <p style={textStyle}>
-            Structurez vos tâches, priorisez vos actions et planifiez vos visites de manière efficace.
+            {t('home.organizeText1')}
           </p>
           <p style={textStyle}>
-            <span style={jennyStyle}>JENNY</span> vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.
+            <span style={jennyStyle}>JENNY</span> {t('home.organizeText2')}
           </p>
         </section>
 
         <section style={featuresStyle}>
-          <h2 style={sectionTitleStyle}>Fonctionnalités ajoutées récement :</h2>
+          <h2 style={sectionTitleStyle}>{t('home.recentTitle')}</h2>
           <ul style={listStyle}>
-            <li>✅ Version mobile optimisée et simplifiée</li>
-            <li>✅ Désactivation des contacts (ex: départ d'une entreprise)</li>
-            <li>✅ Compte des contacts par site</li>
-            <li>✅ Historique des dernières visites pour chaque site</li>
+            <li>✅ {t('home.recent2')}</li>
+            <li>✅ {t('home.recent3')}</li>
+            <li>✅ {t('home.recent4')}</li>
           </ul>
         </section>
       </div>

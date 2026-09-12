@@ -17,6 +17,11 @@ export default function AdminZones() {
   const [msg, setMsg] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [mapLat, setMapLat] = useState<string>('');
+  const [mapLng, setMapLng] = useState<string>('');
+  const [initialMapLat, setInitialMapLat] = useState<string>('');
+  const [initialMapLng, setInitialMapLng] = useState<string>('');
+
   // Charger la liste des utilisateurs (non admin)
   useEffect(() => {
     (async () => {
@@ -35,36 +40,75 @@ export default function AdminZones() {
     })();
   }, []);
 
-  // Quand on choisit un utilisateur -> charger ses zones
+    // Quand on choisit un utilisateur -> charger ses zones + le centre de carte
   useEffect(() => {
     if (!selectedUserId) {
       setSelected(new Set());
       setInitial(new Set());
+      setMapLat('');
+      setMapLng('');
+      setInitialMapLat('');
+      setInitialMapLng('');
       setMsg(null);
       return;
     }
     (async () => {
-      const { data, error } = await supabase
-        .from('user_zones')
-        .select('pays')
-        .eq('user_id', selectedUserId);
+      const [zonesRes, profileRes] = await Promise.all([
+        supabase.from('user_zones').select('pays').eq('user_id', selectedUserId),
+        supabase
+          .from('profiles')
+          .select('map_center_lat, map_center_lng')
+          .eq('id', selectedUserId)
+          .maybeSingle(),
+      ]);
 
-      if (error) {
-        setMsg({ text: `Erreur: ${error.message}`, isSuccess: false });
+      if (zonesRes.error) {
+        setMsg({ text: `Erreur zones: ${zonesRes.error.message}`, isSuccess: false });
         return;
       }
-      const pays = new Set<string>((data || []).map(r => r.pays));
+      const pays = new Set<string>((zonesRes.data || []).map(r => r.pays));
       setSelected(pays);
       setInitial(pays);
+
+      // Centre de carte : on ne bloque pas l'affichage des zones si la lecture échoue,
+      // mais on signale l'erreur pour le diagnostic.
+      if (profileRes.error) {
+        setMsg({
+          text: `Erreur profil (centre carte): ${profileRes.error.message}`,
+          isSuccess: false,
+        });
+        setMapLat('');
+        setMapLng('');
+        setInitialMapLat('');
+        setInitialMapLng('');
+        return;
+      }
+
+      const lat = profileRes.data?.map_center_lat;
+      const lng = profileRes.data?.map_center_lng;
+      const latStr = lat != null ? String(lat) : '';
+      const lngStr = lng != null ? String(lng) : '';
+      setMapLat(latStr);
+      setMapLng(lngStr);
+      setInitialMapLat(latStr);
+      setInitialMapLng(lngStr);
+
       setMsg(null);
     })();
   }, [selectedUserId]);
 
-  const hasChanges = useMemo(() => {
+  const zonesChanged = useMemo(() => {
     if (selected.size !== initial.size) return true;
     for (const p of selected) if (!initial.has(p)) return true;
     return false;
   }, [selected, initial]);
+
+  const mapChanged = useMemo(
+    () => mapLat.trim() !== initialMapLat.trim() || mapLng.trim() !== initialMapLng.trim(),
+    [mapLat, mapLng, initialMapLat, initialMapLng]
+  );
+
+  const hasChanges = zonesChanged || mapChanged;
 
   const toggleCountry = (pays: string) => {
     setSelected(prev => {
@@ -120,6 +164,25 @@ export default function AdminZones() {
         const { error } = await supabase.from('user_zones').insert(rows);
         if (error) throw error;
       }
+
+      if (mapChanged) {
+        const latValue = mapLat.trim() === '' ? null : parseFloat(mapLat.trim());
+        const lngValue = mapLng.trim() === '' ? null : parseFloat(mapLng.trim());
+        if (
+          (latValue !== null && isNaN(latValue)) ||
+          (lngValue !== null && isNaN(lngValue))
+        ) {
+          throw new Error('Coordonnées invalides : latitude/longitude doivent être des nombres.');
+        }
+        const { error } = await supabase
+          .from('profiles')
+          .update({ map_center_lat: latValue, map_center_lng: lngValue })
+          .eq('id', selectedUserId);
+        if (error) throw error;
+        setInitialMapLat(mapLat.trim());
+        setInitialMapLng(mapLng.trim());
+      }
+
       setInitial(new Set(selected));
       setMsg({ text: 'Zones enregistrées avec succès.', isSuccess: true });
     } catch (err: any) {
@@ -132,6 +195,10 @@ export default function AdminZones() {
   const handleCancel = () => {
     setSelected(new Set());
     setInitial(new Set());
+    setMapLat('');
+    setMapLng('');
+    setInitialMapLat('');
+    setInitialMapLng('');
     setSelectedUserId('');
     setMsg(null);
   };
@@ -196,6 +263,38 @@ export default function AdminZones() {
               </div>
             );
           })}
+
+          {/* Centre de la carte (Page Sites) */}
+          <div style={mapCenterBlockStyle}>
+            <h2 style={sectionTitleStyle}>Centre de la carte (Page Sites)</h2>
+            <p style={mutedStyle}>
+              Coordonnées du centre de carte affiché pour cet utilisateur. Laisser vide pour utiliser la valeur par défaut.
+            </p>
+            <div style={coordsRowStyle}>
+              <div style={coordFieldStyle}>
+                <label style={labelStyle}>Latitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={mapLat}
+                  onChange={e => setMapLat(e.target.value)}
+                  placeholder="ex: 48.8566"
+                  style={inputStyle}
+                />
+              </div>
+              <div style={coordFieldStyle}>
+                <label style={labelStyle}>Longitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={mapLng}
+                  onChange={e => setMapLng(e.target.value)}
+                  placeholder="ex: 2.3522"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Boutons */}
           <div style={buttonsStyle}>
@@ -265,6 +364,7 @@ const mutedStyle: React.CSSProperties = {
   fontSize: '13px',
   color: '#666',
   marginTop: '5px',
+  marginBottom: '10px',
 };
 
 const continentBlockStyle: React.CSSProperties = {
@@ -301,6 +401,21 @@ const countryLabelStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   cursor: 'pointer',
+};
+
+const mapCenterBlockStyle: React.CSSProperties = {
+  marginBottom: '20px',
+  paddingBottom: '15px',
+  borderBottom: '1px solid #eee',
+};
+
+const coordsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '15px',
+};
+
+const coordFieldStyle: React.CSSProperties = {
+  flex: 1,
 };
 
 const buttonsStyle: React.CSSProperties = {
