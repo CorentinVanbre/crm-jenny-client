@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { CONTINENTS } from '../lib/countries';
+import { useIsMobile } from '../lib/useIsMobile';
 
 interface Profile {
   id: string;
@@ -32,6 +33,7 @@ export default function AdminZones() {
 
   // Inscriptions en attente
   const [pending, setPending] = useState<PendingRegistration[]>([]);
+  const isMobile = useIsMobile();
   const [loadingPending, setLoadingPending] = useState(false);
 
   // Charger la liste des utilisateurs (non admin)
@@ -307,7 +309,7 @@ export default function AdminZones() {
         ) : (
           <div style={pendingListStyle}>
             {pending.map(reg => (
-              <div key={reg.id} style={pendingItemStyle}>
+              <div key={reg.id} style={{ ...pendingItemStyle, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? '10px' : 0 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{reg.email}</div>
                   <div style={mutedStyle}>
@@ -318,14 +320,14 @@ export default function AdminZones() {
                   <button
                     onClick={() => handleApprove(reg)}
                     disabled={saving}
-                    style={approveButtonStyle}
+                    style={{ ...approveButtonStyle, flex: isMobile ? 1 : undefined }}
                   >
                     Valider
                   </button>
                   <button
                     onClick={() => handleReject(reg)}
                     disabled={saving}
-                    style={rejectButtonStyle}
+                    style={{ ...rejectButtonStyle, flex: isMobile ? 1 : undefined }}
                   >
                     Refuser
                   </button>
@@ -376,7 +378,7 @@ export default function AdminZones() {
                     ({pays.filter(p => selected.has(p)).length}/{pays.length})
                   </span>
                 </div>
-                <div style={countriesGridStyle}>
+                <div style={{ ...countriesGridStyle, gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 140 : 200}px, 1fr))` }}>
                   {pays.map(p => (
                     <label key={p} style={countryLabelStyle}>
                       <input
@@ -399,7 +401,7 @@ export default function AdminZones() {
             <p style={mutedStyle}>
               Coordonnées du centre de carte affiché pour cet utilisateur. Laisser vide pour utiliser la valeur par défaut.
             </p>
-            <div style={coordsRowStyle}>
+            <div style={{ ...coordsRowStyle, flexDirection: isMobile ? 'column' : 'row' }}>
               <div style={coordFieldStyle}>
                 <label style={labelStyle}>Latitude</label>
                 <input

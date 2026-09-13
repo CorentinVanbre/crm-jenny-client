@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
+import { useIsMobile } from '../lib/useIsMobile';
 
 // Types
 interface Address {
@@ -66,6 +67,7 @@ export default function Sites() {
   const [selectedDomains, setSelectedDomains] = useState<string[]>(['Ciment', 'Mineralurgie', 'Platre', 'Papeterie', 'Fertilisant', 'Autre']);
   const { t } = useTranslation();
   const { allowedCountries, loadingZones } = useUserZones();
+  const isMobile = useIsMobile();
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(DEFAULT_MAP_CENTER);
   const [selectedSites, setSelectedSites] = useState<Site[]>([]);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -705,24 +707,23 @@ export default function Sites() {
       <div style={{
         width: 'calc(100% - 40px)',
         maxWidth: '980px',
-        height: '95px',
         margin: '0 auto 20px',
         backgroundColor: '#A6A6A6',
         borderRadius: '8px',
         padding: '10px',
         boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <div>
-            <button style={buttonStyle} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
-            <button style={buttonStyle} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
-            <button style={buttonStyle} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', gap: isMobile ? '10px' : 0, marginBottom: '10px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+            <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+            <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: isMobile ? 'left' : 'right', display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
             {colorTags.map(tag => (
               <span
                 key={tag}
-                style={colorTagStyle(tag, selectedColors.includes(tag))}
+                style={{ ...colorTagStyle(tag, selectedColors.includes(tag)), marginLeft: 0 }}
                 onClick={() => toggleColorTag(tag)}
                 onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
                 onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
@@ -733,7 +734,7 @@ export default function Sites() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? '10px' : 0 }}>
           <input
             type="text"
             placeholder={t('sites.searchPlaceholder')}
@@ -741,24 +742,25 @@ export default function Sites() {
             onChange={(e) => setSearchText(e.target.value)}
             style={{
               height: '30px',
-              width: '210px',
+              width: isMobile ? '100%' : '210px',
               padding: '0 15px',
               border: '1px solid #000',
               borderRadius: '4px',
               fontFamily: 'Barlow, sans-serif',
               fontWeight: 200,
               fontSize: '14px',
-              backgroundColor: '#fff'
+              backgroundColor: '#fff',
+              boxSizing: 'border-box' as const
             }}
           />
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '0 5px' }}>
+          <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: isMobile ? '0' : '0 5px' }}>
             {t('sites.matchingCount', { count: matchingSitesCount })}
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: isMobile ? 'left' : 'right', display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
             {domainTags.map(tag => (
               <span
                 key={tag}
-                style={domainTagStyle(selectedDomains.includes(tag))}
+                style={{ ...domainTagStyle(selectedDomains.includes(tag)), marginLeft: 0 }}
                 onClick={() => toggleDomainTag(tag)}
                 onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
                 onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
@@ -771,7 +773,7 @@ export default function Sites() {
       </div>
 
       {/* Fiches de sites */}
-      <div style={{ width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+      <div style={{ width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
         {loading || loadingZones ? (
           <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>{t('sites.loading')}</p>
         ) : allSites.filter(matchesFilters).length === 0 ? (
@@ -1084,7 +1086,7 @@ export default function Sites() {
               {t('sites.addSiteTitle')}
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
               {/* Nom du site */}
               <div>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
