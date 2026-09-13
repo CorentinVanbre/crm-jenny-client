@@ -444,7 +444,7 @@ export default function AdminZones() {
 
 // Styles (thème du site)
 const containerStyle: React.CSSProperties = {
-  padding: '20px',
+  padding: '10px',
   maxWidth: '900px',
   margin: '0 auto',
   fontFamily: 'Barlow, sans-serif',

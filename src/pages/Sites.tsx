@@ -713,7 +713,7 @@ export default function Sites() {
         padding: '10px',
         boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
           <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
           <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
           <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
@@ -746,7 +746,7 @@ export default function Sites() {
         </div>
 
         {/* Sélection des couleurs sous la barre de recherche */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
           {colorTags.map(tag => (
             <span
               key={tag}
@@ -760,7 +760,7 @@ export default function Sites() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
           {domainTags.map(tag => (
             <span
               key={tag}
