@@ -637,7 +637,7 @@ export default function SiteDetail() {
 
   return (
     <div style={containerStyle}>
-      {/* En-tête avec bouton retour à gauche et titre centré */}
+      {/* En-tête avec boutons et titre centré */}
       <div style={headerStyle}>
         <Link to="/sites" style={buttonStyle}>
           {t('siteDetail.backToSites')}
@@ -647,8 +647,24 @@ export default function SiteDetail() {
           <h1 style={titleStyle}>{site.groupe} - {site.noms}</h1>
         </div>
 
-        {/* Spacer pour centrer le titre vis-à-vis du bouton retour */}
-        <div style={{ width: '120px' }} />
+        <div style={buttonContainerStyle}>
+          {isEditing ? (
+            <button onClick={handleCancelEdit} style={buttonStyle}>
+              {t('siteDetail.cancel')}
+            </button>
+          ) : (
+            <button onClick={handleEdit} style={buttonStyle}>
+              {t('siteDetail.edit')}
+            </button>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={!isModified}
+            style={isModified ? buttonStyle : disabledButtonStyle}
+          >
+            {t('siteDetail.save')}
+          </button>
+        </div>
       </div>
 
       {/* Formulaire pré-rempli (données du site) */}
@@ -798,65 +814,40 @@ export default function SiteDetail() {
         </div>
       </div>
 
-      {/* Message de succès/erreur : entre le formulaire et l'historique */}
+      {/* Message de confirmation */}
       {saveMessage && (
         <div style={messageStyle(saveMessage.isSuccess)}>
           {saveMessage.text}
         </div>
       )}
 
-      {/* Bloc historique des visites (50% gauche) + boutons Modifier/Enregistrer (50% droite) */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch', marginBottom: '20px' }}>
-        {/* Historique des visites - moitié gauche */}
-        <div style={{ flex: '1 1 50%', maxWidth: '50%' }}>
-          {(() => {
-            const dates = parseDatesVisites(site.dates_visites);
-            if (dates.length === 0) return null;
-            return (
-              <div style={{ ...formContainerStyle, marginBottom: 0, height: '100%' }}>
-                <h2 style={{ fontSize: '18px', marginBottom: '15px', fontWeight: 'bold' }}>
-                  {t('siteDetail.visitHistory')}
-                </h2>
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  fontFamily: 'Barlow, sans-serif',
-                  fontSize: '14px'
-                }}>
-                  {[...dates]
-                    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-                    .map((date, index) => (
-                      <li key={index} style={{ marginBottom: '5px' }}>
-                        {formatDate(date)}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Boutons Modifier/Enregistrer - moitié droite */}
-        <div style={{ flex: '1 1 50%', maxWidth: '50%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-end', gap: '10px' }}>
-          {isEditing ? (
-            <button onClick={handleCancelEdit} style={buttonStyle}>
-              {t('siteDetail.cancel')}
-            </button>
-          ) : (
-            <button onClick={handleEdit} style={buttonStyle}>
-              {t('siteDetail.edit')}
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={!isModified}
-            style={isModified ? buttonStyle : disabledButtonStyle}
-          >
-            {t('siteDetail.save')}
-          </button>
-        </div>
-      </div>
+      {/* Historique des visites - pleine largeur */}
+      {(() => {
+        const dates = parseDatesVisites(site.dates_visites);
+        if (dates.length === 0) return null;
+        return (
+          <div style={formContainerStyle}>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px', fontWeight: 'bold' }}>
+              {t('siteDetail.visitHistory')}
+            </h2>
+            <ul style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              fontFamily: 'Barlow, sans-serif',
+              fontSize: '14px'
+            }}>
+              {[...dates]
+                .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                .map((date, index) => (
+                  <li key={index} style={{ marginBottom: '5px' }}>
+                    {formatDate(date)}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* En-tête des contacts avec bouton Copier emails */}
       {contacts.length > 0 && (
