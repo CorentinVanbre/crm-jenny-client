@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { useIsMobile } from '../lib/useIsMobile';
+import { Autocomplete } from '@react-google-maps/api';
 
 // Types
 interface Site {
@@ -70,6 +71,36 @@ export default function Contacts() {
   const [useAIMode, setUseAIMode] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const { allowedCountries, loadingZones } = useUserZones();
+
+  // Modale Ajouter Groupe
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({ nom_groupe: '', site_web: '' });
+  const [groupNameError, setGroupNameError] = useState('');
+  const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
+  const [groupSubmitMessage, setGroupSubmitMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+
+  // Modale Ajouter Site
+  const [showAddSiteModal, setShowAddSiteModal] = useState(false);
+  const [newSiteData, setNewSiteData] = useState({
+    noms: '',
+    groupe: '',
+    pays: '',
+    adress: { formatted: '' },
+    latitude: '',
+    longitude: '',
+    couleur: 'Non visités',
+    domaine: 'Ciment',
+    observations: '',
+  });
+  const [siteNameError, setSiteNameError] = useState('');
+  const [isSiteSubmitting, setIsSiteSubmitting] = useState(false);
+  const [siteSubmitMessage, setSiteSubmitMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [showSiteGroupDropdown, setShowSiteGroupDropdown] = useState(false);
+  const [filteredSiteGroupes, setFilteredSiteGroupes] = useState<Groupe[]>([]);
+  const [addressAutocomplete, setAddressAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+  const colorTags = ['Non visités', 'Visités', 'Visités il y a +18mois', 'A visiter', 'Fermés'];
+  const domainTags = ['Ciment', 'Mineralurgie', 'Platre', 'Papeterie', 'Fertilisant', 'Autre'];
   const isMobile = useIsMobile();
 
   // Map site (nom) -> pays, pour filtrer les contacts par zone
@@ -372,6 +403,172 @@ export default function Contacts() {
     setShowSiteDropdown(false);
   };
 
+  // ---------- MODALE AJOUTER GROUPE ----------
+  const checkGroupExists = async (nom: string): Promise<boolean> => {
+    if (!nom.trim()) return false;
+    const { data } = await supabase
+      .from('groupes')
+      .select('ID')
+      .ilike('nom_groupe', nom.trim())
+      .maybeSingle();
+    return !!data;
+  };
+
+  const resetGroupForm = () => {
+    setNewGroupData({ nom_groupe: '', site_web: '' });
+    setGroupNameError('');
+    setGroupSubmitMessage(null);
+    setIsGroupSubmitting(false);
+  };
+
+  const handleCloseGroupModal = () => { setShowAddGroupModal(false); resetGroupForm(); };
+
+  const handleAddGroup = async () => {
+    if (!newGroupData.nom_groupe.trim() || groupNameError) return;
+    setIsGroupSubmitting(true);
+    setGroupSubmitMessage(null);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('groupes').insert([{
+        nom_groupe: newGroupData.nom_groupe.trim(),
+        site_web: newGroupData.site_web.trim(),
+        ID: crypto.randomUUID(),
+        owner: (await supabase.auth.getUser()).data.user?.id || null,
+        created_date: now,
+        updated_date: now
+      }]);
+      if (error) throw error;
+      setGroupSubmitMessage({ text: t('sites.groupAdded'), isSuccess: true });
+      const { data: groupesData } = await supabase
+        .from('groupes')
+        .select('ID, nom_groupe')
+        .order('nom_groupe', { ascending: true });
+      setGroupes(groupesData || []);
+      setFilteredGroupes(groupesData || []);
+      setFormData(prev => ({ ...prev, groupe: newGroupData.nom_groupe.trim() }));
+      setTimeout(() => { setShowAddGroupModal(false); resetGroupForm(); }, 1000);
+    } catch (error: any) {
+      setGroupSubmitMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+    } finally {
+      setIsGroupSubmitting(false);
+    }
+  };
+
+  // ---------- MODALE AJOUTER SITE ----------
+  const checkSiteExists = async (nom: string): Promise<boolean> => {
+    if (!nom.trim()) return false;
+    const { data } = await supabase
+      .from('sites')
+      .select('id')
+      .ilike('noms', nom.trim())
+      .maybeSingle();
+    return !!data;
+  };
+
+  const resetSiteForm = () => {
+    setNewSiteData({
+      noms: '', groupe: '', pays: '', adress: { formatted: '' },
+      latitude: '', longitude: '', couleur: 'Non visités', domaine: 'Ciment', observations: '',
+    });
+    setSiteNameError('');
+    setSiteSubmitMessage(null);
+    setIsSiteSubmitting(false);
+    setShowSiteGroupDropdown(false);
+    setFilteredSiteGroupes([]);
+    setAddressAutocomplete(null);
+  };
+
+  const handleCloseSiteModal = () => { setShowAddSiteModal(false); resetSiteForm(); };
+
+  const handleOpenAddSiteModal = () => {
+    setShowAddSiteModal(true);
+    setFilteredSiteGroupes(groupes);
+    setNewSiteData(prev => ({ ...prev, groupe: formData.groupe }));
+    resetSiteForm();
+    setNewSiteData(prev => ({ ...prev, groupe: formData.groupe }));
+  };
+
+  const onAutocompleteLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
+    setAddressAutocomplete(autocomplete);
+  }, []);
+
+  const onAutocompletePlaceChanged = useCallback(() => {
+    if (!addressAutocomplete) return;
+    const place = addressAutocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) return;
+    const countryComponent = place.address_components?.find(
+      (component: any) => component.types.includes('country')
+    );
+    const country = countryComponent?.long_name || '';
+    const lat = place.geometry.location.lat().toString();
+    const lng = place.geometry.location.lng().toString();
+    setNewSiteData(prev => ({
+      ...prev,
+      adress: { formatted: place.formatted_address || '' },
+      pays: country,
+      latitude: lat,
+      longitude: lng
+    }));
+  }, [addressAutocomplete]);
+
+  const handleSiteNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewSiteData(prev => ({ ...prev, noms: value }));
+    if (!value.trim()) { setSiteNameError(''); return; }
+    const exists = await checkSiteExists(value);
+    setSiteNameError(exists ? t('sites.siteExists') : '');
+  };
+
+  const handleSiteGroupSearch = (value: string) => {
+    setNewSiteData(prev => ({ ...prev, groupe: value }));
+    setFilteredSiteGroupes(value === '' ? groupes : groupes.filter(g => g.nom_groupe.toLowerCase().includes(value.toLowerCase())));
+  };
+
+  const handleSelectSiteGroup = (groupe: Groupe) => {
+    setNewSiteData(prev => ({ ...prev, groupe: groupe.nom_groupe }));
+    setShowSiteGroupDropdown(false);
+  };
+
+  const handleAddSite = async () => {
+    if (!newSiteData.noms.trim() || siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim()) return;
+    setIsSiteSubmitting(true);
+    setSiteSubmitMessage(null);
+    try {
+      const now = new Date().toISOString();
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase.from('sites').insert([{
+        id: crypto.randomUUID(),
+        noms: newSiteData.noms.trim(),
+        groupe: newSiteData.groupe.trim(),
+        pays: newSiteData.pays.trim(),
+        adress: { formatted: newSiteData.adress.formatted.trim() },
+        latitude: newSiteData.latitude.trim(),
+        longitude: newSiteData.longitude.trim(),
+        couleur: newSiteData.couleur,
+        domaine: newSiteData.domaine,
+        observations: newSiteData.observations.trim(),
+        nb_contact: 0,
+        dates_visites: [],
+        owner: user?.id || null,
+        created_date: now,
+        updated_date: now
+      }]);
+      if (error) throw error;
+      setSiteSubmitMessage({ text: t('sites.siteAdded'), isSuccess: true });
+      const { data: sitesData } = await supabase
+        .from('sites')
+        .select('id, noms, groupe, pays')
+        .order('noms', { ascending: true });
+      setAllSites(sitesData || []);
+      setFormData(prev => ({ ...prev, site: newSiteData.noms.trim(), groupe: newSiteData.groupe.trim() }));
+      setTimeout(() => { setShowAddSiteModal(false); resetSiteForm(); }, 1000);
+    } catch (error: any) {
+      setSiteSubmitMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+    } finally {
+      setIsSiteSubmitting(false);
+    }
+  };
+
   // Formater les données avant enregistrement
   const formatDataForSave = (data: typeof formData) => {
     return {
@@ -619,7 +816,7 @@ export default function Contacts() {
             <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.group')}</label>
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="text"
                     value={formData.groupe}
@@ -634,9 +831,16 @@ export default function Contacts() {
                     }}
                     style={{
                       ...inputStyle,
+                      flex: 1,
                       borderColor: (touchedFields.has('groupe') && !formData.groupe) ? '#ff4444' : '#ddd'
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowAddGroupModal(true)}
+                    style={addButtonStyle}
+                    title={t('sites.addGroup')}
+                  >+</button>
                   {showGroupeDropdown && filteredGroupes.length > 0 && (
                     <div style={dropdownStyle} onMouseDown={(e) => e.preventDefault()}>
                       {filteredGroupes.map(groupe => (
@@ -669,7 +873,7 @@ export default function Contacts() {
             <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.site')}</label>
-                <div style={{ position: 'relative' }}>
+                <div style={{ position: 'relative', display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
                     type="text"
                     value={formData.site}
@@ -687,10 +891,17 @@ export default function Contacts() {
                     disabled={!formData.groupe}
                     style={{
                       ...inputStyle,
+                      flex: 1,
                       borderColor: (touchedFields.has('site') && !formData.site) ? '#ff4444' : '#ddd',
                       backgroundColor: !formData.groupe ? '#f5f5f5' : '#fff'
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={handleOpenAddSiteModal}
+                    style={addButtonStyle}
+                    title={t('sites.addSite')}
+                  >+</button>
                   {showSiteDropdown && formData.groupe && filteredSites.length > 0 && (
                     <div style={dropdownStyle} onMouseDown={(e) => e.preventDefault()}>
                       {filteredSites.map(site => (
@@ -934,6 +1145,198 @@ export default function Contacts() {
           </div>
         )}
       </div>
+
+      {/* Modale Ajouter Groupe */}
+      {showAddGroupModal && (
+        <>
+          <div style={modalOverlayStyle} onClick={handleCloseGroupModal} />
+          <div style={modalStyle} onClick={e => e.stopPropagation()}>
+            <h2 style={modalTitleStyle}>{t('sites.addGroupTitle')}</h2>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={modalLabelStyle}>{t('sites.groupName')}</label>
+              <input
+                type="text"
+                value={newGroupData.nom_groupe}
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  setNewGroupData(prev => ({ ...prev, nom_groupe: value }));
+                  if (!value.trim()) { setGroupNameError(''); return; }
+                  const exists = await checkGroupExists(value);
+                  setGroupNameError(exists ? t('sites.groupExists') : '');
+                }}
+                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : '#ddd' }}
+                placeholder={t('sites.groupNamePlaceholder')}
+              />
+              {groupNameError && <span style={errorStyle}>{groupNameError}</span>}
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={modalLabelStyle}>{t('sites.websiteAddress')}</label>
+              <input
+                type="url"
+                value={newGroupData.site_web}
+                onChange={(e) => setNewGroupData(prev => ({ ...prev, site_web: e.target.value }))}
+                style={inputStyle}
+                placeholder={t('sites.websitePlaceholder')}
+              />
+            </div>
+            {groupSubmitMessage && (
+              <div style={{
+                padding: '10px', marginBottom: '15px', borderRadius: '4px',
+                fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+                backgroundColor: groupSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
+                color: groupSubmitMessage.isSuccess ? '#155724' : '#721c24',
+                border: `1px solid ${groupSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                textAlign: 'center'
+              }}>
+                {groupSubmitMessage.text}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button type="button" onClick={handleCloseGroupModal} style={buttonStyle}>{t('common.cancel')}</button>
+              <button
+                type="button"
+                onClick={handleAddGroup}
+                disabled={!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting}
+                style={{
+                  ...buttonStyle,
+                  opacity: (!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting) ? 0.5 : 1,
+                  cursor: (!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isGroupSubmitting ? t('sites.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modale Ajouter Site */}
+      {showAddSiteModal && (
+        <>
+          <div style={modalOverlayStyle} onClick={handleCloseSiteModal} />
+          <div style={{ ...modalStyle, width: '500px' }} onClick={e => e.stopPropagation()}>
+            <h2 style={modalTitleStyle}>{t('sites.addSiteTitle')}</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+              <div>
+                <label style={modalLabelStyle}>{t('sites.siteName')}</label>
+                <input
+                  type="text"
+                  value={newSiteData.noms}
+                  onChange={handleSiteNameChange}
+                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : '#ddd' }}
+                  placeholder={t('sites.siteNamePlaceholder')}
+                />
+                {siteNameError && <span style={errorStyle}>{siteNameError}</span>}
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <label style={modalLabelStyle}>{t('sites.group')}</label>
+                <input
+                  type="text"
+                  value={newSiteData.groupe}
+                  onChange={(e) => handleSiteGroupSearch(e.target.value)}
+                  onFocus={() => { setShowSiteGroupDropdown(true); setFilteredSiteGroupes(groupes); }}
+                  style={inputStyle}
+                  placeholder={t('common.select')}
+                />
+                {showSiteGroupDropdown && filteredSiteGroupes.length > 0 && (
+                  <div style={dropdownStyle} onMouseDown={e => e.preventDefault()}>
+                    {filteredSiteGroupes.map(groupe => (
+                      <div
+                        key={groupe.ID}
+                        onClick={() => handleSelectSiteGroup(groupe)}
+                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent' }}
+                      >
+                        {groupe.nom_groupe}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={modalLabelStyle}>{t('sites.domain')}</label>
+                <select
+                  value={newSiteData.domaine}
+                  onChange={(e) => setNewSiteData(prev => ({ ...prev, domaine: e.target.value }))}
+                  style={inputStyle}
+                >
+                  {domainTags.map(tag => <option key={tag} value={tag}>{t('sites.domains.' + tag)}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label style={modalLabelStyle}>{t('sites.color')}</label>
+                <select
+                  value={newSiteData.couleur}
+                  onChange={(e) => setNewSiteData(prev => ({ ...prev, couleur: e.target.value }))}
+                  style={inputStyle}
+                >
+                  {colorTags.map(tag => <option key={tag} value={tag}>{t('sites.colors.' + tag)}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={modalLabelStyle}>{t('sites.address')}</label>
+              <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onAutocompletePlaceChanged}>
+                <input
+                  type="text"
+                  value={newSiteData.adress.formatted}
+                  onChange={(e) => setNewSiteData(prev => ({ ...prev, adress: { formatted: e.target.value } }))}
+                  style={inputStyle}
+                  placeholder={t('sites.addressPlaceholder')}
+                />
+              </Autocomplete>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={modalLabelStyle}>{t('sites.country')}</label>
+              <input type="text" value={newSiteData.pays} readOnly style={{ ...inputStyle, backgroundColor: '#f5f5f5' }} placeholder={t('sites.countryAutoPlaceholder')} />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={modalLabelStyle}>{t('sites.observations')}</label>
+              <textarea
+                value={newSiteData.observations}
+                onChange={(e) => setNewSiteData(prev => ({ ...prev, observations: e.target.value }))}
+                style={{ ...inputStyle, height: '100px', resize: 'vertical' }}
+                placeholder={t('sites.observationsPlaceholder')}
+              />
+            </div>
+
+            {siteSubmitMessage && (
+              <div style={{
+                padding: '10px', marginBottom: '15px', borderRadius: '4px',
+                fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+                backgroundColor: siteSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
+                color: siteSubmitMessage.isSuccess ? '#155724' : '#721c24',
+                border: `1px solid ${siteSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                textAlign: 'center'
+              }}>
+                {siteSubmitMessage.text}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button type="button" onClick={handleCloseSiteModal} style={buttonStyle}>{t('common.cancel')}</button>
+              <button
+                type="button"
+                onClick={handleAddSite}
+                disabled={!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting}
+                style={{
+                  ...buttonStyle,
+                  opacity: (!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting) ? 0.5 : 1,
+                  cursor: (!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSiteSubmitting ? t('sites.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1101,4 +1504,60 @@ const cardTextStyle = {
   fontWeight: 200,
   fontSize: '14px',
   margin: '5px 0'
+};
+
+const addButtonStyle: React.CSSProperties = {
+  width: '38px',
+  height: '38px',
+  flexShrink: 0,
+  border: '1px solid black',
+  borderRadius: '4px',
+  backgroundColor: '#E5E5E4',
+  cursor: 'pointer',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 700,
+  fontSize: '20px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  lineHeight: 1
+};
+
+const modalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0, left: 0, right: 0, bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  backdropFilter: 'blur(5px)',
+  zIndex: 999
+};
+
+const modalStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: '50%', left: '50%',
+  transform: 'translate(-50%, -50%)',
+  backgroundColor: '#A6A6A6',
+  borderRadius: '8px',
+  padding: '20px',
+  zIndex: 1000,
+  width: '400px',
+  maxWidth: '90%',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+};
+
+const modalTitleStyle: React.CSSProperties = {
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 'bold',
+  fontSize: '20px',
+  marginBottom: '20px',
+  textAlign: 'center'
+};
+
+const modalLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  fontSize: '14px',
+  marginBottom: '5px'
 };
