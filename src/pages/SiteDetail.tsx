@@ -394,6 +394,21 @@ export default function SiteDetail() {
     }
   };
 
+  // Couleur d'affichage de la date de visite selon la valeur de `couleur`
+  const getVisitDateColor = (couleur: string | undefined): string => {
+    switch ((couleur || '').toLowerCase()) {
+      case 'visités':
+        return '#008000';
+      case 'visités il y a +18mois':
+      case 'visités il ya +18mois':
+        return '#CCCC00';
+      case 'a visiter':
+        return '#FF0000';
+      default:
+        return '#000000';
+    }
+  };
+
   if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.loading')}</div>;
   if (error) return <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>{error}</div>;
   if (!site) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.notFound')}</div>;
@@ -749,7 +764,11 @@ export default function SiteDetail() {
               name="datevisite"
               value={formData.datevisite}
               onChange={handleDateChange}
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                color: getVisitDateColor(formData.couleur),
+                fontWeight: 'bold'
+              }}
             />
           </div>
         </div>
