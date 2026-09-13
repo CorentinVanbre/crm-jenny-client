@@ -104,7 +104,7 @@
     "domain": "Domaine",
     "color": "Couleur",
     "country": "Pays",
-    "visitDate": "Date de visite",
+    "visitDate": "Date de la dernière visite",
     "address": "Adresse",
     "addressPlaceholder": "Rechercher une adresse...",
     "observations": "Observations",

@@ -394,6 +394,33 @@ export default function SiteDetail() {
     }
   };
 
+  // Couleur d'affichage de la date de visite selon la valeur de `couleur`
+  const getVisitDateColor = (couleur: string | undefined): string => {
+    switch ((couleur || '').toLowerCase()) {
+      case 'visités':
+        return '#008000';
+      case 'visités il y a +18mois':
+      case 'visités il ya +18mois':
+        return '#CCCC00';
+      case 'a visiter':
+        return '#FF0000';
+      default:
+        return '#000000';
+    }
+  };
+
+  // Conversion de `dates_visites` en tableau de chaînes
+  const parseDatesVisites = (value: any): string[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+    return [];
+  };
+
   if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.loading')}</div>;
   if (error) return <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>{error}</div>;
   if (!site) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('siteDetail.notFound')}</div>;
@@ -608,7 +635,7 @@ export default function SiteDetail() {
     gridColumn: '1 / -1'
   };
 
-  return (
+    return (
     <div style={containerStyle}>
       {/* En-tête avec boutons et titre centré */}
       <div style={headerStyle}>
@@ -640,14 +667,7 @@ export default function SiteDetail() {
         </div>
       </div>
 
-      {/* Message de confirmation */}
-      {saveMessage && (
-        <div style={messageStyle(saveMessage.isSuccess)}>
-          {saveMessage.text}
-        </div>
-      )}
-
-      {/* Formulaire pré-rempli */}
+      {/* Formulaire pré-rempli (données du site) */}
       <div style={formContainerStyle}>
         <div style={formRowStyle}>
           <div style={formFieldStyle}>
@@ -749,7 +769,11 @@ export default function SiteDetail() {
               name="datevisite"
               value={formData.datevisite}
               onChange={handleDateChange}
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                color: getVisitDateColor(formData.couleur),
+                fontWeight: 'bold'
+              }}
             />
           </div>
         </div>
@@ -790,26 +814,40 @@ export default function SiteDetail() {
         </div>
       </div>
 
-      {/* Liste des dates de visite */}
-      {Array.isArray(site.dates_visites) && site.dates_visites.length > 0 && (
-        <div style={formContainerStyle}>
-          <h2 style={{ fontSize: '18px', marginBottom: '15px', fontWeight: 'bold' }}>
-            {t('siteDetail.visitHistory')}
-          </h2>
-          <ul style={{
-            listStyle: 'none',
-            padding: 0,
-            fontFamily: 'Barlow, sans-serif',
-            fontSize: '14px'
-          }}>
-            {site.dates_visites.map((date, index) => (
-              <li key={index} style={{ marginBottom: '5px' }}>
-                {formatDate(date)}
-              </li>
-            ))}
-          </ul>
+      {/* Message de confirmation */}
+      {saveMessage && (
+        <div style={messageStyle(saveMessage.isSuccess)}>
+          {saveMessage.text}
         </div>
       )}
+
+      {/* Historique des visites - pleine largeur */}
+      {(() => {
+        const dates = parseDatesVisites(site.dates_visites);
+        if (dates.length === 0) return null;
+        return (
+          <div style={formContainerStyle}>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px', fontWeight: 'bold' }}>
+              {t('siteDetail.visitHistory')}
+            </h2>
+            <ul style={{
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              fontFamily: 'Barlow, sans-serif',
+              fontSize: '14px'
+            }}>
+              {[...dates]
+                .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+                .map((date, index) => (
+                  <li key={index} style={{ marginBottom: '5px' }}>
+                    {formatDate(date)}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* En-tête des contacts avec bouton Copier emails */}
       {contacts.length > 0 && (
