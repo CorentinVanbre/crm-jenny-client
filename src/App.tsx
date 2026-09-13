@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
+import RequireAuth from './components/RequireAuth';
 import Home from './pages/Home';
 import Sites from './pages/Sites';
 import SiteDetail from './pages/SiteDetail';
@@ -9,6 +10,7 @@ import Contacts from './pages/Contacts';
 import Emails from './pages/Emails';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import { GoogleMapsWrapper } from './components/GoogleMapsWrapper';
 import { UserZonesProvider } from './lib/userZones';
 import AdminRoute from './components/AdminRoute';
@@ -25,14 +27,70 @@ export default function App() {
               <Header />
               <main style={mainStyle}>
                 <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/sites" element={<PrivateRoute><Sites /></PrivateRoute>} />
-                  <Route path="/sites/:id" element={<PrivateRoute><SiteDetail /></PrivateRoute>} />
-                  <Route path="/contacts" element={<PrivateRoute><Contacts /></PrivateRoute>} />
-                  <Route path="/emails" element={<PrivateRoute><Emails /></PrivateRoute>} />
-                  <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-                  <Route path="/admin/zones" element={<AdminRoute><AdminZones /></AdminRoute>} />
+                  <Route
+                    path="/sites"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <Sites />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/sites/:id"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <SiteDetail />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/contacts"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <Contacts />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/emails"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <Emails />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <Profile />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/admin/zones"
+                    element={
+                      <RequireAuth>
+                        <AdminRoute>
+                          <AdminZones />
+                        </AdminRoute>
+                      </RequireAuth>
+                    }
+                  />
                 </Routes>
               </main>
               <Footer />

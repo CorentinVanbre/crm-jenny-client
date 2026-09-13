@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 type Lang = 'fr' | 'en';
 
@@ -92,11 +92,20 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const t = translations[lang];
 
   useEffect(() => {
     localStorage.setItem('loginLang', lang);
   }, [lang]);
+
+  // Afficher le message "compte en attente" si redirigé par RequireAuth
+  useEffect(() => {
+    if (searchParams.get('pending') === '1') {
+      setError(t.errors.accountPending);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const switchLang = (l: Lang) => {
     setLang(l);
@@ -181,6 +190,12 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
       return;
+    }
+
+    // Déconnecter immédiatement : le compte n'est pas encore approuvé.
+    // `signUp` peut établir une session même sans confirmation email.
+    if (data.session) {
+      await supabase.auth.signOut();
     }
 
     setSuccess(t.success.registered);
