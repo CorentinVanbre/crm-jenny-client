@@ -1,30 +1,32 @@
 import { useTranslation } from 'react-i18next';
+import { useIsMobile } from '../lib/useIsMobile';
 
 export default function Home() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   return (
     <div style={containerStyle}>
       <div style={contentStyle}>
         <section style={heroStyle}>
-          <h1 style={titleStyle}>{t('home.welcome')} <span style={jennyStyle}>JENNY</span></h1>
-          <p style={subtitleStyle}>
+          <h1 style={{ ...titleStyle, fontSize: isMobile ? '30px' : '48px' }}>{t('home.welcome')} <span style={jennyStyle}>JENNY</span></h1>
+          <p style={{ ...subtitleStyle, fontSize: isMobile ? '18px' : '24px' }}>
             {t('home.subtitle')}
           </p>
         </section>
 
         <section style={featuresStyle}>
-          <h2 style={sectionTitleStyle}>{t('home.organizeTitle')}</h2>
-          <p style={textStyle}>
+          <h2 style={{ ...sectionTitleStyle, fontSize: isMobile ? '22px' : '28px' }}>{t('home.organizeTitle')}</h2>
+          <p style={{ ...textStyle, fontSize: isMobile ? '15px' : '18px' }}>
             {t('home.organizeText1')}
           </p>
-          <p style={textStyle}>
+          <p style={{ ...textStyle, fontSize: isMobile ? '15px' : '18px' }}>
             <span style={jennyStyle}>JENNY</span> {t('home.organizeText2')}
           </p>
         </section>
 
         <section style={featuresStyle}>
-          <h2 style={sectionTitleStyle}>{t('home.recentTitle')}</h2>
-          <ul style={listStyle}>
+          <h2 style={{ ...sectionTitleStyle, fontSize: isMobile ? '22px' : '28px' }}>{t('home.recentTitle')}</h2>
+          <ul style={{ ...listStyle, fontSize: isMobile ? '15px' : '18px' }}>
             <li>✅ {t('home.recent2')}</li>
             <li>✅ {t('home.recent3')}</li>
             <li>✅ {t('home.recent4')}</li>
@@ -44,7 +46,7 @@ const jennyStyle = {
 // Espace réduit de moitié entre le header et le contenu
 const containerStyle = {
   width: '100%',
-  padding: '20px 30px', // ✅ Réduit de 40px à 20px (moitié)
+  padding: '20px 30px',
   boxSizing: 'border-box',
   backgroundColor: '#E5E5E4',
   minHeight: 'calc(100vh - 180px)',

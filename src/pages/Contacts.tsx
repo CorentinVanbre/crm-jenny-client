@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
+import { useIsMobile } from '../lib/useIsMobile';
 
 // Types
 interface Site {
@@ -69,6 +70,7 @@ export default function Contacts() {
   const [useAIMode, setUseAIMode] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const { allowedCountries, loadingZones } = useUserZones();
+  const isMobile = useIsMobile();
 
   // Map site (nom) -> pays, pour filtrer les contacts par zone
   const sitePaysMap: Record<string, string> = {};
@@ -513,7 +515,7 @@ export default function Contacts() {
     <div style={{ padding: '20px', width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
       <form onSubmit={handleSubmit} style={formContainerStyle}>
         {/* En-tête avec titre, contact actif et mode IA */}
-        <div style={formHeaderStyle}>
+        <div style={{ ...formHeaderStyle, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '10px' : 0 }}>
           <h2 style={{...formTitleStyle, fontWeight: 'bold'}}>
             {editingContactId ? t('contacts.editTitle') : t('contacts.addTitle')}
           </h2>
@@ -540,11 +542,11 @@ export default function Contacts() {
         </div>
 
         {/* Grille principale */}
-        <div style={mainGridStyle}>
+        <div style={{ ...mainGridStyle, gridTemplateColumns: isMobile ? '1fr' : '3fr 1fr' }}>
           {/* Colonne gauche */}
           <div style={leftColumnStyle}>
             {/* Ligne 1: Nom / Prénom */}
-            <div style={formRowStyle}>
+            <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.lastName')}</label>
                 <input
@@ -577,7 +579,7 @@ export default function Contacts() {
             </div>
 
             {/* Ligne 2: Fonction / Genre */}
-            <div style={formRowStyle}>
+            <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.function')}</label>
                 <input
@@ -614,7 +616,7 @@ export default function Contacts() {
             </div>
 
             {/* Ligne 3: Groupe / Tel fixe */}
-            <div style={formRowStyle}>
+            <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.group')}</label>
                 <div style={{ position: 'relative' }}>
@@ -664,7 +666,7 @@ export default function Contacts() {
             </div>
 
             {/* Ligne 4: Site / Tel mobile */}
-            <div style={formRowStyle}>
+            <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.site')}</label>
                 <div style={{ position: 'relative' }}>
@@ -718,7 +720,7 @@ export default function Contacts() {
             </div>
 
             {/* Ligne 5: Langue / Email */}
-            <div style={formRowStyle}>
+            <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
               <div style={formFieldStyle}>
                 <label style={labelStyle}>{t('contacts.language')}</label>
                 <select
@@ -831,7 +833,7 @@ export default function Contacts() {
         <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' }}>{t('contacts.listTitle')}</h2>
 
         {/* Barre de recherche avec compteur et filtre actif */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '15px' }}>
           <input
             type="text"
             placeholder={t('contacts.searchPlaceholder')}
@@ -839,7 +841,9 @@ export default function Contacts() {
             onChange={(e) => setSearchText(e.target.value)}
             style={{
               flex: 1,
-              maxWidth: '400px',
+              width: isMobile ? '100%' : 'auto',
+              maxWidth: isMobile ? 'none' : '400px',
+              boxSizing: 'border-box' as const,
               padding: '10px',
               border: '1px solid #ddd',
               borderRadius: '4px',

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { Autocomplete } from '@react-google-maps/api';
+import { useIsMobile } from '../lib/useIsMobile';
 
 // Types
 interface Address {
@@ -48,6 +49,7 @@ export default function SiteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [site, setSite] = useState<Site | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -638,16 +640,16 @@ export default function SiteDetail() {
     return (
     <div style={containerStyle}>
       {/* En-tête avec boutons et titre centré */}
-      <div style={headerStyle}>
-        <Link to="/sites" style={buttonStyle}>
+      <div style={{ ...headerStyle, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : 0, alignItems: isMobile ? 'stretch' : 'center' }}>
+        <Link to="/sites" style={{ ...buttonStyle, width: isMobile ? '100%' : undefined }}>
           {t('siteDetail.backToSites')}
         </Link>
 
-        <div style={titleContainerStyle}>
-          <h1 style={titleStyle}>{site.groupe} - {site.noms}</h1>
+        <div style={{ ...titleContainerStyle, textAlign: isMobile ? 'left' : 'center' }}>
+          <h1 style={{ ...titleStyle, fontSize: isMobile ? '18px' : '24px' }}>{site.groupe} - {site.noms}</h1>
         </div>
 
-        <div style={buttonContainerStyle}>
+        <div style={{ ...buttonContainerStyle, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'stretch' : 'flex-end', justifyContent: isMobile ? 'space-between' : 'initial' }}>
           {isEditing ? (
             <button onClick={handleCancelEdit} style={buttonStyle}>
               {t('siteDetail.cancel')}
@@ -669,7 +671,7 @@ export default function SiteDetail() {
 
       {/* Formulaire pré-rempli (données du site) */}
       <div style={formContainerStyle}>
-        <div style={formRowStyle}>
+        <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
           <div style={formFieldStyle}>
             <label style={labelStyle}>{t('siteDetail.name')}</label>
             <input
@@ -718,7 +720,7 @@ export default function SiteDetail() {
           </div>
         </div>
 
-        <div style={formRowStyle}>
+        <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
           <div style={formFieldStyle}>
             <label style={labelStyle}>{t('siteDetail.domain')}</label>
             <select
@@ -749,7 +751,7 @@ export default function SiteDetail() {
           </div>
         </div>
 
-        <div style={formRowStyle}>
+        <div style={{ ...formRowStyle, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
           <div style={formFieldStyle}>
             <label style={labelStyle}>{t('siteDetail.country')}</label>
             <input
