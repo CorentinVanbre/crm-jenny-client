@@ -1,10 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { CONTINENTS } from '../lib/countries';
 
 interface Profile {
   id: string;
   email: string;
+}
+
+interface PendingRegistration {
+  id: string;
+  user_id: string | null;
+  email: string;
+  status: string;
+  created_date: string;
 }
 
 export default function AdminZones() {
@@ -21,6 +29,10 @@ export default function AdminZones() {
   const [mapLng, setMapLng] = useState<string>('');
   const [initialMapLat, setInitialMapLat] = useState<string>('');
   const [initialMapLng, setInitialMapLng] = useState<string>('');
+
+  // Inscriptions en attente
+  const [pending, setPending] = useState<PendingRegistration[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
 
   // Charger la liste des utilisateurs (non admin)
   useEffect(() => {
@@ -40,7 +52,27 @@ export default function AdminZones() {
     })();
   }, []);
 
-    // Quand on choisit un utilisateur -> charger ses zones + le centre de carte
+  // Charger les inscriptions en attente
+  const fetchPending = useCallback(async () => {
+    setLoadingPending(true);
+    const { data, error } = await supabase
+      .from('pending_registrations')
+      .select('id, user_id, email, status, created_date')
+      .eq('status', 'pending')
+      .order('created_date', { ascending: true });
+    if (error) {
+      setMsg({ text: `Erreur inscriptions: ${error.message}`, isSuccess: false });
+    } else {
+      setPending(data || []);
+    }
+    setLoadingPending(false);
+  }, []);
+
+  useEffect(() => {
+    fetchPending();
+  }, [fetchPending]);
+
+  // Quand on choisit un utilisateur -> charger ses zones + le centre de carte
   useEffect(() => {
     if (!selectedUserId) {
       setSelected(new Set());
@@ -70,8 +102,6 @@ export default function AdminZones() {
       setSelected(pays);
       setInitial(pays);
 
-      // Centre de carte : on ne bloque pas l'affichage des zones si la lecture échoue,
-      // mais on signale l'erreur pour le diagnostic.
       if (profileRes.error) {
         setMsg({
           text: `Erreur profil (centre carte): ${profileRes.error.message}`,
@@ -203,9 +233,108 @@ export default function AdminZones() {
     setMsg(null);
   };
 
+  // Valider une inscription : approuver le profil + marquer la demande approved
+  const handleApprove = async (reg: PendingRegistration) => {
+    if (!reg.user_id) {
+      setMsg({ text: 'Erreur : utilisateur introuvable (user_id manquant).', isSuccess: false });
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ approved: true })
+        .eq('id', reg.user_id);
+      if (profileError) throw profileError;
+
+      const { error: regError } = await supabase
+        .from('pending_registrations')
+        .update({ status: 'approved' })
+        .eq('id', reg.id);
+      if (regError) throw regError;
+
+      setMsg({ text: `Inscription validée pour ${reg.email}.`, isSuccess: true });
+      await fetchPending();
+    } catch (err: any) {
+      setMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Refuser une inscription : marquer la demande rejected + profil non approuvé
+  const handleReject = async (reg: PendingRegistration) => {
+    if (!reg.user_id) {
+      setMsg({ text: 'Erreur : utilisateur introuvable (user_id manquant).', isSuccess: false });
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { error: regError } = await supabase
+        .from('pending_registrations')
+        .update({ status: 'rejected' })
+        .eq('id', reg.id);
+      if (regError) throw regError;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ approved: false })
+        .eq('id', reg.user_id);
+      if (profileError) throw profileError;
+
+      setMsg({ text: `Inscription refusée pour ${reg.email}.`, isSuccess: true });
+      await fetchPending();
+    } catch (err: any) {
+      setMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={titleStyle}>Gestion des zones par utilisateur</h1>
+
+      {/* Inscriptions en attente */}
+      <div style={cardStyle}>
+        <h2 style={sectionTitleStyle}>Inscriptions en attente</h2>
+        {loadingPending ? (
+          <p style={mutedStyle}>Chargement des inscriptions...</p>
+        ) : pending.length === 0 ? (
+          <p style={mutedStyle}>Aucune inscription en attente.</p>
+        ) : (
+          <div style={pendingListStyle}>
+            {pending.map(reg => (
+              <div key={reg.id} style={pendingItemStyle}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{reg.email}</div>
+                  <div style={mutedStyle}>
+                    Demandée le {new Date(reg.created_date).toLocaleString('fr-FR')}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => handleApprove(reg)}
+                    disabled={saving}
+                    style={approveButtonStyle}
+                  >
+                    Valider
+                  </button>
+                  <button
+                    onClick={() => handleReject(reg)}
+                    disabled={saving}
+                    style={rejectButtonStyle}
+                  >
+                    Refuser
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Sélecteur d'utilisateur */}
       <div style={cardStyle}>
@@ -444,6 +573,36 @@ const disabledButtonStyle: React.CSSProperties = {
   backgroundColor: '#f5f5f5',
   opacity: 0.5,
   cursor: 'not-allowed',
+};
+
+const approveButtonStyle: React.CSSProperties = {
+  ...baseButton,
+  backgroundColor: '#008000',
+  color: '#fff',
+  border: '1px solid #008000',
+};
+
+const rejectButtonStyle: React.CSSProperties = {
+  ...baseButton,
+  backgroundColor: '#FF0000',
+  color: '#fff',
+  border: '1px solid #FF0000',
+};
+
+const pendingListStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+};
+
+const pendingItemStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '12px',
+  border: '1px solid #eee',
+  borderRadius: '6px',
+  backgroundColor: '#fafafa',
 };
 
 const messageStyle = (isSuccess: boolean): React.CSSProperties => ({
