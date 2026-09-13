@@ -640,16 +640,16 @@ export default function SiteDetail() {
     return (
     <div style={containerStyle}>
       {/* En-tête avec boutons et titre centré */}
-      <div style={{ ...headerStyle, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : 0, alignItems: isMobile ? 'flex-start' : 'center' }}>
-        <Link to="/sites" style={buttonStyle}>
+      <div style={{ ...headerStyle, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : 0, alignItems: isMobile ? 'center' : 'center' }}>
+        <Link to="/sites" style={{ ...buttonStyle, alignSelf: isMobile ? 'flex-start' : undefined }}>
           {t('siteDetail.backToSites')}
         </Link>
 
-        <div style={{ ...titleContainerStyle, textAlign: isMobile ? 'left' : 'center' }}>
+        <div style={{ ...titleContainerStyle, textAlign: 'center', width: '100%' }}>
           <h1 style={{ ...titleStyle, fontSize: isMobile ? '18px' : '24px' }}>{site.groupe} - {site.noms}</h1>
         </div>
 
-        <div style={{ ...buttonContainerStyle, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'stretch' : 'flex-end', justifyContent: isMobile ? 'space-between' : 'initial' }}>
+        <div style={{ ...buttonContainerStyle, flexDirection: isMobile ? 'row' : 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           {isEditing ? (
             <button onClick={handleCancelEdit} style={buttonStyle}>
               {t('siteDetail.cancel')}

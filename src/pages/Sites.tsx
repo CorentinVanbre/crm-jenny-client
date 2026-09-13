@@ -719,33 +719,7 @@ export default function Sites() {
           <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'center', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? '8px' : '10px', marginBottom: '10px' }}>
-          <input
-            type="text"
-            placeholder={t('sites.searchPlaceholder')}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              height: '30px',
-              flex: isMobile ? undefined : 1,
-              width: isMobile ? '100%' : 'auto',
-              maxWidth: '400px',
-              padding: '0 15px',
-              border: '1px solid #000',
-              borderRadius: '4px',
-              fontFamily: 'Barlow, sans-serif',
-              fontWeight: 200,
-              fontSize: '14px',
-              backgroundColor: '#fff',
-              boxSizing: 'border-box' as const
-            }}
-          />
-          <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-            {t('sites.matchingCount', { count: matchingSitesCount })}
-          </div>
-        </div>
-
-        {/* Sélection des couleurs sous la barre de recherche */}
+        {/* Sélection des couleurs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
           {colorTags.map(tag => (
             <span
@@ -760,7 +734,8 @@ export default function Sites() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
+        {/* Sélection des domaines */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
           {domainTags.map(tag => (
             <span
               key={tag}
@@ -772,6 +747,34 @@ export default function Sites() {
               {t('sites.domains.' + tag)}
             </span>
           ))}
+        </div>
+
+        {/* Barre de recherche sous les tags */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+          <input
+            type="text"
+            placeholder={t('sites.searchPlaceholder')}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{
+              height: '30px',
+              width: '100%',
+              maxWidth: '400px',
+              padding: '0 15px',
+              border: '1px solid #000',
+              borderRadius: '4px',
+              fontFamily: 'Barlow, sans-serif',
+              fontWeight: 200,
+              fontSize: '14px',
+              backgroundColor: '#fff',
+              boxSizing: 'border-box' as const
+            }}
+          />
+        </div>
+
+        {/* Résultat de recherche tout en bas */}
+        <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+          {t('sites.matchingCount', { count: matchingSitesCount })}
         </div>
       </div>
 

@@ -831,6 +831,7 @@ export default function Contacts() {
                     }}
                     style={{
                       ...inputStyle,
+                      width: 'auto',
                       flex: 1,
                       borderColor: (touchedFields.has('groupe') && !formData.groupe) ? '#ff4444' : '#ddd'
                     }}
@@ -891,6 +892,7 @@ export default function Contacts() {
                     disabled={!formData.groupe}
                     style={{
                       ...inputStyle,
+                      width: 'auto',
                       flex: 1,
                       borderColor: (touchedFields.has('site') && !formData.site) ? '#ff4444' : '#ddd',
                       backgroundColor: !formData.groupe ? '#f5f5f5' : '#fff'
@@ -1421,7 +1423,9 @@ const inputStyle = {
   fontSize: '14px',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
-  backgroundColor: '#fff'
+  backgroundColor: '#fff',
+  width: '100%',
+  boxSizing: 'border-box' as const
 };
 
 const errorStyle = {
