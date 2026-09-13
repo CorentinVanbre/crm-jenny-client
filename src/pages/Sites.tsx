@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
-import { useIsMobile } from '../lib/useIsMobile';
+import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 
 // Types
 interface Address {
@@ -452,7 +452,8 @@ export default function Sites() {
     const updateDimensions = () => {
       if (mapContainerRef.current) {
         const width = Math.min(mapContainerRef.current.clientWidth, 980);
-        setMapDimensions({ width, height: width * 1.0 });
+        const ratio = width < MOBILE_BREAKPOINT ? 1.0 : 0.5;
+        setMapDimensions({ width, height: width * ratio });
       }
     };
     updateDimensions();
@@ -713,73 +714,132 @@ export default function Sites() {
         padding: '10px',
         boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-          <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
-          <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
-          <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
-        </div>
+        {isMobile ? (
+          <>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
+            </div>
 
-        {/* Sélection des couleurs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
-          {colorTags.map(tag => (
-            <span
-              key={tag}
-              style={{ ...colorTagStyle(tag, selectedColors.includes(tag)), marginLeft: 0 }}
-              onClick={() => toggleColorTag(tag)}
-              onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
-              onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
-            >
-              {t('sites.colors.' + tag)}
-            </span>
-          ))}
-        </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
+              {colorTags.map(tag => (
+                <span
+                  key={tag}
+                  style={{ ...colorTagStyle(tag, selectedColors.includes(tag)), marginLeft: 0 }}
+                  onClick={() => toggleColorTag(tag)}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
+                >
+                  {t('sites.colors.' + tag)}
+                </span>
+              ))}
+            </div>
 
-        {/* Sélection des domaines */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
-          {domainTags.map(tag => (
-            <span
-              key={tag}
-              style={{ ...domainTagStyle(selectedDomains.includes(tag)), marginLeft: 0 }}
-              onClick={() => toggleDomainTag(tag)}
-              onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
-              onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
-            >
-              {t('sites.domains.' + tag)}
-            </span>
-          ))}
-        </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
+              {domainTags.map(tag => (
+                <span
+                  key={tag}
+                  style={{ ...domainTagStyle(selectedDomains.includes(tag)), marginLeft: 0 }}
+                  onClick={() => toggleDomainTag(tag)}
+                  onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
+                  onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
+                >
+                  {t('sites.domains.' + tag)}
+                </span>
+              ))}
+            </div>
 
-        {/* Barre de recherche sous les tags */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
-          <input
-            type="text"
-            placeholder={t('sites.searchPlaceholder')}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{
-              height: '30px',
-              width: '100%',
-              maxWidth: '400px',
-              padding: '0 15px',
-              border: '1px solid #000',
-              borderRadius: '4px',
-              fontFamily: 'Barlow, sans-serif',
-              fontWeight: 200,
-              fontSize: '14px',
-              backgroundColor: '#fff',
-              boxSizing: 'border-box' as const
-            }}
-          />
-        </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+              <input
+                type="text"
+                placeholder={t('sites.searchPlaceholder')}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{
+                  height: '30px',
+                  width: '100%',
+                  maxWidth: '400px',
+                  padding: '0 15px',
+                  border: '1px solid #000',
+                  borderRadius: '4px',
+                  fontFamily: 'Barlow, sans-serif',
+                  fontWeight: 200,
+                  fontSize: '14px',
+                  backgroundColor: '#fff',
+                  boxSizing: 'border-box' as const
+                }}
+              />
+            </div>
 
-        {/* Résultat de recherche tout en bas */}
-        <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-          {t('sites.matchingCount', { count: matchingSitesCount })}
-        </div>
+            <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+              {t('sites.matchingCount', { count: matchingSitesCount })}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div>
+                <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+                <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-end' }}>
+                {colorTags.map(tag => (
+                  <span
+                    key={tag}
+                    style={{ ...colorTagStyle(tag, selectedColors.includes(tag)), marginLeft: 0 }}
+                    onClick={() => toggleColorTag(tag)}
+                    onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
+                  >
+                    {t('sites.colors.' + tag)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder={t('sites.searchPlaceholder')}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{
+                  height: '30px',
+                  width: '210px',
+                  padding: '0 15px',
+                  border: '1px solid #000',
+                  borderRadius: '4px',
+                  fontFamily: 'Barlow, sans-serif',
+                  fontWeight: 200,
+                  fontSize: '14px',
+                  backgroundColor: '#fff'
+                }}
+              />
+              <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '0 5px', whiteSpace: 'nowrap' }}>
+                {t('sites.matchingCount', { count: matchingSitesCount })}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-end' }}>
+                {domainTags.map(tag => (
+                  <span
+                    key={tag}
+                    style={{ ...domainTagStyle(selectedDomains.includes(tag)), marginLeft: 0 }}
+                    onClick={() => toggleDomainTag(tag)}
+                    onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
+                    onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
+                  >
+                    {t('sites.domains.' + tag)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Fiches de sites */}
-      <div style={{ width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
+      <div style={{ width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
         {loading || loadingZones ? (
           <p style={{ gridColumn: '1 / -1', textAlign: 'center' }}>{t('sites.loading')}</p>
         ) : allSites.filter(matchesFilters).length === 0 ? (
