@@ -46,7 +46,7 @@ const jennyStyle = {
 // Espace réduit de moitié entre le header et le contenu
 const containerStyle = {
   width: '100%',
-  padding: '20px 30px',
+  padding: '10px 15px',
   boxSizing: 'border-box',
   backgroundColor: '#E5E5E4',
   minHeight: 'calc(100vh - 180px)',

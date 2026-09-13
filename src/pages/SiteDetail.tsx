@@ -429,7 +429,7 @@ export default function SiteDetail() {
 
   // Styles
   const containerStyle = {
-    padding: '20px',
+    padding: '10px',
     maxWidth: '980px',
     margin: '0 auto',
     fontFamily: 'Barlow, sans-serif'
@@ -640,8 +640,8 @@ export default function SiteDetail() {
     return (
     <div style={containerStyle}>
       {/* En-tête avec boutons et titre centré */}
-      <div style={{ ...headerStyle, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : 0, alignItems: isMobile ? 'stretch' : 'center' }}>
-        <Link to="/sites" style={{ ...buttonStyle, width: isMobile ? '100%' : undefined }}>
+      <div style={{ ...headerStyle, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : 0, alignItems: isMobile ? 'flex-start' : 'center' }}>
+        <Link to="/sites" style={buttonStyle}>
           {t('siteDetail.backToSites')}
         </Link>
 

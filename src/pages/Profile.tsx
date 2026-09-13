@@ -148,7 +148,7 @@ export default function Profile() {
 }
 
 // Styles (inchangés)
-const containerStyle: React.CSSProperties = { padding: '20px', maxWidth: '600px', margin: '0 auto', fontFamily: 'Barlow, sans-serif' };
+const containerStyle: React.CSSProperties = { padding: '10px', maxWidth: '600px', margin: '0 auto', fontFamily: 'Barlow, sans-serif' };
 const titleStyle: React.CSSProperties = { fontWeight: 'bold', fontSize: '24px', marginBottom: '20px', textAlign: 'center' };
 const cardStyle: React.CSSProperties = { backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
 const sectionTitleStyle: React.CSSProperties = { fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' };

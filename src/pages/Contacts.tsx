@@ -709,7 +709,7 @@ export default function Contacts() {
   const matchingContactsCount = allContacts.filter(matchesSearch).length;
 
   return (
-    <div style={{ padding: '20px', width: 'calc(100% - 40px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
+    <div style={{ padding: '10px', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
       <form onSubmit={handleSubmit} style={formContainerStyle}>
         {/* En-tête avec titre, contact actif et mode IA */}
         <div style={{ ...formHeaderStyle, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '10px' : 0 }}>
@@ -1214,7 +1214,7 @@ export default function Contacts() {
       {showAddSiteModal && (
         <>
           <div style={modalOverlayStyle} onClick={handleCloseSiteModal} />
-          <div style={{ ...modalStyle, width: '500px' }} onClick={e => e.stopPropagation()}>
+          <div style={modalStyle} onClick={e => e.stopPropagation()}>
             <h2 style={modalTitleStyle}>{t('sites.addSiteTitle')}</h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
@@ -1539,8 +1539,8 @@ const modalStyle: React.CSSProperties = {
   borderRadius: '8px',
   padding: '20px',
   zIndex: 1000,
-  width: '400px',
-  maxWidth: '90%',
+  width: 'min(560px, calc(100vw - 20px))',
+  maxWidth: 'calc(100vw - 20px)',
   maxHeight: '90vh',
   overflowY: 'auto',
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
