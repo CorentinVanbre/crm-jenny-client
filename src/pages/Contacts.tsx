@@ -710,7 +710,8 @@ export default function Contacts() {
 
   return (
     <div style={{ padding: '10px', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
-      <form onSubmit={handleSubmit} style={formContainerStyle}>
+      {editingContactId && <div style={modalOverlayStyle} onClick={resetForm} />}
+      <form onSubmit={handleSubmit} style={editingContactId ? { ...formContainerStyle, ...editModalFormStyle } : formContainerStyle} onClick={e => e.stopPropagation()}>
         {/* En-tête avec titre, contact actif et mode IA */}
         <div style={{ ...formHeaderStyle, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '10px' : 0 }}>
           <h2 style={{...formTitleStyle, fontWeight: 'bold'}}>
@@ -1544,6 +1545,19 @@ const modalStyle: React.CSSProperties = {
   padding: '20px',
   zIndex: 1000,
   width: 'min(560px, calc(100vw - 20px))',
+  maxWidth: 'calc(100vw - 20px)',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+};
+
+const editModalFormStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  zIndex: 1000,
+  width: 'min(960px, calc(100vw - 20px))',
   maxWidth: 'calc(100vw - 20px)',
   maxHeight: '90vh',
   overflowY: 'auto',

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useState, useEffect, useRef } from 'react';
@@ -16,6 +16,11 @@ export default function Header() {
   const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isPathActive = (path: string) => location.pathname === path;
+  const activeFontWeight = (path: string) => isPathActive(path) ? 'bold' : 'normal';
+  const activeMobileFontWeight = (path: string) => isPathActive(path) ? 'bold' : 200;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,7 +63,7 @@ export default function Header() {
   const navLinks = (
     <>
       {user?.user_metadata?.role === 'admin' && (
-        <Link to="/admin/zones" style={isMobile ? mobileLinkStyle : linkStyle}
+        <Link to="/admin/zones" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/admin/zones') } : { ...linkStyle, fontWeight: activeFontWeight('/admin/zones') }}
           onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
           onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
           onClick={closeMobileMenu}>
@@ -67,19 +72,19 @@ export default function Header() {
       )}
       {user && (
         <>
-          <Link to="/sites" style={isMobile ? mobileLinkStyle : linkStyle}
+          <Link to="/sites" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/sites') } : { ...linkStyle, fontWeight: activeFontWeight('/sites') }}
             onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
             onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
             onClick={closeMobileMenu}>
             {t('header.sites')}
           </Link>
-          <Link to="/contacts" style={isMobile ? mobileLinkStyle : linkStyle}
+          <Link to="/contacts" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/contacts') } : { ...linkStyle, fontWeight: activeFontWeight('/contacts') }}
             onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
             onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
             onClick={closeMobileMenu}>
             {t('header.contacts')}
           </Link>
-          <Link to="/emails" style={isMobile ? mobileLinkStyle : linkStyle}
+          <Link to="/emails" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/emails') } : { ...linkStyle, fontWeight: activeFontWeight('/emails') }}
             onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
             onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
             onClick={closeMobileMenu}>
@@ -88,7 +93,7 @@ export default function Header() {
         </>
       )}
       {!user && (
-        <Link to="/login" style={isMobile ? { ...mobileLinkStyle, fontWeight: 'bold' } : { ...linkStyle, fontWeight: 'bold' }}
+        <Link to="/login" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/login') } : { ...linkStyle, fontWeight: activeFontWeight('/login') }}
           onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
           onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
           onClick={closeMobileMenu}>
