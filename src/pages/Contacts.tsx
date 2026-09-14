@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { useIsMobile } from '../lib/useIsMobile';
+import { extractContactFromText } from '../lib/aiContactExtract';
 import { Autocomplete } from '@react-google-maps/api';
 
 // Types
@@ -69,6 +70,7 @@ export default function Contacts() {
   const [searchText, setSearchText] = useState('');
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [useAIMode, setUseAIMode] = useState(false);
+  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const { allowedCountries, loadingZones } = useUserZones();
 
@@ -217,81 +219,54 @@ export default function Contacts() {
     setEditingContactId(null);
     setInitialFormData(null);
     setEmailExistsError(false);
+    setIsAnalyzingAI(false);
   };
 
-  // Fonction pour analyser le texte collé dans observations
-  const parseObservations = (text: string) => {
-    const newData: Partial<typeof formData> = {};
+  // Analyse IA du contenu des observations via Mistral (Edge Function contact-extract).
+  // Ne remplit que les champs encore vides du formulaire.
+  const analyzeWithAI = async (text: string) => {
+    if (!text || !text.trim()) return;
+    setIsAnalyzingAI(true);
+    const extracted = await extractContactFromText(text);
+    setIsAnalyzingAI(false);
+    if (!extracted) return;
 
-    // Détecter l'email
-    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
-    const emailMatch = text.match(emailRegex);
-    if (emailMatch && !formData.email) {
-      newData.email = emailMatch[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const fields: (keyof typeof formData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
+    let extractedEmail = '';
+
+    setFormData(prev => {
+      const newFormData = { ...prev };
+      fields.forEach(key => {
+        const value = extracted[key as keyof typeof extracted];
+        if (value && !newFormData[key]) {
+          newFormData[key] = value;
+          if (key === 'email') extractedEmail = value;
+        }
+      });
+      return newFormData;
+    });
+
+    if (extractedEmail) {
+      checkEmailAvailability(extractedEmail);
     }
-
-    // Détecter les numéros de téléphone
-    const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{2,3}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}/g;
-    const phoneMatches = text.match(phoneRegex) || [];
-
-    if (phoneMatches.length > 0) {
-      if (!formData.num_mobile && phoneMatches.length >= 1) {
-        newData.num_mobile = phoneMatches[0].replace(/[^\d+]/g, '');
-      }
-      if (!formData.num_fixe && phoneMatches.length >= 2) {
-        newData.num_fixe = phoneMatches[1].replace(/[^\d+]/g, '');
-      } else if (!formData.num_fixe && phoneMatches.length === 1) {
-        newData.num_fixe = phoneMatches[0].replace(/[^\d+]/g, '');
-      }
-    }
-
-    // Détecter nom et prénom
-    const nameRegex = /([A-ZÉÈÊËÀÂÇÔÏÜ][a-zéèêëàâçôïüA-ZÉÈÊËÀÂÇÔÏÜ'-]+(?:\s[A-ZÉÈÊËÀÂÇÔÏÜ][a-zéèêëàâçôïüA-ZÉÈÊËÀÂÇÔÏÜ'-]+)*)/g;
-    const nameMatches = text.match(nameRegex) || [];
-
-    if (nameMatches.length >= 2 && !formData.noms && !formData.prenom) {
-      newData.noms = nameMatches[0].toUpperCase();
-      newData.prenom = nameMatches[1].charAt(0).toUpperCase() + nameMatches[1].slice(1).toLowerCase();
-
-      const femaleNames = ['marie', 'anne', 'sophie', 'camille', 'laura', 'julie', 'catherine', 'claire', 'isabelle', 'emmanuelle'];
-      const maleNames = ['jean', 'pierre', 'paul', 'jacques', 'michel', 'david', 'thomas', 'vincent', 'nicolas', 'alexandre'];
-
-      const prenomLower = nameMatches[1].toLowerCase();
-      if (femaleNames.some(name => prenomLower.includes(name)) && !formData.genre) {
-        newData.genre = 'Femme';
-      } else if (maleNames.some(name => prenomLower.includes(name)) && !formData.genre) {
-        newData.genre = 'Homme';
-      }
-    } else if (nameMatches.length === 1 && !formData.noms && !formData.prenom) {
-      newData.noms = nameMatches[0].toUpperCase();
-    }
-
-    return newData;
   };
 
-  // Gestion du collage dans observations
+  // Gestion du collage dans observations (mode IA : analyse après collage)
   const handlePaste = (e: React.ClipboardEvent) => {
     if (!useAIMode) {
       return;
     }
 
     const pastedText = e.clipboardData.getData('text');
-    const parsedData = parseObservations(pastedText);
+    // On concatène au texte déjà présent dans observations pour une analyse complète
+    const combined = `${formData.observations}${formData.observations ? '\n' : ''}${pastedText}`;
+    analyzeWithAI(combined);
+  };
 
-    setFormData(prev => {
-      const newFormData = { ...prev };
-      Object.keys(parsedData).forEach(key => {
-        if (!newFormData[key as keyof typeof formData]) {
-          newFormData[key as keyof typeof formData] = parsedData[key as keyof typeof formData] as string;
-        }
-      });
-      return newFormData;
-    });
-
-    // Vérifier l'email si présent dans les données collées
-    if (parsedData.email) {
-      checkEmailAvailability(parsedData.email);
-    }
+  // Bouton "Analyser" : relance l'IA sur le contenu actuel des observations
+  const handleAnalyze = () => {
+    if (!useAIMode || !formData.observations.trim()) return;
+    analyzeWithAI(formData.observations);
   };
 
     // Fonction de recherche pour les cartes
@@ -985,7 +960,30 @@ export default function Contacts() {
           {/* Colonne droite: Observations */}
           <div style={rightColumnStyle}>
             <div style={formFieldStyle}>
-              <label style={labelStyle}>{t('contacts.observations')}</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={labelStyle}>{t('contacts.observations')}</label>
+                {useAIMode && (
+                  <button
+                    type="button"
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzingAI || !formData.observations.trim()}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '12px',
+                      fontFamily: 'Barlow, sans-serif',
+                      fontWeight: 200,
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      backgroundColor: '#000',
+                      color: '#fff',
+                      cursor: isAnalyzingAI || !formData.observations.trim() ? 'not-allowed' : 'pointer',
+                      opacity: isAnalyzingAI || !formData.observations.trim() ? 0.5 : 1,
+                    }}
+                  >
+                    {isAnalyzingAI ? t('contacts.analyzing') : t('contacts.analyze')}
+                  </button>
+                )}
+              </div>
               <textarea
                 value={formData.observations}
                 onChange={(e) => setFormData({ ...formData, observations: e.target.value })}

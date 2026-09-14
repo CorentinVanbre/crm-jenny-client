@@ -145,6 +145,8 @@
     "editTitle": "Edit a contact",
     "activeContact": "Active contact",
     "aiMode": "AI mode",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing...",
     "lastName": "Last name *",
     "firstName": "First name *",
     "function": "Function *",

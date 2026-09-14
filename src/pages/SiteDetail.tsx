@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
+import { extractContactFromText } from '../lib/aiContactExtract';
 import { Autocomplete } from '@react-google-maps/api';
 import { useIsMobile } from '../lib/useIsMobile';
 
@@ -109,6 +110,8 @@ export default function SiteDetail() {
   const [contactEmailExistsError, setContactEmailExistsError] = useState(false);
   const [isCheckingContactEmail, setIsCheckingContactEmail] = useState(false);
   const [contactConfirmMessage, setContactConfirmMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [useContactAIMode, setUseContactAIMode] = useState(false);
+  const [isAnalyzingContactAI, setIsAnalyzingContactAI] = useState(false);
   const [allSites, setAllSites] = useState<SiteOption[]>([]);
   const [filteredContactSites, setFilteredContactSites] = useState<SiteOption[]>([]);
   const [showContactSiteDropdown, setShowContactSiteDropdown] = useState(false);
@@ -332,6 +335,47 @@ export default function SiteDetail() {
     setIsCheckingContactEmail(false);
   }, [checkContactEmailExists, editingContactId]);
 
+  // Analyse IA du contenu des observations via Mistral (Edge Function contact-extract).
+  // Ne remplit que les champs encore vides du formulaire de contact.
+  const analyzeContactWithAI = async (text: string) => {
+    if (!text || !text.trim()) return;
+    setIsAnalyzingContactAI(true);
+    const extracted = await extractContactFromText(text);
+    setIsAnalyzingContactAI(false);
+    if (!extracted) return;
+
+    const fields: (keyof typeof contactFormData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
+    let extractedEmail = '';
+
+    setContactFormData(prev => {
+      const newFormData = { ...prev };
+      fields.forEach(key => {
+        const value = extracted[key as keyof typeof extracted];
+        if (value && !newFormData[key]) {
+          newFormData[key] = value;
+          if (key === 'email') extractedEmail = value;
+        }
+      });
+      return newFormData;
+    });
+
+    if (extractedEmail) {
+      checkContactEmailAvailability(extractedEmail);
+    }
+  };
+
+  const handleContactPaste = (e: React.ClipboardEvent) => {
+    if (!useContactAIMode) return;
+    const pastedText = e.clipboardData.getData('text');
+    const combined = `${contactFormData.observations}${contactFormData.observations ? '\n' : ''}${pastedText}`;
+    analyzeContactWithAI(combined);
+  };
+
+  const handleContactAnalyze = () => {
+    if (!useContactAIMode || !contactFormData.observations.trim()) return;
+    analyzeContactWithAI(contactFormData.observations);
+  };
+
   const handleContactEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setContactFormData(prev => ({ ...prev, email: value }));
@@ -426,6 +470,8 @@ export default function SiteDetail() {
     setContactEmailError('');
     setContactEmailExistsError(false);
     setContactConfirmMessage(null);
+    setUseContactAIMode(false);
+    setIsAnalyzingContactAI(false);
   };
 
   const handleContactGroupeSearch = (value: string) => {
@@ -1213,15 +1259,26 @@ export default function SiteDetail() {
               <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '18px', margin: 0 }}>
                 {t('contacts.editTitle')}
               </h2>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={contactFormData.contact_actif}
-                  onChange={(e) => setContactFormData({ ...contactFormData, contact_actif: e.target.checked })}
-                  style={{ cursor: 'pointer' }}
-                />
-                {t('contacts.activeContact')}
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={contactFormData.contact_actif}
+                    onChange={(e) => setContactFormData({ ...contactFormData, contact_actif: e.target.checked })}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {t('contacts.activeContact')}
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={useContactAIMode}
+                    onChange={(e) => setUseContactAIMode(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {t('contacts.aiMode')}
+                </label>
+              </div>
             </div>
 
             {/* Grille principale: champs à gauche, observations à droite */}
@@ -1398,10 +1455,34 @@ export default function SiteDetail() {
               {/* Colonne droite: Observations */}
               <div>
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>{t('contacts.observations')}</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                    <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('contacts.observations')}</label>
+                    {useContactAIMode && (
+                      <button
+                        type="button"
+                        onClick={handleContactAnalyze}
+                        disabled={isAnalyzingContactAI || !contactFormData.observations.trim()}
+                        style={{
+                          padding: '4px 12px',
+                          fontSize: '12px',
+                          fontFamily: 'Barlow, sans-serif',
+                          fontWeight: 200,
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          backgroundColor: '#000',
+                          color: '#fff',
+                          cursor: isAnalyzingContactAI || !contactFormData.observations.trim() ? 'not-allowed' : 'pointer',
+                          opacity: isAnalyzingContactAI || !contactFormData.observations.trim() ? 0.5 : 1,
+                        }}
+                      >
+                        {isAnalyzingContactAI ? t('contacts.analyzing') : t('contacts.analyze')}
+                      </button>
+                    )}
+                  </div>
                   <textarea
                     value={contactFormData.observations}
                     onChange={(e) => setContactFormData({ ...contactFormData, observations: e.target.value })}
+                    onPaste={handleContactPaste}
                     style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', height: '260px', resize: 'vertical' }}
                   />
                 </div>
