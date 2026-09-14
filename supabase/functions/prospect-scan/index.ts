@@ -34,7 +34,7 @@ const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 
 const SCORE_THRESHOLD = 25;
 const MAX_SUGGESTIONS_PER_RUN = 80;
-const MAX_CANDIDATES = 120;
+const MAX_CANDIDATES = 160;
 
 // Diagnostics de run (remplis au fil de l'exécution)
 let mistralKeyPresent = !!(MISTRAL_API_KEY);
@@ -184,16 +184,27 @@ async function generateQueries(
     .map((g) => `${g.nom_groupe} (${g.site_web})`)
     .slice(0, 40);
   const knownGroupNames = groupes.map((g) => g.nom_groupe).slice(0, 60);
+  const knownCountries = Array.from(new Set(sites.map((s) => s.pays).filter(Boolean))).slice(0, 30);
 
-  const prompt = `Tu es un assistant de prospection B2B pour des industriels utilisant des broyeurs à boulets et fours rotatifs.
+  const prompt = `Tu es un assistant de prospection B2B. On cherche des INSTALLATIONS INDUSTRIELLES réelles (usines, cimenteries, cimenteries, usines chimiques, fours de calcination, usines d'incinération) — PAS des articles de blog, des pages Wikipédia, des fiches produit sur les machines, ni des annuaires de constructeurs.
 
-Voici les domaines ciblés : ${Array.from(domainSet).join(", ")}.
-Mots-clés process : ${PROCESS_KEYWORDS.join(", ")}.
+Domaines ciblés : ${Array.from(domainSet).join(", ")}.
+Pays déjà présents dans la base (privilégier ces zones) : ${knownCountries.join(", ")}.
 
-Groupes existants à explorer (chercher d'autres sites de ces groupes non encore répertoriés) :
+Groupes industriels déjà connus (chercher d'autres usines de ces groupes non encore répertoriées) :
 ${knownGroups.join("\n")}
 
-Génère 12 requêtes de recherche web (style Google/Bing) en français et anglais permettant de trouver de NOUVEAUX sites industriels (usines/cimenteries/usines chimiques/calcination/incinération) qui pourraient utiliser des broyeurs à boulets ou fours rotatifs. Inclis des requêtes du type "site:<domaine_d_un_groupe>" pour découvrir d'autres usines d'un groupe connu.
+Génère 16 requêtes de recherche web (style Google/Bing) qui retournent des PAGES DE SITES INDUSTRIELS RÉELS, c'est-à-dire des usines nommées avec une adresse. Évite les requêtes génériques sur les mots-clés des machines ("broyeur à boulets", "ball mill", "rotary kiln") qui renvoient du contenu technique/article.
+
+Types de requêtes efficaces à générer :
+1. "site:<domaine_d_un_groupe_connu> usine" ou "site:<domaine> plant" pour découvrir d'autres sites d'un groupe
+2. "<nom_de_groupe> usine <pays>" / "<group> plant <country>"
+3. "cimenterie <pays>" / "cement plant <country>" (par pays présent dans la base)
+4. "usine de calcination <pays>" / "lime plant <country>"
+5. "usine d'incinération <pays>" / "waste-to-energy plant <country>"
+6. "usine chimique <pays>" / "chemical plant <country>"
+7. "cimenterie <ville connue du secteur>" / "cement plant <city>"
+8. "groupe cimentier <pays> implantations" / "cement group <country> plants"
 
 Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]} sans aucun texte autour, sans markdown.`;
   const queries = await callMistralText(prompt);
@@ -208,7 +219,7 @@ Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]}
     return arr
       .filter((q) => typeof q === "string" && q.trim())
       .map((q) => q.trim())
-      .slice(0, 12);
+      .slice(0, 16);
   }
   // Fallback statique basé sur les domaines connus
   const fallback: string[] = [];
@@ -229,8 +240,15 @@ async function scoreCandidates(
   candidates: Candidate[],
   sites: ExistingSite[],
   groupes: Groupe[]
-): Promise<ScoredCandidate[]> {
-  if (candidates.length === 0) return [];
+): Promise<{ scored: ScoredCandidate[]; diag: ScoreDiag }> {
+  const diag: ScoreDiag = {
+    candidates_in: candidates.length,
+    mistral_results: 0,
+    existing_filtered: 0,
+    noise_filtered: 0,
+    raw_samples: [],
+  };
+  if (candidates.length === 0) return { scored: [], diag };
 
   const profile = sites
     .slice(0, 60)
@@ -270,7 +288,7 @@ ${items}
 Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"","domaine":"...","score":0,"pays":"...","raison":"..."}]} sans markdown ni texte autour.`;
 
     const raw = await callMistralText(prompt);
-    const parsed = parseMistralJson<{ results: Array<{
+    type ScoreResult = {
       index: number;
       site_nom?: string;
       groupe?: string;
@@ -278,19 +296,29 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       score?: number;
       pays?: string;
       raison?: string;
-    }> }>(raw);
+    };
+    const parsed = parseMistralJson<{ results: Array<ScoreResult> }>(raw);
     if (!parsed && raw) {
       console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
+      diag.raw_samples.push(raw.slice(0, 120));
+    } else if (parsed) {
+      diag.mistral_results += parsed.results?.length ?? 0;
+      if (diag.raw_samples.length < 2 && raw) {
+        diag.raw_samples.push(raw.slice(0, 120));
+      }
     }
 
     const results = parsed?.results ?? [];
+    if (results.length === 0 && batch.length > 0) {
+      console.warn(`batch ${i / BATCH}: 0 résultats Mistral pour ${batch.length} candidats`);
+    }
     batch.forEach((c, idx) => {
-      const r = results.find((x) => x.index === idx) ?? {};
+      const r: ScoreResult = results.find((x) => x.index === idx) ?? { index: idx };
       // Nom de site propre extrait par Mistral ; fallback sur le titre nettoyé
       const cleanNom = (r.site_nom ?? "").trim();
       const nomFinal = cleanNom || c.noms;
       const name = nomFinal.toLowerCase().trim();
-      if (existingNames.has(name)) return; // déjà répertorié
+      if (existingNames.has(name)) { diag.existing_filtered++; return; }
       // Groupe : priorité à Mistral, puis rattachement par domaine du site_web
       let groupeFinal = (r.groupe ?? "").trim();
       if (!groupeFinal) {
@@ -305,7 +333,8 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
         });
         if (byDomain) groupeFinal = byDomain.nom_groupe;
       }
-      if (!cleanNom && r.score !== undefined && r.score <= 15) return; // bruit filtré
+      // Bruit filtré : pas de site_nom ET score faible
+      if (!cleanNom && (r.score ?? 0) <= 15) { diag.noise_filtered++; return; }
       scored.push({
         ...c,
         noms: nomFinal,
@@ -320,7 +349,15 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       });
     });
   }
-  return scored;
+  return { scored, diag };
+}
+
+interface ScoreDiag {
+  candidates_in: number;
+  mistral_results: number;
+  existing_filtered: number;
+  noise_filtered: number;
+  raw_samples: string[];
 }
 
 function clampScore(n: number): number {
@@ -497,7 +534,7 @@ Deno.serve(async (req) => {
     // 3. Recherche web (Serper.dev = vrais résultats Google)
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
-      const found = await serperSearch(q, 8);
+      const found = await serperSearch(q, 10);
       for (const c of found) {
         allCandidates.push(c);
       }
@@ -519,7 +556,7 @@ Deno.serve(async (req) => {
     console.log(`Candidats frais: ${fresh.length}`);
 
     // 4. Scoring
-    const scored = await scoreCandidates(fresh, sites, groupes);
+    const { scored, diag: scoreDiag } = await scoreCandidates(fresh, sites, groupes);
     const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
     const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored
@@ -527,6 +564,7 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUGGESTIONS_PER_RUN);
     console.log(`Suggestions retenues: ${kept.length} (max score=${maxScore}, >=seuil=${aboveThreshold})`);
+    console.log(`Score diag:`, JSON.stringify(scoreDiag));
     const topSamples = scored
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
@@ -594,6 +632,7 @@ Deno.serve(async (req) => {
       mistral_key_present: mistralKeyPresent,
       mistral_ok: mistralCallOk,
       mistral_error: mistralError,
+      score_diag: scoreDiag,
       top_candidates: topSamples,
     });
   } catch (err) {
