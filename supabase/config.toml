@@ -1,0 +1,4 @@
+project_id = "ptmkcivmgnfczijlxtaf"
+
+[functions.contact-extract]
+verify_jwt = false
