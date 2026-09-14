@@ -345,7 +345,6 @@ export default function SiteDetail() {
     if (!extracted) return;
 
     const fields: (keyof typeof contactFormData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
-    let extractedEmail = '';
 
     setContactFormData(prev => {
       const newFormData = { ...prev };
@@ -353,13 +352,16 @@ export default function SiteDetail() {
         const value = extracted[key as keyof typeof extracted];
         if (value && !newFormData[key]) {
           newFormData[key] = value;
-          if (key === 'email') extractedEmail = value;
         }
       });
       return newFormData;
     });
 
+    // Vérifier la disponibilité de l'email extrait (s'il a pré-rempli un champ vide)
+    const extractedEmail = extracted.email && !contactFormData.email ? extracted.email : '';
     if (extractedEmail) {
+      // Marquer le champ email comme touché pour activer la bordure rouge en cas de doublon
+      setTouchedContactFields(prev => new Set(prev).add('email'));
       checkContactEmailAvailability(extractedEmail);
     }
   };
