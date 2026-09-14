@@ -34,7 +34,7 @@ const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 
 const SCORE_THRESHOLD = 25;
 const MAX_SUGGESTIONS_PER_RUN = 80;
-const MAX_CANDIDATES = 120;
+const MAX_CANDIDATES = 160;
 
 // Diagnostics de run (remplis au fil de l'exécution)
 let mistralKeyPresent = !!(MISTRAL_API_KEY);
@@ -184,16 +184,27 @@ async function generateQueries(
     .map((g) => `${g.nom_groupe} (${g.site_web})`)
     .slice(0, 40);
   const knownGroupNames = groupes.map((g) => g.nom_groupe).slice(0, 60);
+  const knownCountries = Array.from(new Set(sites.map((s) => s.pays).filter(Boolean))).slice(0, 30);
 
-  const prompt = `Tu es un assistant de prospection B2B pour des industriels utilisant des broyeurs à boulets et fours rotatifs.
+  const prompt = `Tu es un assistant de prospection B2B. On cherche des INSTALLATIONS INDUSTRIELLES réelles (usines, cimenteries, cimenteries, usines chimiques, fours de calcination, usines d'incinération) — PAS des articles de blog, des pages Wikipédia, des fiches produit sur les machines, ni des annuaires de constructeurs.
 
-Voici les domaines ciblés : ${Array.from(domainSet).join(", ")}.
-Mots-clés process : ${PROCESS_KEYWORDS.join(", ")}.
+Domaines ciblés : ${Array.from(domainSet).join(", ")}.
+Pays déjà présents dans la base (privilégier ces zones) : ${knownCountries.join(", ")}.
 
-Groupes existants à explorer (chercher d'autres sites de ces groupes non encore répertoriés) :
+Groupes industriels déjà connus (chercher d'autres usines de ces groupes non encore répertoriées) :
 ${knownGroups.join("\n")}
 
-Génère 12 requêtes de recherche web (style Google/Bing) en français et anglais permettant de trouver de NOUVEAUX sites industriels (usines/cimenteries/usines chimiques/calcination/incinération) qui pourraient utiliser des broyeurs à boulets ou fours rotatifs. Inclis des requêtes du type "site:<domaine_d_un_groupe>" pour découvrir d'autres usines d'un groupe connu.
+Génère 16 requêtes de recherche web (style Google/Bing) qui retournent des PAGES DE SITES INDUSTRIELS RÉELS, c'est-à-dire des usines nommées avec une adresse. Évite les requêtes génériques sur les mots-clés des machines ("broyeur à boulets", "ball mill", "rotary kiln") qui renvoient du contenu technique/article.
+
+Types de requêtes efficaces à générer :
+1. "site:<domaine_d_un_groupe_connu> usine" ou "site:<domaine> plant" pour découvrir d'autres sites d'un groupe
+2. "<nom_de_groupe> usine <pays>" / "<group> plant <country>"
+3. "cimenterie <pays>" / "cement plant <country>" (par pays présent dans la base)
+4. "usine de calcination <pays>" / "lime plant <country>"
+5. "usine d'incinération <pays>" / "waste-to-energy plant <country>"
+6. "usine chimique <pays>" / "chemical plant <country>"
+7. "cimenterie <ville connue du secteur>" / "cement plant <city>"
+8. "groupe cimentier <pays> implantations" / "cement group <country> plants"
 
 Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]} sans aucun texte autour, sans markdown.`;
   const queries = await callMistralText(prompt);
@@ -208,7 +219,7 @@ Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]}
     return arr
       .filter((q) => typeof q === "string" && q.trim())
       .map((q) => q.trim())
-      .slice(0, 12);
+      .slice(0, 16);
   }
   // Fallback statique basé sur les domaines connus
   const fallback: string[] = [];
@@ -522,7 +533,7 @@ Deno.serve(async (req) => {
     // 3. Recherche web (Serper.dev = vrais résultats Google)
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
-      const found = await serperSearch(q, 8);
+      const found = await serperSearch(q, 10);
       for (const c of found) {
         allCandidates.push(c);
       }
