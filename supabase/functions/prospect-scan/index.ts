@@ -227,7 +227,8 @@ Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]}
 
 async function scoreCandidates(
   candidates: Candidate[],
-  sites: ExistingSite[]
+  sites: ExistingSite[],
+  groupes: Groupe[]
 ): Promise<ScoredCandidate[]> {
   if (candidates.length === 0) return [];
 
@@ -255,20 +256,24 @@ async function scoreCandidates(
 Sites déjà connus de notre base :
 ${profile}
 
-Pour CHAQUE candidat ci-dessous, renvoie un JSON : {"results":[{"index":0,"domaine":"...","score":0-100,"pays":"...","raison":"..."}]}.
+Pour CHAQUE candidat ci-dessous (titre de page web + URL + extrait), extraire un VRAI site industriel et le rattacher à un groupe.
+- site_nom : le nom propre de l'usine/site (ex: "Teresa Plant", "Bukit Asam Plant", "Ciments de l'Atlas - Fès"). NE JAMAIS mettre une question, un titre de blog, ou un texte générique. Si tu ne peux pas identifier un site industriel précis, mets "site_nom" vide.
+- groupe : le groupe industriel propriétaire si identifiable (ex: "CRH", "LafargeHolcim", "Republic Cement (CRH)"). Sinon vide.
 - domaine : un de Ciment, Mineralurgie, Platre, Papeterie, Fertilisant, Chimie, Calcination, Incinération, Autre.
 - pays : le pays probable du site (vide si inconnu).
-- score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise les blogs, annuaires, Wikipédia, LinkedIn.
+- score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise fortement (score <= 15) les blogs, annuaires, Wikipédia, LinkedIn, questions/réponses type "Quel est...", sites de petites annonces, news génériques.
 - raison : courte explication.
 
 Candidats :
 ${items}
 
-Réponds UNIQUEMENT avec l'objet JSON ci-dessus, sans markdown ni texte autour.`;
+Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"","domaine":"...","score":0,"pays":"...","raison":"..."}]} sans markdown ni texte autour.`;
 
     const raw = await callMistralText(prompt);
     const parsed = parseMistralJson<{ results: Array<{
       index: number;
+      site_nom?: string;
+      groupe?: string;
       domaine?: string;
       score?: number;
       pays?: string;
@@ -281,10 +286,30 @@ Réponds UNIQUEMENT avec l'objet JSON ci-dessus, sans markdown ni texte autour.`
     const results = parsed?.results ?? [];
     batch.forEach((c, idx) => {
       const r = results.find((x) => x.index === idx) ?? {};
-      const name = c.noms.toLowerCase().trim();
+      // Nom de site propre extrait par Mistral ; fallback sur le titre nettoyé
+      const cleanNom = (r.site_nom ?? "").trim();
+      const nomFinal = cleanNom || c.noms;
+      const name = nomFinal.toLowerCase().trim();
       if (existingNames.has(name)) return; // déjà répertorié
+      // Groupe : priorité à Mistral, puis rattachement par domaine du site_web
+      let groupeFinal = (r.groupe ?? "").trim();
+      if (!groupeFinal) {
+        const byDomain = groupes.find((g) => {
+          if (!g.site_web) return false;
+          try {
+            const host = new URL(g.site_web).hostname.replace(/^www\./, "");
+            return c.source_url.includes(host);
+          } catch {
+            return false;
+          }
+        });
+        if (byDomain) groupeFinal = byDomain.nom_groupe;
+      }
+      if (!cleanNom && r.score !== undefined && r.score <= 15) return; // bruit filtré
       scored.push({
         ...c,
+        noms: nomFinal,
+        groupe: groupeFinal,
         domaine: r.domaine ?? "Autre",
         pays: r.pays ?? "",
         adress: "",
@@ -473,12 +498,7 @@ Deno.serve(async (req) => {
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
       const found = await serperSearch(q, 8);
-      // rattache au groupe connu si la requête le mentionne
       for (const c of found) {
-        const matchedGroup = groupes.find((g) =>
-          g.nom_groupe && c.noms.toLowerCase().includes(g.nom_groupe.toLowerCase())
-        );
-        c.groupe = matchedGroup?.nom_groupe ?? "";
         allCandidates.push(c);
       }
       // Limite globale de candidats
@@ -499,7 +519,7 @@ Deno.serve(async (req) => {
     console.log(`Candidats frais: ${fresh.length}`);
 
     // 4. Scoring
-    const scored = await scoreCandidates(fresh, sites);
+    const scored = await scoreCandidates(fresh, sites, groupes);
     const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
     const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored
@@ -544,7 +564,7 @@ Deno.serve(async (req) => {
 
     // 6. Insertion
     const rows = kept.map((c) => ({
-      groupe: c.groupe || c.noms,
+      groupe: c.groupe,
       noms: c.noms,
       domaine: c.domaine,
       pays: c.pays,
