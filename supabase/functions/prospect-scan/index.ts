@@ -229,8 +229,15 @@ async function scoreCandidates(
   candidates: Candidate[],
   sites: ExistingSite[],
   groupes: Groupe[]
-): Promise<ScoredCandidate[]> {
-  if (candidates.length === 0) return [];
+): Promise<{ scored: ScoredCandidate[]; diag: ScoreDiag }> {
+  const diag: ScoreDiag = {
+    candidates_in: candidates.length,
+    mistral_results: 0,
+    existing_filtered: 0,
+    noise_filtered: 0,
+    raw_samples: [],
+  };
+  if (candidates.length === 0) return { scored: [], diag };
 
   const profile = sites
     .slice(0, 60)
@@ -281,16 +288,25 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
     }> }>(raw);
     if (!parsed && raw) {
       console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
+      diag.raw_samples.push(raw.slice(0, 120));
+    } else if (parsed) {
+      diag.mistral_results += parsed.results?.length ?? 0;
+      if (diag.raw_samples.length < 2 && raw) {
+        diag.raw_samples.push(raw.slice(0, 120));
+      }
     }
 
     const results = parsed?.results ?? [];
+    if (results.length === 0 && batch.length > 0) {
+      console.warn(`batch ${i / BATCH}: 0 résultats Mistral pour ${batch.length} candidats`);
+    }
     batch.forEach((c, idx) => {
       const r = results.find((x) => x.index === idx) ?? {};
       // Nom de site propre extrait par Mistral ; fallback sur le titre nettoyé
       const cleanNom = (r.site_nom ?? "").trim();
       const nomFinal = cleanNom || c.noms;
       const name = nomFinal.toLowerCase().trim();
-      if (existingNames.has(name)) return; // déjà répertorié
+      if (existingNames.has(name)) { diag.existing_filtered++; return; }
       // Groupe : priorité à Mistral, puis rattachement par domaine du site_web
       let groupeFinal = (r.groupe ?? "").trim();
       if (!groupeFinal) {
@@ -305,7 +321,8 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
         });
         if (byDomain) groupeFinal = byDomain.nom_groupe;
       }
-      if (!cleanNom && r.score !== undefined && r.score <= 15) return; // bruit filtré
+      // Bruit filtré : pas de site_nom ET score faible
+      if (!cleanNom && (r.score ?? 0) <= 15) { diag.noise_filtered++; return; }
       scored.push({
         ...c,
         noms: nomFinal,
@@ -320,10 +337,16 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       });
     });
   }
-  return scored;
+  return { scored, diag };
 }
 
-function clampScore(n: number): number {
+interface ScoreDiag {
+  candidates_in: number;
+  mistral_results: number;
+  existing_filtered: number;
+  noise_filtered: number;
+  raw_samples: string[];
+}
   if (isNaN(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));
 }
@@ -519,7 +542,7 @@ Deno.serve(async (req) => {
     console.log(`Candidats frais: ${fresh.length}`);
 
     // 4. Scoring
-    const scored = await scoreCandidates(fresh, sites, groupes);
+    const { scored, diag: scoreDiag } = await scoreCandidates(fresh, sites, groupes);
     const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
     const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored
@@ -527,6 +550,7 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUGGESTIONS_PER_RUN);
     console.log(`Suggestions retenues: ${kept.length} (max score=${maxScore}, >=seuil=${aboveThreshold})`);
+    console.log(`Score diag:`, JSON.stringify(scoreDiag));
     const topSamples = scored
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
@@ -594,6 +618,7 @@ Deno.serve(async (req) => {
       mistral_key_present: mistralKeyPresent,
       mistral_ok: mistralCallOk,
       mistral_error: mistralError,
+      score_diag: scoreDiag,
       top_candidates: topSamples,
     });
   } catch (err) {
