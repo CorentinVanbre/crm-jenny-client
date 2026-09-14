@@ -55,6 +55,10 @@ create index if not exists prospect_suggestions_groupe_idx
   on public.prospect_suggestions (groupe);
 
 -- Contrainte : approved ne peut valoir que null, 'approved' ou 'refused'
+-- Idempotente : on retire d'éventuelles anciennes contraintes du même nom
+-- avant de la recréer (utile en cas de ré-exécution).
+alter table public.prospect_suggestions
+  drop constraint if exists prospect_suggestions_approved_check;
 alter table public.prospect_suggestions
   add constraint prospect_suggestions_approved_check
   check (approved is null or approved in ('approved', 'refused'));

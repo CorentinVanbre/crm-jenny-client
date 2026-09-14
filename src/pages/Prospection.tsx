@@ -85,8 +85,14 @@ export default function Prospection() {
   }, [loadingZones, fetchSuggestions]);
 
   // Filtrage par pays attribués (renforcé par RLS côté base, mais on filtre aussi côté client)
+  const isAdmin = allowedCountries === null;
+
   const matchesSearch = (s: Suggestion) => {
-    if (allowedCountries && !allowedCountries.includes(s.pays)) return false;
+    if (!s.pays) {
+      if (!isAdmin) return false;
+    } else if (allowedCountries && !allowedCountries.includes(s.pays)) {
+      return false;
+    }
     if (filterStatus === 'pending' && s.approved !== null) return false;
     if (!searchText) return true;
     const q = searchText.toLowerCase();
@@ -124,7 +130,7 @@ export default function Prospection() {
       : '';
     setNewSiteData({
       noms: s.noms,
-      groupe: s.groupe,
+      groupe: '',
       pays: s.pays,
       adress: { formatted: s.adress?.formatted ?? '' },
       latitude: s.latitude,

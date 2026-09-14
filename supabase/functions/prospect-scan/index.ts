@@ -8,16 +8,16 @@
 //   2. Génère des requêtes de recherche web (Mistral AI) ciblant les domaines
 //      existants + Chimie / Calcination / Incinération (broyeurs à boulets,
 //      fours rotatifs).
-//   3. Exécute les recherches (Brave Search API) et collecte des candidats
-//      (URL de page = source_url, titre = site candidat).
+//   3. Exécute les recherches web (Serper.dev = vrais résultats Google) et
+//      collecte des candidats (URL de page = source_url, titre = site candidat).
 //   4. Pour chaque candidat : géocodage (OpenStreetMap Nominatim) du pays de
 //      la source, scoring de pertinence (Mistral AI) par rapport aux sites
 //      existants, et déduplication vs sites déjà répertoriés.
 //   5. Insère les nouveaux candidats (score >= SEUIL) dans prospect_suggestions.
 //
 // Secrets requis (supabase secrets set ...):
-//   - BRAVE_SEARCH_API_KEY   : clé API Brave Search (https://brave.com/search/api/)
-//   - MISTRAL_API_KEY        : clé API Mistral AI (https://console.mistral.ai)
+//   - SERPER_API_KEY   : clé API Serper.dev (https://serper.dev/, 2 500 requêtes offertes à l'inscription)
+//   - MISTRAL_API_KEY  : clé API Mistral AI (https://console.mistral.ai)
 //
 // Planification (lundi matin) :
 //   supabase functions schedule prospect-scan --cron "0 7 * * 1"
@@ -29,12 +29,17 @@
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const BRAVE_SEARCH_API_KEY = Deno.env.get("BRAVE_SEARCH_API_KEY") ?? "";
+const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY") ?? "";
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 
-const SCORE_THRESHOLD = 40;
+const SCORE_THRESHOLD = 25;
 const MAX_SUGGESTIONS_PER_RUN = 80;
 const MAX_CANDIDATES = 120;
+
+// Diagnostics de run (remplis au fil de l'exécution)
+let mistralKeyPresent = !!(MISTRAL_API_KEY);
+let mistralCallOk = true;
+let mistralError = "";
 
 interface ExistingSite {
   groupe: string;
@@ -105,39 +110,42 @@ async function supabaseInsert(rows: Record<string, unknown>[]): Promise<void> {
   }
 }
 
-// --- Brave Search -----------------------------------------------------------
+// --- Serper.dev (vrais résultats Google, API SERP) -------------------------
+// API : https://serper.dev  — renvoie les vrais résultats Google au format JSON.
+// Free tier : 2 500 requêtes offertes à l'inscription (couvrent ~4 ans de scans
+// hebdomadaires de ~12 requêtes), puis $1 / 1 000 requêtes.
 
-async function braveSearch(query: string, count = 10): Promise<Candidate[]> {
-  if (!BRAVE_SEARCH_API_KEY) {
-    console.warn("BRAVE_SEARCH_API_KEY manquant — recherche ignorée");
+async function serperSearch(query: string, count = 10): Promise<Candidate[]> {
+  if (!SERPER_API_KEY) {
+    console.warn("SERPER_API_KEY manquant — recherche ignorée");
     return [];
   }
-  const url =
-    `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}` +
-    `&count=${count}&country=ALL&search_lang=fr`;
-  const res = await fetch(url, {
+  const num = Math.min(Math.max(count, 1), 10);
+  const res = await fetch("https://google.serper.dev/search", {
+    method: "POST",
     headers: {
-      Accept: "application/json",
-      "X-Subscription-Token": BRAVE_SEARCH_API_KEY,
+      "X-API-KEY": SERPER_API_KEY,
+      "Content-Type": "application/json",
     },
+    body: JSON.stringify({ q: query, num }),
   });
   if (!res.ok) {
-    console.warn(`Brave search failed (${res.status}): ${await res.text()}`);
+    console.warn(`Serper search failed (${res.status}): ${await res.text()}`);
     return [];
   }
   const data = await res.json();
-  const results = (data?.results ?? []) as Array<{
+  const items = (data?.organic ?? []) as Array<{
     title?: string;
-    url?: string;
-    description?: string;
+    link?: string;
+    snippet?: string;
   }>;
-  return results
-    .filter((r) => r.title && r.url)
+  return items
+    .filter((r) => r.title && r.link)
     .map((r) => ({
       groupe: "",
       noms: r.title!.split(/[|·—\-–]/)[0].trim(),
-      source_url: r.url!,
-      snippet: r.description ?? "",
+      source_url: r.link!,
+      snippet: r.snippet ?? "",
     }));
 }
 
@@ -187,18 +195,20 @@ ${knownGroups.join("\n")}
 
 Génère 12 requêtes de recherche web (style Google/Bing) en français et anglais permettant de trouver de NOUVEAUX sites industriels (usines/cimenteries/usines chimiques/calcination/incinération) qui pourraient utiliser des broyeurs à boulets ou fours rotatifs. Inclis des requêtes du type "site:<domaine_d_un_groupe>" pour découvrir d'autres usines d'un groupe connu.
 
-Réponds UNIQUEMENT avec un tableau JSON de chaînes, par exemple ["requête 1", "requête 2"].`;
+Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]} sans aucun texte autour, sans markdown.`;
   const queries = await callMistralText(prompt);
-  try {
-    const parsed = JSON.parse(queries);
-    if (Array.isArray(parsed)) {
-      return parsed
-        .filter((q) => typeof q === "string" && q.trim())
-        .map((q) => q.trim())
-        .slice(0, 12);
-    }
-  } catch {
-    // fallback
+  // Format attendu : {"queries": [...]} (json_object forcé) ou directement [...]
+  const obj = parseMistralJson<{ queries?: string[] } | string[]>(queries);
+  let arr: string[] | null = null;
+  if (obj && Array.isArray(obj)) arr = obj;
+  else if (obj && Array.isArray((obj as { queries?: string[] }).queries)) {
+    arr = (obj as { queries: string[] }).queries;
+  }
+  if (arr) {
+    return arr
+      .filter((q) => typeof q === "string" && q.trim())
+      .map((q) => q.trim())
+      .slice(0, 12);
   }
   // Fallback statique basé sur les domaines connus
   const fallback: string[] = [];
@@ -217,7 +227,8 @@ Réponds UNIQUEMENT avec un tableau JSON de chaînes, par exemple ["requête 1",
 
 async function scoreCandidates(
   candidates: Candidate[],
-  sites: ExistingSite[]
+  sites: ExistingSite[],
+  groupes: Groupe[]
 ): Promise<ScoredCandidate[]> {
   if (candidates.length === 0) return [];
 
@@ -245,38 +256,60 @@ async function scoreCandidates(
 Sites déjà connus de notre base :
 ${profile}
 
-Pour CHAQUE candidat ci-dessous, renvoie un JSON : {"results":[{"index":0,"domaine":"...","score":0-100,"pays":"...","raison":"..."}]}.
+Pour CHAQUE candidat ci-dessous (titre de page web + URL + extrait), extraire un VRAI site industriel et le rattacher à un groupe.
+- site_nom : le nom propre de l'usine/site (ex: "Teresa Plant", "Bukit Asam Plant", "Ciments de l'Atlas - Fès"). NE JAMAIS mettre une question, un titre de blog, ou un texte générique. Si tu ne peux pas identifier un site industriel précis, mets "site_nom" vide.
+- groupe : le groupe industriel propriétaire si identifiable (ex: "CRH", "LafargeHolcim", "Republic Cement (CRH)"). Sinon vide.
 - domaine : un de Ciment, Mineralurgie, Platre, Papeterie, Fertilisant, Chimie, Calcination, Incinération, Autre.
 - pays : le pays probable du site (vide si inconnu).
-- score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise les blogs, annuaires, Wikipédia, LinkedIn.
+- score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise fortement (score <= 15) les blogs, annuaires, Wikipédia, LinkedIn, questions/réponses type "Quel est...", sites de petites annonces, news génériques.
 - raison : courte explication.
 
 Candidats :
 ${items}
 
-Réponds UNIQUEMENT avec le JSON ci-dessus.`;
+Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"","domaine":"...","score":0,"pays":"...","raison":"..."}]} sans markdown ni texte autour.`;
 
-    let parsed: { results: Array<{
+    const raw = await callMistralText(prompt);
+    const parsed = parseMistralJson<{ results: Array<{
       index: number;
+      site_nom?: string;
+      groupe?: string;
       domaine?: string;
       score?: number;
       pays?: string;
       raison?: string;
-    }> } | null = null;
-    try {
-      const raw = await callMistralText(prompt);
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      console.warn("score parse failed", e);
+    }> }>(raw);
+    if (!parsed && raw) {
+      console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
     }
 
     const results = parsed?.results ?? [];
     batch.forEach((c, idx) => {
       const r = results.find((x) => x.index === idx) ?? {};
-      const name = c.noms.toLowerCase().trim();
+      // Nom de site propre extrait par Mistral ; fallback sur le titre nettoyé
+      const cleanNom = (r.site_nom ?? "").trim();
+      const nomFinal = cleanNom || c.noms;
+      const name = nomFinal.toLowerCase().trim();
       if (existingNames.has(name)) return; // déjà répertorié
+      // Groupe : priorité à Mistral, puis rattachement par domaine du site_web
+      let groupeFinal = (r.groupe ?? "").trim();
+      if (!groupeFinal) {
+        const byDomain = groupes.find((g) => {
+          if (!g.site_web) return false;
+          try {
+            const host = new URL(g.site_web).hostname.replace(/^www\./, "");
+            return c.source_url.includes(host);
+          } catch {
+            return false;
+          }
+        });
+        if (byDomain) groupeFinal = byDomain.nom_groupe;
+      }
+      if (!cleanNom && r.score !== undefined && r.score <= 15) return; // bruit filtré
       scored.push({
         ...c,
+        noms: nomFinal,
+        groupe: groupeFinal,
         domaine: r.domaine ?? "Autre",
         pays: r.pays ?? "",
         adress: "",
@@ -295,9 +328,65 @@ function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+// Nettoie la sortie d'un LLM pour extraire un JSON valide :
+// - retire les fences markdown ```json ... ``` (ou ``` ... ```)
+// - si le JSON est incomplet, tente de compléter les crochets/accolades ouverts
+function stripJsonFence(raw: string): string {
+  let s = (raw ?? "").trim();
+  if (!s) return "";
+  // fences ```json ... ``` ou ``` ... ```
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence && fence[1]) {
+    s = fence[1].trim();
+  }
+  // parfois pas de fence fermante (tronqué) : retire un éventuel ```json d'ouverture
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+  // garde la première occurrence {...} ou [...]
+  const objStart = s.indexOf("{");
+  const arrStart = s.indexOf("[");
+  let start = -1;
+  if (objStart === -1) start = arrStart;
+  else if (arrStart === -1) start = objStart;
+  else start = Math.min(objStart, arrStart);
+  if (start > 0) s = s.slice(start);
+  // complète un JSON tronqué : équilibre crochets/accollades ouverts
+  let openSq = 0, openCu = 0;
+  let inStr = false, esc = false;
+  for (const ch of s) {
+    if (esc) { esc = false; continue; }
+    if (ch === "\\") { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === "[") openSq++;
+    else if (ch === "]") openSq--;
+    else if (ch === "{") openCu++;
+    else if (ch === "}") openCu--;
+  }
+  // si jamais négatif, on ne complète pas (cassé)
+  if (openSq > 0) s += "]".repeat(openSq);
+  if (openCu > 0) s += "}".repeat(openCu);
+  return s.trim();
+}
+
+// Tente plusieurs stratégies pour parser un JSON depuis la sortie d'un LLM.
+function parseMistralJson<T>(raw: string): T | null {
+  if (!raw) return null;
+  const candidates = [raw, stripJsonFence(raw)];
+  for (const c of candidates) {
+    try {
+      return JSON.parse(c) as T;
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
+
 async function callMistralText(prompt: string): Promise<string> {
   if (!MISTRAL_API_KEY) {
     console.warn("MISTRAL_API_KEY manquant");
+    mistralCallOk = false;
+    mistralError = "MISTRAL_API_KEY manquant";
     return "[]";
   }
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -309,11 +398,15 @@ async function callMistralText(prompt: string): Promise<string> {
     body: JSON.stringify({
       model: "mistral-small-latest",
       temperature: 0.2,
+      response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
     }),
   });
   if (!res.ok) {
-    console.warn(`Mistral failed (${res.status}): ${await res.text()}`);
+    const body = await res.text();
+    console.warn(`Mistral failed (${res.status}): ${body}`);
+    mistralCallOk = false;
+    mistralError = `Mistral ${res.status}: ${body.slice(0, 200)}`;
     return "[]";
   }
   const data = await res.json();
@@ -401,16 +494,11 @@ Deno.serve(async (req) => {
     const queries = await generateQueries(groupes, sites);
     console.log(`Requêtes générées: ${queries.length}`);
 
-    // 3. Recherche web
+    // 3. Recherche web (Serper.dev = vrais résultats Google)
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
-      const found = await braveSearch(q, 8);
-      // rattache au groupe connu si la requête le mentionne
+      const found = await serperSearch(q, 8);
       for (const c of found) {
-        const matchedGroup = groupes.find((g) =>
-          g.nom_groupe && c.noms.toLowerCase().includes(g.nom_groupe.toLowerCase())
-        );
-        c.groupe = matchedGroup?.nom_groupe ?? "";
         allCandidates.push(c);
       }
       // Limite globale de candidats
@@ -431,12 +519,18 @@ Deno.serve(async (req) => {
     console.log(`Candidats frais: ${fresh.length}`);
 
     // 4. Scoring
-    const scored = await scoreCandidates(fresh, sites);
+    const scored = await scoreCandidates(fresh, sites, groupes);
+    const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
+    const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored
       .filter((c) => c.score >= SCORE_THRESHOLD)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUGGESTIONS_PER_RUN);
-    console.log(`Suggestions retenues: ${kept.length}`);
+    console.log(`Suggestions retenues: ${kept.length} (max score=${maxScore}, >=seuil=${aboveThreshold})`);
+    const topSamples = scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((c) => ({ noms: c.noms, score: c.score, domaine: c.domaine, pays: c.pays }));
 
     // 5. Géocodage des suggestions retenues
     for (const c of kept) {
@@ -470,7 +564,7 @@ Deno.serve(async (req) => {
 
     // 6. Insertion
     const rows = kept.map((c) => ({
-      groupe: c.groupe || c.noms,
+      groupe: c.groupe,
       noms: c.noms,
       domaine: c.domaine,
       pays: c.pays,
@@ -492,11 +586,26 @@ Deno.serve(async (req) => {
       queries: queries.length,
       candidates: unique.length,
       fresh: fresh.length,
+      scored: scored.length,
       inserted: rows.length,
+      score_threshold: SCORE_THRESHOLD,
+      max_score: maxScore,
+      above_threshold: aboveThreshold,
+      mistral_key_present: mistralKeyPresent,
+      mistral_ok: mistralCallOk,
+      mistral_error: mistralError,
+      top_candidates: topSamples,
     });
   } catch (err) {
-    console.error("prospect-scan error:", err);
-    return json({ error: String(err), run_id: runId }, 500);
+    const e = err as { name?: string; message?: string; stack?: string };
+    const detail = JSON.stringify({
+      name: e?.name,
+      message: e?.message,
+      stack: e?.stack,
+      raw: String(err),
+    }, null, 2);
+    console.error("prospect-scan error:", detail);
+    return json({ error: detail, run_id: runId }, 500);
   }
 });
 
