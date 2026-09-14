@@ -32,9 +32,14 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const SERPER_API_KEY = Deno.env.get("SERPER_API_KEY") ?? "";
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 
-const SCORE_THRESHOLD = 40;
+const SCORE_THRESHOLD = 25;
 const MAX_SUGGESTIONS_PER_RUN = 80;
 const MAX_CANDIDATES = 120;
+
+// Diagnostics de run (remplis au fil de l'exécution)
+let mistralKeyPresent = !!(MISTRAL_API_KEY);
+let mistralCallOk = true;
+let mistralError = "";
 
 interface ExistingSite {
   groupe: string;
@@ -301,6 +306,8 @@ function clampScore(n: number): number {
 async function callMistralText(prompt: string): Promise<string> {
   if (!MISTRAL_API_KEY) {
     console.warn("MISTRAL_API_KEY manquant");
+    mistralCallOk = false;
+    mistralError = "MISTRAL_API_KEY manquant";
     return "[]";
   }
   const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
@@ -316,7 +323,10 @@ async function callMistralText(prompt: string): Promise<string> {
     }),
   });
   if (!res.ok) {
-    console.warn(`Mistral failed (${res.status}): ${await res.text()}`);
+    const body = await res.text();
+    console.warn(`Mistral failed (${res.status}): ${body}`);
+    mistralCallOk = false;
+    mistralError = `Mistral ${res.status}: ${body.slice(0, 200)}`;
     return "[]";
   }
   const data = await res.json();
@@ -435,11 +445,17 @@ Deno.serve(async (req) => {
 
     // 4. Scoring
     const scored = await scoreCandidates(fresh, sites);
+    const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
+    const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored
       .filter((c) => c.score >= SCORE_THRESHOLD)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_SUGGESTIONS_PER_RUN);
-    console.log(`Suggestions retenues: ${kept.length}`);
+    console.log(`Suggestions retenues: ${kept.length} (max score=${maxScore}, >=seuil=${aboveThreshold})`);
+    const topSamples = scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((c) => ({ noms: c.noms, score: c.score, domaine: c.domaine, pays: c.pays }));
 
     // 5. Géocodage des suggestions retenues
     for (const c of kept) {
@@ -495,7 +511,15 @@ Deno.serve(async (req) => {
       queries: queries.length,
       candidates: unique.length,
       fresh: fresh.length,
+      scored: scored.length,
       inserted: rows.length,
+      score_threshold: SCORE_THRESHOLD,
+      max_score: maxScore,
+      above_threshold: aboveThreshold,
+      mistral_key_present: mistralKeyPresent,
+      mistral_ok: mistralCallOk,
+      mistral_error: mistralError,
+      top_candidates: topSamples,
     });
   } catch (err) {
     console.error("prospect-scan error:", err);
