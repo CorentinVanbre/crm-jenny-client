@@ -374,7 +374,7 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
         noms: nomFinal,
         groupe: groupeFinal,
         domaine: r.domaine ?? "Autre",
-        pays: r.pays ?? "",
+        pays: normalizeCountry(r.pays ?? ""),
         adress: "",
         latitude: "",
         longitude: "",
@@ -398,6 +398,117 @@ function clampScore(n: number): number {
   if (isNaN(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));
 }
+
+// --- Normalisation des noms de pays ----------------------------------------
+// Aligne l'orthographe des pays renvoyés par Nominatim/Mistral sur celle
+// utilisée dans user_zones (noms français de référence, cf. countries.ts).
+// Ex: "Vietnam" -> "Viêt Nam", "france" -> "France", "United States" -> "États-Unis".
+
+const COUNTRY_NORMALIZE: Record<string, string> = {
+  // Variantes anglaises / Nominatim -> français
+  "United States": "États-Unis", "United States of America": "États-Unis",
+  "United Kingdom": "Royaume-Uni", "Russia": "Russie", "China": "Chine",
+  "Japan": "Japon", "South Korea": "Corée du Sud", "North Korea": "Corée du Nord",
+  "Vietnam": "Viêt Nam", "Viet Nam": "Viêt Nam",
+  "India": "Inde", "Indonesia": "Indonésie", "Thailand": "Thaïlande",
+  "Malaysia": "Malaisie", "Philippines": "Philippines", "Pakistan": "Pakistan",
+  "Bangladesh": "Bangladesh", "Turkey": "Turquie", "Iran": "Iran", "Iraq": "Irak",
+  "Saudi Arabia": "Arabie saoudite", "United Arab Emirates": "Émirats arabes unis",
+  "Israel": "Israël", "Egypt": "Égypte", "Algeria": "Algérie", "Morocco": "Maroc",
+  "Tunisia": "Tunisie", "Libya": "Libye", "Nigeria": "Nigeria", "Kenya": "Kenya",
+  "Ethiopia": "Éthiopie", "Ghana": "Ghana", "South Africa": "Afrique du Sud",
+  "Tanzania": "Tanzanie", "Uganda": "Ouganda", "Cameroon": "Cameroun",
+  "Senegal": "Sénégal", "Zimbabwe": "Zimbabwe", "Zambia": "Zambie",
+  "Mozambique": "Mozambique", "Angola": "Angola", "Namibia": "Namibie",
+  "Botswana": "Botswana", "Madagascar": "Madagascar", "Sudan": "Soudan",
+  "South Sudan": "Soudan du Sud", "Mali": "Mali", "Niger": "Niger",
+  "Burkina Faso": "Burkina Faso", "Chad": "Tchad", "Mauritania": "Mauritanie",
+  "Gabon": "Gabon", "Togo": "Togo", "Benin": "Bénin", "Liberia": "Liberia",
+  "Sierra Leone": "Sierra Leone", "Somalia": "Somalie", "Rwanda": "Rwanda",
+  "Burundi": "Burundi", "Malawi": "Malawi", "Lesotho": "Lesotho",
+  "Eswatini": "Eswatini (ex-Swaziland)",
+  // Europe
+  "France": "France", "Germany": "Allemagne", "Spain": "Espagne", "Italy": "Italie",
+  "Portugal": "Portugal", "Belgium": "Belgique", "Netherlands": "Pays-Bas",
+  "Switzerland": "Suisse", "Austria": "Autriche", "Poland": "Pologne",
+  "Sweden": "Suède", "Norway": "Norvège", "Denmark": "Danemark",
+  "Finland": "Finlande", "Ireland": "Irlande", "Iceland": "Islande",
+  "Greece": "Grèce", "Croatia": "Croatie", "Bulgaria": "Bulgarie",
+  "Romania": "Roumanie", "Hungary": "Hongrie", "Czech Republic": "République tchèque",
+  "Czechia": "République tchèque", "Slovakia": "Slovaquie", "Slovenia": "Slovénie",
+  "Serbia": "Serbie", "Bosnia and Herzegovina": "Bosnie-Herzégovine",
+  "Albania": "Albanie", "North Macedonia": "Macédoine du Nord", "Moldova": "Moldavie",
+  "Montenegro": "Monténégro", "Ukraine": "Ukraine", "Belarus": "Bielorussie",
+  "Estonia": "Estonie", "Latvia": "Lettonie", "Lithuania": "Lituanie",
+  "Luxembourg": "Luxembourg", "Malta": "Malte", "Cyprus": "Chypre",
+  // Amériques
+  "Canada": "Canada", "Mexico": "Mexique", "Brazil": "Brésil",
+  "Argentina": "Argentine", "Chile": "Chili", "Colombia": "Colombie",
+  "Peru": "Pérou", "Venezuela": "Venezuela", "Bolivia": "Bolivie",
+  "Ecuador": "Équateur", "Paraguay": "Paraguay", "Uruguay": "Uruguay",
+  "Costa Rica": "Costa Rica", "Panama": "Panama", "Guatemala": "Guatemala",
+  "Honduras": "Honduras", "Nicaragua": "Nicaragua", "El Salvador": "Salvador",
+  "Cuba": "Cuba", "Dominican Republic": "République dominicaine",
+  "Haiti": "Haïti", "Jamaica": "Jamaïque", "Bahamas": "Bahamas",
+  "Trinidad and Tobago": "Trinité-et-Tobago",
+  // Océanie
+  "Australia": "Australie", "New Zealand": "Nouvelle-Zélande",
+  "Papua New Guinea": "Papouasie-Nouvelle-Guinée", "Fiji": "Fidji",
+  "Vanuatu": "Vanuatu", "Solomon Islands": "Salomon",
+};
+
+// Variantes françaises courantes (fautes / formes alternatives)
+const COUNTRY_FRENCH_VARIANTS: Record<string, string> = {
+  "vietnam": "Viêt Nam", "viet nam": "Viêt Nam", "viet-nam": "Viêt Nam",
+  "france": "France", "fr": "France",
+  "etats-unis": "États-Unis", "etats unis": "États-Unis", "usa": "États-Unis",
+  "royaume uni": "Royaume-Uni", "royaume-uni": "Royaume-Uni", "uk": "Royaume-Uni",
+  "pays bas": "Pays-Bas", "pays-bas": "Pays-Bas",
+  "republique tcheque": "République tchèque",
+  "coree du sud": "Corée du Sud", "coree du nord": "Corée du Nord",
+  "emirats arabes unis": "Émirats arabes unis",
+  "afrique du sud": "Afrique du Sud",
+  "nouvelle zelande": "Nouvelle-Zélande", "nouvelle-zelande": "Nouvelle-Zélande",
+  "bosnie herzegovine": "Bosnie-Herzégovine",
+  "macedoine du nord": "Macédoine du Nord",
+  "republique dominicaine": "République dominicaine",
+  "trinite et tobago": "Trinité-et-Tobago",
+  "papouasie nouvelle guinee": "Papouasie-Nouvelle-Guinée",
+  "guinee equatoriale": "Guinée équatoriale",
+  "guinee-bissau": "Guinée-Bissau",
+  "saint vincent et les grenadines": "Saint-Vincent-et-les-Grenadines",
+  "saint christophe et nevis": "Saint-Christophe-et-Niévès",
+  "birmanie": "Birmanie (Myanmar)", "myanmar": "Birmanie (Myanmar)",
+  "eswatini": "Eswatini (ex-Swaziland)", "swaziland": "Eswatini (ex-Swaziland)",
+  "congo": "Congo (Brazzaville)", "congo brazzaville": "Congo (Brazzaville)",
+  "congo rdc": "Congo (RDC / Kinshasa)", "rdc": "Congo (RDC / Kinshasa)",
+  "congo kinshasa": "Congo (RDC / Kinshasa)",
+};
+
+function normalizeCountry(raw: string): string {
+  const s = (raw ?? "").trim();
+  if (!s) return "";
+  // 1. Match exact (insensible à la casse) dans le mapping anglais->français
+  const key = s.toLowerCase();
+  for (const [k, v] of Object.entries(COUNTRY_NORMALIZE)) {
+    if (k.toLowerCase() === key) return v;
+  }
+  // 2. Variantes françaises
+  for (const [k, v] of Object.entries(COUNTRY_FRENCH_VARIANTS)) {
+    if (k === key) return v;
+  }
+  // 3. Si déjà un nom français valide (présent dans les valeurs), le garder tel quel
+  const frenchValues = new Set(Object.values(COUNTRY_NORMALIZE).map((v) => v.toLowerCase()));
+  if (frenchValues.has(key)) {
+    // retourne la forme canonique (première occurrence)
+    for (const v of Object.values(COUNTRY_NORMALIZE)) {
+      if (v.toLowerCase() === key) return v;
+    }
+  }
+  // 4. Sinon on retourne le nom original (non normalisé) — évite de perdre l'info
+  return s;
+}
+
 
 // Nettoie la sortie d'un LLM pour extraire un JSON valide :
 // - retire les fences markdown ```json ... ``` (ou ``` ... ```)
@@ -629,7 +740,7 @@ Deno.serve(async (req) => {
         : `${c.noms}`;
       const geo = await geocode(q);
       if (geo.pays) {
-        c.pays = geo.pays;
+        c.pays = normalizeCountry(geo.pays);
         c.adress = geo.adress;
         c.latitude = geo.latitude;
         c.longitude = geo.longitude;
@@ -640,7 +751,7 @@ Deno.serve(async (req) => {
           const host = new URL(c.source_url).hostname;
           const geo2 = await geocode(host);
           if (geo2.pays) {
-            c.pays = geo2.pays;
+            c.pays = normalizeCountry(geo2.pays);
             if (!c.adress) c.adress = geo2.adress;
             if (!c.latitude) c.latitude = geo2.latitude;
             if (!c.longitude) c.longitude = geo2.longitude;
