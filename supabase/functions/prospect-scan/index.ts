@@ -288,7 +288,7 @@ ${items}
 Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"","domaine":"...","score":0,"pays":"...","raison":"..."}]} sans markdown ni texte autour.`;
 
     const raw = await callMistralText(prompt);
-    const parsed = parseMistralJson<{ results: Array<{
+    type ScoreResult = {
       index: number;
       site_nom?: string;
       groupe?: string;
@@ -296,7 +296,8 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       score?: number;
       pays?: string;
       raison?: string;
-    }> }>(raw);
+    };
+    const parsed = parseMistralJson<{ results: Array<ScoreResult> }>(raw);
     if (!parsed && raw) {
       console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
       diag.raw_samples.push(raw.slice(0, 120));
@@ -312,7 +313,7 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       console.warn(`batch ${i / BATCH}: 0 résultats Mistral pour ${batch.length} candidats`);
     }
     batch.forEach((c, idx) => {
-      const r = results.find((x) => x.index === idx) ?? {};
+      const r: ScoreResult = results.find((x) => x.index === idx) ?? { index: idx };
       // Nom de site propre extrait par Mistral ; fallback sur le titre nettoyé
       const cleanNom = (r.site_nom ?? "").trim();
       const nomFinal = cleanNom || c.noms;
