@@ -232,7 +232,6 @@ export default function Contacts() {
     if (!extracted) return;
 
     const fields: (keyof typeof formData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
-    let extractedEmail = '';
 
     setFormData(prev => {
       const newFormData = { ...prev };
@@ -240,13 +239,16 @@ export default function Contacts() {
         const value = extracted[key as keyof typeof extracted];
         if (value && !newFormData[key]) {
           newFormData[key] = value;
-          if (key === 'email') extractedEmail = value;
         }
       });
       return newFormData;
     });
 
+    // Vérifier la disponibilité de l'email extrait (s'il a pré-rempli un champ vide)
+    const extractedEmail = extracted.email && !formData.email ? extracted.email : '';
     if (extractedEmail) {
+      // Marquer le champ email comme touché pour activer la bordure rouge en cas de doublon
+      setTouchedFields(prev => new Set(prev).add('email'));
       checkEmailAvailability(extractedEmail);
     }
   };
