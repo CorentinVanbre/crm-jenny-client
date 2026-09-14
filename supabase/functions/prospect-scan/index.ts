@@ -347,6 +347,8 @@ interface ScoreDiag {
   noise_filtered: number;
   raw_samples: string[];
 }
+
+function clampScore(n: number): number {
   if (isNaN(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));
 }
