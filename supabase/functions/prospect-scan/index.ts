@@ -577,8 +577,15 @@ Deno.serve(async (req) => {
       top_candidates: topSamples,
     });
   } catch (err) {
-    console.error("prospect-scan error:", err);
-    return json({ error: String(err), run_id: runId }, 500);
+    const e = err as { name?: string; message?: string; stack?: string };
+    const detail = JSON.stringify({
+      name: e?.name,
+      message: e?.message,
+      stack: e?.stack,
+      raw: String(err),
+    }, null, 2);
+    console.error("prospect-scan error:", detail);
+    return json({ error: detail, run_id: runId }, 500);
   }
 });
 
