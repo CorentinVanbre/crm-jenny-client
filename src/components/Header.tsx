@@ -90,6 +90,12 @@ export default function Header() {
             onClick={closeMobileMenu}>
             {t('header.emails')}
           </Link>
+          <Link to="/prospection" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/prospection') } : { ...linkStyle, fontWeight: activeFontWeight('/prospection') }}
+            onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
+            onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
+            onClick={closeMobileMenu}>
+            {t('header.prospection')}
+          </Link>
         </>
       )}
       {!user && (

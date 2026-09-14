@@ -23,7 +23,8 @@
     "editProfile": "Modifier mon profil",
     "logout": "Se déconnecter",
     "menu": "☰ Menu",
-    "zones": "Gestion des zones"
+    "zones": "Gestion des zones",
+    "prospection": "Prospection"
   },
   "home": {
     "welcome": "Bienvenue sur",
@@ -242,5 +243,38 @@
     "noChanges": "Aucune modification à enregistrer.",
     "saved": "Zones enregistrées avec succès.",
     "saveError": "Erreur lors de l'enregistrement des zones."
+  },
+  "prospection": {
+    "title": "Prospection",
+    "subtitle": "Suggestions de sites et groupes issues du scan IA hebdomadaire (broyeurs à boulets / fours rotatifs).",
+    "searchPlaceholder": "Rechercher par groupe, site, domaine, pays",
+    "matchingCount": "{{count}} suggestions correspondantes",
+    "pendingOnly": "En attente uniquement",
+    "loading": "Chargement des suggestions...",
+    "noResults": "Aucune suggestion trouvée.",
+    "address": "Adresse",
+    "domain": "Domaine",
+    "country": "Pays",
+    "relevance": "Taux de pertinence",
+    "source": "Source",
+    "openSource": "Ouvrir la source",
+    "unknown": "Inconnu",
+    "refuse": "Supprimer",
+    "analyze": "Analyser",
+    "analyzeTitle": "Analyser la suggestion",
+    "sourceObs": "Site web identifié",
+    "statusApproved": "Validé",
+    "statusRefused": "Refusé",
+    "domains": {
+      "Ciment": "Ciment",
+      "Mineralurgie": "Mineralurgie",
+      "Platre": "Platre",
+      "Papeterie": "Papeterie",
+      "Fertilisant": "Fertilisant",
+      "Chimie": "Chimie",
+      "Calcination": "Calcination",
+      "Incinération": "Incinération",
+      "Autre": "Autre"
+    }
   }
 }
