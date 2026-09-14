@@ -23,7 +23,8 @@
     "editProfile": "Edit my profile",
     "logout": "Log out",
     "menu": "☰ Menu",
-    "zones": "Zone management"
+    "zones": "Zone management",
+    "prospection": "Prospecting"
   },
   "home": {
     "welcome": "Welcome to",
@@ -242,5 +243,38 @@
     "noChanges": "No changes to save.",
     "saved": "Zones saved successfully.",
     "saveError": "Error while saving zones."
+  },
+  "prospection": {
+    "title": "Prospecting",
+    "subtitle": "Site and group suggestions from the weekly AI scan (ball mills / rotary kilns).",
+    "searchPlaceholder": "Search by group, site, domain, country",
+    "matchingCount": "{{count}} matching suggestions",
+    "pendingOnly": "Pending only",
+    "loading": "Loading suggestions...",
+    "noResults": "No suggestion found.",
+    "address": "Address",
+    "domain": "Domain",
+    "country": "Country",
+    "relevance": "Relevance score",
+    "source": "Source",
+    "openSource": "Open source",
+    "unknown": "Unknown",
+    "refuse": "Delete",
+    "analyze": "Analyze",
+    "analyzeTitle": "Analyze suggestion",
+    "sourceObs": "Identified website",
+    "statusApproved": "Approved",
+    "statusRefused": "Refused",
+    "domains": {
+      "Ciment": "Cement",
+      "Mineralurgie": "Mineralurgy",
+      "Platre": "Plaster",
+      "Papeterie": "Paper",
+      "Fertilisant": "Fertilizer",
+      "Chimie": "Chemistry",
+      "Calcination": "Calcination",
+      "Incinération": "Incineration",
+      "Autre": "Other"
+    }
   }
 }
