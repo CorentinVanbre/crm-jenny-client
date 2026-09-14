@@ -133,9 +133,12 @@ Deno.serve(async (req) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
+  // Accepte du JSON, que ce soit envoyé en application/json (invoke) ou en
+  // text/plain (fetch simple navigateur, pour éviter le preflight CORS).
   let body: { text?: string };
   try {
-    body = await req.json();
+    const raw = await req.text();
+    body = raw ? JSON.parse(raw) : {};
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
   }
