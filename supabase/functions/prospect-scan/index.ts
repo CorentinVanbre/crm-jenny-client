@@ -8,7 +8,7 @@
 //   2. Génère des requêtes de recherche web (Mistral AI) ciblant les domaines
 //      existants + Chimie / Calcination / Incinération (broyeurs à boulets,
 //      fours rotatifs).
-//   3. Exécute les recherches (Brave Search API) et collecte des candidats
+//   3. Exécute les recherches (Google Custom Search API) et collecte des candidats
 //      (URL de page = source_url, titre = site candidat).
 //   4. Pour chaque candidat : géocodage (OpenStreetMap Nominatim) du pays de
 //      la source, scoring de pertinence (Mistral AI) par rapport aux sites
@@ -16,8 +16,9 @@
 //   5. Insère les nouveaux candidats (score >= SEUIL) dans prospect_suggestions.
 //
 // Secrets requis (supabase secrets set ...):
-//   - BRAVE_SEARCH_API_KEY   : clé API Brave Search (https://brave.com/search/api/)
-//   - MISTRAL_API_KEY        : clé API Mistral AI (https://console.mistral.ai)
+//   - GOOGLE_API_KEY   : clé API Google (Google Cloud Console, Custom Search API activée)
+//   - GOOGLE_CSE_ID    : identifiant du Custom Search Engine (créé sur https://programmablesearchengine.google.com/, en mode "Search the entire web")
+//   - MISTRAL_API_KEY  : clé API Mistral AI (https://console.mistral.ai)
 //
 // Planification (lundi matin) :
 //   supabase functions schedule prospect-scan --cron "0 7 * * 1"
@@ -29,7 +30,8 @@
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const BRAVE_SEARCH_API_KEY = Deno.env.get("BRAVE_SEARCH_API_KEY") ?? "";
+const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY") ?? "";
+const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID") ?? "";
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
 
 const SCORE_THRESHOLD = 40;
@@ -105,39 +107,41 @@ async function supabaseInsert(rows: Record<string, unknown>[]): Promise<void> {
   }
 }
 
-// --- Brave Search -----------------------------------------------------------
+// --- Google Custom Search ---------------------------------------------------
+// API : https://developers.google.com/custom-search/v1/overview
+// Quota : 100 requêtes/jour gratuites, puis $5 / 1000 requêtes.
+// Le CSE doit être configuré en mode "Search the entire web" (sans restriction
+// de sites) pour permettre une prospection large.
 
-async function braveSearch(query: string, count = 10): Promise<Candidate[]> {
-  if (!BRAVE_SEARCH_API_KEY) {
-    console.warn("BRAVE_SEARCH_API_KEY manquant — recherche ignorée");
+async function googleSearch(query: string, count = 10): Promise<Candidate[]> {
+  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
+    console.warn("GOOGLE_API_KEY / GOOGLE_CSE_ID manquants — recherche ignorée");
     return [];
   }
+  const num = Math.min(Math.max(count, 1), 10); // l'API Google limite à 10 résultats/requête
   const url =
-    `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}` +
-    `&count=${count}&country=ALL&search_lang=fr`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "X-Subscription-Token": BRAVE_SEARCH_API_KEY,
-    },
-  });
+    `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(GOOGLE_API_KEY)}` +
+    `&cx=${encodeURIComponent(GOOGLE_CSE_ID)}` +
+    `&q=${encodeURIComponent(query)}&num=${num}`;
+  const res = await fetch(url);
   if (!res.ok) {
-    console.warn(`Brave search failed (${res.status}): ${await res.text()}`);
+    console.warn(`Google CSE failed (${res.status}): ${await res.text()}`);
     return [];
   }
   const data = await res.json();
-  const results = (data?.results ?? []) as Array<{
+  const items = (data?.items ?? []) as Array<{
     title?: string;
-    url?: string;
-    description?: string;
+    link?: string;
+    snippet?: string;
+    displayLink?: string;
   }>;
-  return results
-    .filter((r) => r.title && r.url)
+  return items
+    .filter((r) => r.title && r.link)
     .map((r) => ({
       groupe: "",
       noms: r.title!.split(/[|·—\-–]/)[0].trim(),
-      source_url: r.url!,
-      snippet: r.description ?? "",
+      source_url: r.link!,
+      snippet: r.snippet ?? r.displayLink ?? "",
     }));
 }
 
@@ -401,10 +405,10 @@ Deno.serve(async (req) => {
     const queries = await generateQueries(groupes, sites);
     console.log(`Requêtes générées: ${queries.length}`);
 
-    // 3. Recherche web
+    // 3. Recherche web (Google Custom Search)
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
-      const found = await braveSearch(q, 8);
+      const found = await googleSearch(q, 8);
       // rattache au groupe connu si la requête le mentionne
       for (const c of found) {
         const matchedGroup = groupes.find((g) =>
