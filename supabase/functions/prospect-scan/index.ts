@@ -195,18 +195,20 @@ ${knownGroups.join("\n")}
 
 Génère 12 requêtes de recherche web (style Google/Bing) en français et anglais permettant de trouver de NOUVEAUX sites industriels (usines/cimenteries/usines chimiques/calcination/incinération) qui pourraient utiliser des broyeurs à boulets ou fours rotatifs. Inclis des requêtes du type "site:<domaine_d_un_groupe>" pour découvrir d'autres usines d'un groupe connu.
 
-Réponds UNIQUEMENT avec un tableau JSON de chaînes, par exemple ["requête 1", "requête 2"].`;
+Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]} sans aucun texte autour, sans markdown.`;
   const queries = await callMistralText(prompt);
-  try {
-    const parsed = JSON.parse(queries);
-    if (Array.isArray(parsed)) {
-      return parsed
-        .filter((q) => typeof q === "string" && q.trim())
-        .map((q) => q.trim())
-        .slice(0, 12);
-    }
-  } catch {
-    // fallback
+  // Format attendu : {"queries": [...]} (json_object forcé) ou directement [...]
+  const obj = parseMistralJson<{ queries?: string[] } | string[]>(queries);
+  let arr: string[] | null = null;
+  if (obj && Array.isArray(obj)) arr = obj;
+  else if (obj && Array.isArray((obj as { queries?: string[] }).queries)) {
+    arr = (obj as { queries: string[] }).queries;
+  }
+  if (arr) {
+    return arr
+      .filter((q) => typeof q === "string" && q.trim())
+      .map((q) => q.trim())
+      .slice(0, 12);
   }
   // Fallback statique basé sur les domaines connus
   const fallback: string[] = [];
@@ -262,20 +264,18 @@ Pour CHAQUE candidat ci-dessous, renvoie un JSON : {"results":[{"index":0,"domai
 Candidats :
 ${items}
 
-Réponds UNIQUEMENT avec le JSON ci-dessus.`;
+Réponds UNIQUEMENT avec l'objet JSON ci-dessus, sans markdown ni texte autour.`;
 
-    let parsed: { results: Array<{
+    const raw = await callMistralText(prompt);
+    const parsed = parseMistralJson<{ results: Array<{
       index: number;
       domaine?: string;
       score?: number;
       pays?: string;
       raison?: string;
-    }> } | null = null;
-    try {
-      const raw = await callMistralText(prompt);
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      console.warn("score parse failed", e);
+    }> }>(raw);
+    if (!parsed && raw) {
+      console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
     }
 
     const results = parsed?.results ?? [];
@@ -303,6 +303,60 @@ function clampScore(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
+// Nettoie la sortie d'un LLM pour extraire un JSON valide :
+// - retire les fences markdown ```json ... ``` (ou ``` ... ```)
+// - si le JSON est incomplet, tente de compléter les crochets/accolades ouverts
+function stripJsonFence(raw: string): string {
+  let s = (raw ?? "").trim();
+  if (!s) return "";
+  // fences ```json ... ``` ou ``` ... ```
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence && fence[1]) {
+    s = fence[1].trim();
+  }
+  // parfois pas de fence fermante (tronqué) : retire un éventuel ```json d'ouverture
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+  // garde la première occurrence {...} ou [...]
+  const objStart = s.indexOf("{");
+  const arrStart = s.indexOf("[");
+  let start = -1;
+  if (objStart === -1) start = arrStart;
+  else if (arrStart === -1) start = objStart;
+  else start = Math.min(objStart, arrStart);
+  if (start > 0) s = s.slice(start);
+  // complète un JSON tronqué : équilibre crochets/accollades ouverts
+  let openSq = 0, openCu = 0;
+  let inStr = false, esc = false;
+  for (const ch of s) {
+    if (esc) { esc = false; continue; }
+    if (ch === "\\") { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === "[") openSq++;
+    else if (ch === "]") openSq--;
+    else if (ch === "{") openCu++;
+    else if (ch === "}") openCu--;
+  }
+  // si jamais négatif, on ne complète pas (cassé)
+  if (openSq > 0) s += "]".repeat(openSq);
+  if (openCu > 0) s += "}".repeat(openCu);
+  return s.trim();
+}
+
+// Tente plusieurs stratégies pour parser un JSON depuis la sortie d'un LLM.
+function parseMistralJson<T>(raw: string): T | null {
+  if (!raw) return null;
+  const candidates = [raw, stripJsonFence(raw)];
+  for (const c of candidates) {
+    try {
+      return JSON.parse(c) as T;
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
+
 async function callMistralText(prompt: string): Promise<string> {
   if (!MISTRAL_API_KEY) {
     console.warn("MISTRAL_API_KEY manquant");
@@ -319,6 +373,7 @@ async function callMistralText(prompt: string): Promise<string> {
     body: JSON.stringify({
       model: "mistral-small-latest",
       temperature: 0.2,
+      response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
     }),
   });
