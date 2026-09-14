@@ -8,17 +8,23 @@
 //   2. Génère des requêtes de recherche web (Mistral AI) ciblant les domaines
 //      existants + Chimie / Calcination / Incinération (broyeurs à boulets,
 //      fours rotatifs).
-//   3. Exécute les recherches (Google Custom Search API) et collecte des candidats
-//      (URL de page = source_url, titre = site candidat).
+//   3. Exécute les recherches via Vertex AI Search (Agent Search / Discovery Engine
+//      API) sur un datastore de sites web indexant les sites des groupes connus
+//      + domaines industriels cibles, et collecte des candidats (URL de page
+//      = source_url, titre = site candidat).
 //   4. Pour chaque candidat : géocodage (OpenStreetMap Nominatim) du pays de
 //      la source, scoring de pertinence (Mistral AI) par rapport aux sites
 //      existants, et déduplication vs sites déjà répertoriés.
 //   5. Insère les nouveaux candidats (score >= SEUIL) dans prospect_suggestions.
 //
 // Secrets requis (supabase secrets set ...):
-//   - GOOGLE_API_KEY   : clé API Google (Google Cloud Console, Custom Search API activée)
-//   - GOOGLE_CSE_ID    : identifiant du Custom Search Engine (créé sur https://programmablesearchengine.google.com/, en mode "Search the entire web")
-//   - MISTRAL_API_KEY  : clé API Mistral AI (https://console.mistral.ai)
+//   - GCLOUD_PROJECT_ID      : ID du projet Google Cloud
+//   - GCLOUD_LOCATION        : région du datastore ("global", "us" ou "eu")
+//   - VERTEX_SEARCH_DATASTORE_ID : ID du datastore Agent Search (créé sur
+//                                  https://console.cloud.google.com/ → AI Applications)
+//   - GCLOUD_CLIENT_EMAIL    : email du service account (ex: crm-prospect@project.iam.gserviceaccount.com)
+//   - GCLOUD_PRIVATE_KEY     : clé privée du service account (format PEM, JSON-encoded pour les sauts de ligne)
+//   - MISTRAL_API_KEY        : clé API Mistral AI (https://console.mistral.ai)
 //
 // Planification (lundi matin) :
 //   supabase functions schedule prospect-scan --cron "0 7 * * 1"
@@ -30,9 +36,12 @@
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY") ?? "";
-const GOOGLE_CSE_ID = Deno.env.get("GOOGLE_CSE_ID") ?? "";
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
+const GCLOUD_PROJECT_ID = Deno.env.get("GCLOUD_PROJECT_ID") ?? "";
+const GCLOUD_LOCATION = Deno.env.get("GCLOUD_LOCATION") ?? "global";
+const VERTEX_SEARCH_DATASTORE_ID = Deno.env.get("VERTEX_SEARCH_DATASTORE_ID") ?? "";
+const GCLOUD_CLIENT_EMAIL = Deno.env.get("GCLOUD_CLIENT_EMAIL") ?? "";
+const GCLOUD_PRIVATE_KEY = Deno.env.get("GCLOUD_PRIVATE_KEY") ?? "";
 
 const SCORE_THRESHOLD = 40;
 const MAX_SUGGESTIONS_PER_RUN = 80;
@@ -107,42 +116,148 @@ async function supabaseInsert(rows: Record<string, unknown>[]): Promise<void> {
   }
 }
 
-// --- Google Custom Search ---------------------------------------------------
-// API : https://developers.google.com/custom-search/v1/overview
-// Quota : 100 requêtes/jour gratuites, puis $5 / 1000 requêtes.
-// Le CSE doit être configuré en mode "Search the entire web" (sans restriction
-// de sites) pour permettre une prospection large.
+// --- Vertex AI Search (Agent Search / Discovery Engine API) -----------------
+// Google Cloud Vertex AI Search (renommé Agent Search) : recherche sur un
+// datastore de sites web préalablement indexé (sites des groupes connus +
+// domaines industriels cibles). Recommandé par Google comme remplaçant de
+// Programmable Search Engine (CSE).
+// Doc : https://cloud.google.com/generative-ai-app-builder/docs/search-data-store
+// Auth : service account via JWT (OAuth2 access token), scope Discovery Engine.
 
-async function googleSearch(query: string, count = 10): Promise<Candidate[]> {
-  if (!GOOGLE_API_KEY || !GOOGLE_CSE_ID) {
-    console.warn("GOOGLE_API_KEY / GOOGLE_CSE_ID manquants — recherche ignorée");
+let cachedAccessToken: { token: string; exp: number } | null = null;
+
+function b64url(input: string): string {
+  // Base64URL sans padding
+  return btoa(input)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function getGoogleAccessToken(): Promise<string> {
+  if (cachedAccessToken && cachedAccessToken.exp > Date.now() + 60000) {
+    return cachedAccessToken.token;
+  }
+  if (!GCLOUD_CLIENT_EMAIL || !GCLOUD_PRIVATE_KEY) {
+    throw new Error("GCLOUD_CLIENT_EMAIL / GCLOUD_PRIVATE_KEY manquants");
+  }
+  // La clé privée peut être stockée avec les "\n" échappés en littéraux.
+  const privateKeyPem = GCLOUD_PRIVATE_KEY.replace(/\\n/g, "\n");
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    iss: GCLOUD_CLIENT_EMAIL,
+    scope: "https://www.googleapis.com/auth/cloud-platform",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+  const encHeader = b64url(JSON.stringify(header));
+  const encPayload = b64url(JSON.stringify(payload));
+  const unsigned = `${encHeader}.${encPayload}`;
+
+  // Importe la clé privée PKCS8 PEM
+  const pemBody = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s+/g, "");
+  const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    der,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(unsigned)
+  );
+  const encSignature = b64url(String.fromCharCode(...new Uint8Array(signature)));
+  const jwt = `${unsigned}.${encSignature}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+  if (!tokenRes.ok) {
+    throw new Error(`Google OAuth token failed (${tokenRes.status}): ${await tokenRes.text()}`);
+  }
+  const tokenData = await tokenRes.json();
+  cachedAccessToken = {
+    token: tokenData.access_token,
+    exp: Date.now() + (tokenData.expires_in ?? 3600) * 1000,
+  };
+  return tokenData.access_token;
+}
+
+async function vertexSearch(query: string, count = 10): Promise<Candidate[]> {
+  if (!VERTEX_SEARCH_DATASTORE_ID || !GCLOUD_PROJECT_ID) {
+    console.warn("VERTEX_SEARCH_DATASTORE_ID / GCLOUD_PROJECT_ID manquants — recherche ignorée");
     return [];
   }
-  const num = Math.min(Math.max(count, 1), 10); // l'API Google limite à 10 résultats/requête
-  const url =
-    `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(GOOGLE_API_KEY)}` +
-    `&cx=${encodeURIComponent(GOOGLE_CSE_ID)}` +
-    `&q=${encodeURIComponent(query)}&num=${num}`;
-  const res = await fetch(url);
+  const endpoint =
+    GCLOUD_LOCATION === "global"
+      ? "https://discoveryengine.googleapis.com"
+      : `https://${GCLOUD_LOCATION}-discoveryengine.googleapis.com`;
+  const servingConfig =
+    `projects/${GCLOUD_PROJECT_ID}/locations/${GCLOUD_LOCATION}/collections/default_collection` +
+    `/dataStores/${VERTEX_SEARCH_DATASTORE_ID}/servingConfigs/default_search:search`;
+  const url = `${endpoint}/v1/${servingConfig}`;
+
+  const accessToken = await getGoogleAccessToken();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query,
+      pageSize: Math.min(Math.max(count, 1), 100),
+      queryExpansionSpec: { condition: "AUTO" },
+      spellCorrectionSpec: { followupQueryExpansion: true },
+    }),
+  });
   if (!res.ok) {
-    console.warn(`Google CSE failed (${res.status}): ${await res.text()}`);
+    console.warn(`Vertex AI Search failed (${res.status}): ${await res.text()}`);
     return [];
   }
   const data = await res.json();
-  const items = (data?.items ?? []) as Array<{
-    title?: string;
-    link?: string;
-    snippet?: string;
-    displayLink?: string;
+  const results = (data?.results ?? []) as Array<{
+    id?: string;
+    document?: {
+      id?: string;
+      name?: string;
+      structData?: Record<string, unknown>;
+      derivedStructData?: {
+        title?: string;
+        link?: string;
+        snippets?: Array<{ snippet?: string }[]>;
+      };
+    };
   }>;
-  return items
-    .filter((r) => r.title && r.link)
-    .map((r) => ({
-      groupe: "",
-      noms: r.title!.split(/[|·—\-–]/)[0].trim(),
-      source_url: r.link!,
-      snippet: r.snippet ?? r.displayLink ?? "",
-    }));
+  return results
+    .map((r) => {
+      const doc = r.document?.derivedStructData ?? {};
+      const title = doc.title ?? r.document?.name ?? "";
+      const link = doc.link ?? "";
+      const snippet = Array.isArray(doc.snippets)
+        ? doc.snippets.flat().map((s) => s?.snippet ?? "").join(" ")
+        : "";
+      return {
+        groupe: "",
+        noms: String(title).split(/[|·—\-–]/)[0].trim(),
+        source_url: link,
+        snippet,
+      } as Candidate;
+    })
+    .filter((c) => c.noms && c.source_url);
 }
 
 // --- Mistral AI : génération de requêtes ------------------------------------
@@ -405,10 +520,10 @@ Deno.serve(async (req) => {
     const queries = await generateQueries(groupes, sites);
     console.log(`Requêtes générées: ${queries.length}`);
 
-    // 3. Recherche web (Google Custom Search)
+    // 3. Recherche web (Vertex AI Search / Discovery Engine sur le datastore)
     const allCandidates: Candidate[] = [];
     for (const q of queries) {
-      const found = await googleSearch(q, 8);
+      const found = await vertexSearch(q, 8);
       // rattache au groupe connu si la requête le mentionne
       for (const c of found) {
         const matchedGroup = groupes.find((g) =>
