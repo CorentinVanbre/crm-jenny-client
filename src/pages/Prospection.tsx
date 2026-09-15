@@ -64,15 +64,29 @@ export default function Prospection() {
   const colorTags = ['Non visités', 'Visités', 'Visités il y a +18mois', 'A visiter', 'Fermés'];
   const domainTags = ['Ciment', 'Mineralurgie', 'Platre', 'Papeterie', 'Fertilisant', 'Chimie', 'Calcination', 'Incinération', 'Autre'];
 
-  const fetchSuggestions = useCallback(async () => {
+  const fetchSuggestions = useCallback(async (search?: string) => {
     setLoading(true);
     try {
-      // 50 dernières suggestions créées (tri par date de scan décroissante)
-      const { data, error } = await supabase
+      let query = supabase
         .from('prospect_suggestions')
-        .select('*')
-        .order('scanned_at', { ascending: false })
-        .limit(50);
+        .select('*');
+
+      const q = (search ?? '').trim();
+      if (q) {
+        // Recherche côté serveur dans TOUTE la table (fils OR ilike sur les champs textuels)
+        const like = `%${q}%`;
+        query = query.or(
+          `groupe.ilike.${like},noms.ilike.${like},domaine.ilike.${like},pays.ilike.${like}`
+        );
+        // Tri par score décroissant pour les recherches (pertinence d'abord)
+        query = query.order('score', { ascending: false });
+      } else {
+        // Sans recherche : 50 dernières créées
+        query = query.order('scanned_at', { ascending: false });
+      }
+      query = query.limit(50);
+
+      const { data, error } = await query;
       if (error) {
         console.error('Erreur chargement suggestions:', error.message);
         setSuggestions([]);
@@ -99,6 +113,15 @@ export default function Prospection() {
       .then(({ data }) => setGroupes(data || []));
   }, [loadingZones, fetchSuggestions]);
 
+  // Recherche debounced côté serveur quand searchText change
+  useEffect(() => {
+    if (loadingZones) return;
+    const t = setTimeout(() => {
+      fetchSuggestions(searchText);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchText, loadingZones, fetchSuggestions]);
+
   // Filtrage par pays attribués (renforcé par RLS côté base, mais on filtre aussi côté client)
   const isAdmin = allowedCountries === null;
 
@@ -109,15 +132,7 @@ export default function Prospection() {
       return false;
     }
     if (filterStatus === 'pending' && s.approved !== null) return false;
-    if (!searchText) return true;
-    const q = searchText.toLowerCase();
-    return (
-      (s.groupe && s.groupe.toLowerCase().includes(q)) ||
-      (s.noms && s.noms.toLowerCase().includes(q)) ||
-      (s.domaine && s.domaine.toLowerCase().includes(q)) ||
-      (s.pays && s.pays.toLowerCase().includes(q)) ||
-      (s.adress?.formatted && s.adress.formatted.toLowerCase().includes(q))
-    );
+    return true;
   };
 
   const visibleSuggestions = suggestions.filter(matchesSearch);
