@@ -69,7 +69,8 @@ export default function Prospection() {
       const { data, error } = await supabase
         .from('prospect_suggestions')
         .select('*')
-        .order('score', { ascending: false });
+        .order('score', { ascending: false })
+        .limit(50);
       if (error) {
         console.error('Erreur chargement suggestions:', error.message);
         setSuggestions([]);
