@@ -70,6 +70,14 @@ interface ScoredCandidate extends Candidate {
   score_reason: string;
 }
 
+interface Feedback {
+  noms: string;
+  groupe: string;
+  domaine: string;
+  approved: string;
+  score_reason: string;
+}
+
 // --- Supabase helpers (service_role, bypass RLS) ---------------------------
 
 async function supabaseSelect<T>(
@@ -239,7 +247,8 @@ Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]}
 async function scoreCandidates(
   candidates: Candidate[],
   sites: ExistingSite[],
-  groupes: Groupe[]
+  groupes: Groupe[],
+  feedback: Feedback[]
 ): Promise<{ scored: ScoredCandidate[]; diag: ScoreDiag }> {
   const diag: ScoreDiag = {
     candidates_in: candidates.length,
@@ -256,6 +265,20 @@ async function scoreCandidates(
     .join("\n");
 
   const existingNames = new Set(sites.map((s) => s.noms.toLowerCase().trim()));
+
+  // Construction de la section feedback pour le prompt (exemples positifs/négatifs)
+  const positives = feedback
+    .filter((f) => f.approved === "approved" || f.approved === "existing")
+    .slice(0, 15)
+    .map((f) => `${f.noms} (${f.domaine})${f.groupe ? " — " + f.groupe : ""}`);
+  const negatives = feedback
+    .filter((f) => f.approved === "refused")
+    .slice(0, 15)
+    .map((f) => `${f.noms} (${f.domaine})${f.score_reason ? " — " + f.score_reason : ""}`);
+  const feedbackSection = (positives.length || negatives.length)
+    ? `\n\nFeedback précédent de l'utilisateur (adapte tes scores à ces signaux) :
+S suggestions bien reçues (favorise ce type) :\n${positives.join("\n") || "(aucune)"}\nSuggestions refusées (à éviter / pénaliser) :\n${negatives.join("\n") || "(aucune)"}\n`
+    : "";
 
   const scored: ScoredCandidate[] = [];
   // On score par lots pour limiter la taille des prompts
@@ -281,7 +304,7 @@ Pour CHAQUE candidat ci-dessous (titre de page web + URL + extrait), extraire un
 - pays : le pays probable du site (vide si inconnu).
 - score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise fortement (score <= 15) les blogs, annuaires, Wikipédia, LinkedIn, questions/réponses type "Quel est...", sites de petites annonces, news génériques.
 - raison : courte explication.
-
+${feedbackSection}
 Candidats :
 ${items}
 
@@ -318,7 +341,18 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
       const cleanNom = (r.site_nom ?? "").trim();
       const nomFinal = cleanNom || c.noms;
       const name = nomFinal.toLowerCase().trim();
-      if (existingNames.has(name)) { diag.existing_filtered++; return; }
+      // Déduplication robuste : match exact OU inclusion (ex: "Teresa" dans "Teresa Plant")
+      // pour les noms significatifs (>= 4 chars) afin d'éviter les faux positifs courts.
+      let existsAlready = existingNames.has(name);
+      if (!existsAlready && name.length >= 4) {
+        for (const ex of existingNames) {
+          if (ex.length >= 4 && (ex.includes(name) || name.includes(ex))) {
+            existsAlready = true;
+            break;
+          }
+        }
+      }
+      if (existsAlready) { diag.existing_filtered++; return; }
       // Groupe : priorité à Mistral, puis rattachement par domaine du site_web
       let groupeFinal = (r.groupe ?? "").trim();
       if (!groupeFinal) {
@@ -595,6 +629,22 @@ async function geocode(
   }
 }
 
+// --- Chargement des feedbacks récents (approved/refused/existing) ---------
+// Sert à pondérer le scoring IA : exemples positifs (approved/existing) et
+// négatifs (refused) pour rendre le scan adaptatif aux décisions utilisateur.
+
+async function loadFeedback(): Promise<Feedback[]> {
+  const url = `${SUPABASE_URL}/rest/v1/prospect_suggestions?select=noms,groupe,domaine,approved,score_reason&approved=not.is.null&order=updated_date.desc&limit=40`;
+  const res = await fetch(url, {
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+  });
+  if (!res.ok) return [];
+  return (await res.json()) as Feedback[];
+}
+
 // --- Déduplication des URL déjà suggérées -----------------------------------
 
 async function alreadySuggestedUrls(urls: string[]): Promise<Set<string>> {
@@ -630,13 +680,14 @@ Deno.serve(async (req) => {
 
   const runId = `run_${new Date().toISOString().slice(0, 10)}_${Date.now()}`;
   try {
-    // 1. Charger la base existante
-    const [groupes, sites] = await Promise.all([
+    // 1. Charger la base existante + feedbacks récents
+    const [groupes, sites, feedback] = await Promise.all([
       supabaseSelect<Groupe>("groupes", "nom_groupe,site_web"),
       supabaseSelect<ExistingSite>("sites", "groupe,noms,domaine,pays"),
+      loadFeedback(),
     ]);
 
-    console.log(`Base: ${groupes.length} groupes, ${sites.length} sites`);
+    console.log(`Base: ${groupes.length} groupes, ${sites.length} sites, ${feedback.length} feedbacks`);
 
     // 2. Générer les requêtes
     const queries = await generateQueries(groupes, sites);
@@ -667,7 +718,7 @@ Deno.serve(async (req) => {
     console.log(`Candidats frais: ${fresh.length}`);
 
     // 4. Scoring
-    const { scored, diag: scoreDiag } = await scoreCandidates(fresh, sites, groupes);
+    const { scored, diag: scoreDiag } = await scoreCandidates(fresh, sites, groupes, feedback);
     const maxScore = scored.reduce((m, c) => Math.max(m, c.score), 0);
     const aboveThreshold = scored.filter((c) => c.score >= SCORE_THRESHOLD).length;
     const kept = scored

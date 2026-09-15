@@ -135,6 +135,19 @@ export default function Prospection() {
     setSuggestions(prev => prev.map(x => x.id === s.id ? { ...x, approved: 'refused' } : x));
   };
 
+  // --- Modération : déjà existant (bonne suggestion, site déjà en base) ---
+  const handleExisting = async (s: Suggestion) => {
+    const { error } = await supabase
+      .from('prospect_suggestions')
+      .update({ approved: 'existing', updated_date: new Date().toISOString() })
+      .eq('id', s.id);
+    if (error) {
+      setMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+      return;
+    }
+    setSuggestions(prev => prev.map(x => x.id === s.id ? { ...x, approved: 'existing' } : x));
+  };
+
   // --- Ouvrir la modale d'analyse ---
   const handleAnalyze = (s: Suggestion) => {
     setEditingSuggestion(s);
@@ -369,7 +382,7 @@ export default function Prospection() {
             <div
               key={s.id}
               style={{
-                backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : '#A6A6A6',
+                backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : '#A6A6A6',
                 border: '1px solid #ddd', borderRadius: '8px', padding: '10px',
                 boxShadow: '1px 1px 1px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column',
                 opacity: s.approved ? 0.8 : 1,
@@ -415,19 +428,19 @@ export default function Prospection() {
               )}
 
               {s.approved && (
-                <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', margin: '5px 0', color: s.approved === 'approved' ? '#008000' : '#cc0000' }}>
-                  {s.approved === 'approved' ? t('prospection.statusApproved') : t('prospection.statusRefused')}
+                <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', margin: '5px 0', color: s.approved === 'approved' ? '#008000' : s.approved === 'existing' ? '#cc9900' : '#cc0000' }}>
+                  {s.approved === 'approved' ? t('prospection.statusApproved') : s.approved === 'existing' ? t('prospection.statusExisting') : t('prospection.statusRefused')}
                 </p>
               )}
 
               {/* Boutons */}
-              <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '10px', justifyContent: 'space-between' }}>
+              <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
                 <button
                   type="button"
                   onClick={() => handleRefuse(s)}
                   disabled={!!s.approved}
                   style={{
-                    flex: 1, height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
+                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
                     backgroundColor: s.approved === 'refused' ? '#b30000' : '#ff4444', color: '#fff',
                     cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
                     fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
@@ -437,10 +450,23 @@ export default function Prospection() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleExisting(s)}
+                  disabled={!!s.approved}
+                  style={{
+                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
+                    backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: '#000',
+                    cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
+                    fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
+                  }}
+                >
+                  {t('prospection.existing')}
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleAnalyze(s)}
                   disabled={s.approved === 'approved'}
                   style={{
-                    flex: 1, height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
+                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
                     backgroundColor: s.approved === 'approved' ? '#007700' : '#00b35a', color: '#fff',
                     cursor: s.approved === 'approved' ? 'not-allowed' : 'pointer', opacity: s.approved === 'approved' ? 0.6 : 1,
                     fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
