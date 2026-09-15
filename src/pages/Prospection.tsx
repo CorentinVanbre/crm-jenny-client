@@ -38,6 +38,13 @@ export default function Prospection() {
   const [filterStatus, setFilterStatus] = useState<'pending' | 'all'>('pending');
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
+  // --- Modale Ajouter Groupe (identique à Sites) ---
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({ nom_groupe: '', site_web: '' });
+  const [groupNameError, setGroupNameError] = useState('');
+  const [isGroupSubmitting, setIsGroupSubmitting] = useState(false);
+  const [groupSubmitMessage, setGroupSubmitMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+
   // --- Modale d'analyse (création de site, identique à Contacts) ---
   const [editingSuggestion, setEditingSuggestion] = useState<Suggestion | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -243,6 +250,52 @@ export default function Prospection() {
     return '#cc3300';
   };
 
+  // --- Handlers Modale Ajouter Groupe (identiques à Sites) ---
+  const checkGroupExists = async (nom: string): Promise<boolean> => {
+    if (!nom.trim()) return false;
+    const { data } = await supabase
+      .from('groupes')
+      .select('ID')
+      .ilike('nom_groupe', nom.trim())
+      .maybeSingle();
+    return !!data;
+  };
+
+  const resetGroupForm = () => {
+    setNewGroupData({ nom_groupe: '', site_web: '' });
+    setGroupNameError('');
+    setGroupSubmitMessage(null);
+    setIsGroupSubmitting(false);
+  };
+
+  const handleAddGroup = async () => {
+    if (!newGroupData.nom_groupe.trim() || groupNameError) return;
+    setIsGroupSubmitting(true);
+    setGroupSubmitMessage(null);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('groupes').insert([{
+        nom_groupe: newGroupData.nom_groupe.trim(),
+        site_web: newGroupData.site_web.trim(),
+        ID: crypto.randomUUID(),
+        owner: (await supabase.auth.getUser()).data.user?.id || null,
+        created_date: now,
+        updated_date: now
+      }]);
+      if (error) throw error;
+      setGroupSubmitMessage({ text: t('sites.groupAdded'), isSuccess: true });
+      const { data } = await supabase.from('groupes').select('ID, nom_groupe').order('nom_groupe', { ascending: true });
+      setGroupes(data || []);
+      setTimeout(() => { setShowAddGroupModal(false); resetGroupForm(); }, 1000);
+    } catch (error: any) {
+      setGroupSubmitMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+    } finally {
+      setIsGroupSubmitting(false);
+    }
+  };
+
+  const handleCloseGroupModal = () => { setShowAddGroupModal(false); resetGroupForm(); };
+
   return (
     <div style={{ padding: '10px', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
       <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '15px' }}>
@@ -252,7 +305,7 @@ export default function Prospection() {
         {t('prospection.subtitle')}
       </p>
 
-      {/* Barre de recherche + filtres */}
+      {/* Barre de recherche + filtres + bouton Ajouter groupe */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '15px' }}>
         <input
           type="text"
@@ -260,7 +313,7 @@ export default function Prospection() {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           style={{
-            flex: 1, width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? 'none' : '400px',
+            flex: 1, width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? 'none' : '267px',
             boxSizing: 'border-box' as const, padding: '10px', border: '1px solid #ddd', borderRadius: '4px',
             fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px'
           }}
@@ -277,6 +330,13 @@ export default function Prospection() {
           />
           {t('prospection.pendingOnly')}
         </label>
+        <button
+          type="button"
+          onClick={() => setShowAddGroupModal(true)}
+          style={{ ...buttonStyle, marginLeft: 'auto' }}
+        >
+          {t('sites.addGroup')}
+        </button>
       </div>
 
       {message && message.text && (
@@ -331,7 +391,7 @@ export default function Prospection() {
                   <div style={{ width: `${s.score}%`, height: '100%', backgroundColor: scoreColor(s.score) }} />
                 </div>
                 {s.score_reason && (
-                  <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#444', marginTop: '4px' }}>
+                  <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: '#444', marginTop: '4px' }}>
                     {s.score_reason}
                   </div>
                 )}
@@ -508,6 +568,71 @@ export default function Prospection() {
                 }}
               >
                 {isSiteSubmitting ? t('sites.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modale Ajouter Groupe (identique à Sites) */}
+      {showAddGroupModal && (
+        <>
+          <div style={modalOverlayStyle} onClick={handleCloseGroupModal} />
+          <div style={{ ...modalStyle, width: '400px' }} onClick={e => e.stopPropagation()}>
+            <h2 style={modalTitleStyle}>{t('sites.addGroupTitle')}</h2>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={modalLabelStyle}>{t('sites.groupName')}</label>
+              <input
+                type="text"
+                value={newGroupData.nom_groupe}
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  setNewGroupData(prev => ({ ...prev, nom_groupe: value }));
+                  if (!value.trim()) { setGroupNameError(''); return; }
+                  const exists = await checkGroupExists(value);
+                  setGroupNameError(exists ? t('sites.groupExists') : '');
+                }}
+                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : '#ddd' }}
+                placeholder={t('sites.groupNamePlaceholder')}
+              />
+              {groupNameError && <span style={errorStyle}>{groupNameError}</span>}
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={modalLabelStyle}>{t('sites.websiteAddress')}</label>
+              <input
+                type="url"
+                value={newGroupData.site_web}
+                onChange={(e) => setNewGroupData(prev => ({ ...prev, site_web: e.target.value }))}
+                style={inputStyle}
+                placeholder={t('sites.websitePlaceholder')}
+              />
+            </div>
+            {groupSubmitMessage && (
+              <div style={{
+                padding: '10px', marginBottom: '15px', borderRadius: '4px',
+                fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+                backgroundColor: groupSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
+                color: groupSubmitMessage.isSuccess ? '#155724' : '#721c24',
+                border: `1px solid ${groupSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                textAlign: 'center'
+              }}>
+                {groupSubmitMessage.text}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button type="button" onClick={handleCloseGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+              <button
+                type="button"
+                onClick={handleAddGroup}
+                disabled={!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting}
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: '#E5E5E4',
+                  opacity: (!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting) ? 0.5 : 1,
+                  cursor: (!newGroupData.nom_groupe.trim() || !!groupNameError || isGroupSubmitting) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isGroupSubmitting ? t('sites.saving') : t('common.save')}
               </button>
             </div>
           </div>
