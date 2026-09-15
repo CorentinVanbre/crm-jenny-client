@@ -34,6 +34,7 @@ export default function Prospection() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [groupes, setGroupes] = useState<Groupe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalAttributed, setTotalAttributed] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState<'pending' | 'all'>('pending');
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
@@ -66,10 +67,11 @@ export default function Prospection() {
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     try {
+      // 50 dernières suggestions créées (tri par date de scan décroissante)
       const { data, error } = await supabase
         .from('prospect_suggestions')
         .select('*')
-        .order('score', { ascending: false })
+        .order('scanned_at', { ascending: false })
         .limit(50);
       if (error) {
         console.error('Erreur chargement suggestions:', error.message);
@@ -77,6 +79,11 @@ export default function Prospection() {
       } else {
         setSuggestions(data || []);
       }
+      // Comptage total des suggestions attribuées à l'utilisateur (RLS filtre par pays)
+      const { count } = await supabase
+        .from('prospect_suggestions')
+        .select('*', { count: 'exact', head: true });
+      setTotalAttributed(count ?? 0);
     } finally {
       setLoading(false);
     }
@@ -320,7 +327,7 @@ export default function Prospection() {
           }}
         />
         <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', whiteSpace: 'nowrap' }}>
-          {t('prospection.matchingCount', { count: visibleSuggestions.length })}
+          {t('prospection.matchingCount', { count: totalAttributed })}
         </span>
         <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', whiteSpace: 'nowrap' }}>
           <input
