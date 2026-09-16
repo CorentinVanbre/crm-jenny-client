@@ -27,9 +27,9 @@ export default function Home() {
         <section style={featuresStyle}>
           <h2 style={{ ...sectionTitleStyle, fontSize: isMobile ? '22px' : '28px' }}>{t('home.recentTitle')}</h2>
           <ul style={{ ...listStyle, fontSize: isMobile ? '15px' : '18px' }}>
-            <li>✅ {t('home.recent2')}</li>
-            <li>✅ {t('home.recent3')}</li>
-            <li>✅ {t('home.recent4')}</li>
+            {(t('home.recentItems', { returnObjects: true }) as string[]).map((item) => (
+              <li key={item}>✅ {item}</li>
+            ))}
           </ul>
         </section>
       </div>
