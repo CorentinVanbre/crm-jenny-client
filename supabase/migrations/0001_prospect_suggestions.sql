@@ -61,7 +61,8 @@ alter table public.prospect_suggestions
   drop constraint if exists prospect_suggestions_approved_check;
 alter table public.prospect_suggestions
   add constraint prospect_suggestions_approved_check
-  check (approved is null or approved in ('approved', 'refused'));
+  check (approved is null or approved in ('approved', 'refused', 'existing'));
+
 
 -- updated_date automatique
 create or replace function public.set_updated_date_prospect_suggestions()

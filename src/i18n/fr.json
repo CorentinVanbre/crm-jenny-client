@@ -290,10 +290,12 @@
     "unknown": "Inconnu",
     "refuse": "Supprimer",
     "analyze": "Analyser",
+    "existing": "Déjà existant",
     "analyzeTitle": "Analyser la suggestion",
     "sourceObs": "Site web identifié",
     "statusApproved": "Validé",
     "statusRefused": "Refusé",
+    "statusExisting": "Déjà en base",
     "domains": {
       "Ciment": "Ciment",
       "Mineralurgie": "Mineralurgie",
