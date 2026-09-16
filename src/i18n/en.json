@@ -33,10 +33,15 @@
     "organizeText1": "Structure your tasks, prioritize your actions and plan your visits efficiently.",
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
-    "recent1": "Optimized and simplified mobile version",
-    "recent2": "Deactivation of contacts (e.g. leaving a company)",
-    "recent3": "Contact count per site",
-    "recent4": "History of latest visits for each site"
+    "recentItems": [
+      "Smart prospecting page with weekly suggestions of new sites",
+      "Automatic contact form filling with AI",
+      "Automatic site status update every morning",
+      "Optimized and simplified mobile version",
+      "Deactivation of contacts (e.g. leaving a company)",
+      "Contact count per site",
+      "History of latest visits for each site"
+    ]
   },
   "sites": {
     "loading": "Loading sites...",

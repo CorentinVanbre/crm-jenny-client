@@ -33,10 +33,15 @@
     "organizeText1": "Structurez vos tâches, priorisez vos actions et planifiez vos visites de manière efficace.",
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
-    "recent1": "Version mobile optimisée et simplifiée",
-    "recent2": "Désactivation des contacts (ex: départ d'une entreprise)",
-    "recent3": "Compte des contacts par site",
-    "recent4": "Historique des dernières visites pour chaque site"
+    "recentItems": [
+      "Page de prospection intelligente avec suggestions hebdomadaires de nouveaux sites",
+      "Remplissage automatique des fiches contact grâce à l'IA",
+      "Mise à jour automatique du statut des sites chaque matin",
+      "Version mobile optimisée et simplifiée",
+      "Désactivation des contacts (ex: départ d'une entreprise)",
+      "Compte des contacts par site",
+      "Historique des dernières visites pour chaque site"
+    ]
   },
   "sites": {
     "loading": "Chargement des sites...",
