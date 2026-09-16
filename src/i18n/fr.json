@@ -233,6 +233,28 @@
     "french": "Français",
     "english": "English"
   },
+  "emails": {
+    "title": "Emails",
+    "fetch": "Récupérer les emails",
+    "fetching": "Récupération...",
+    "copy": "Copier emails",
+    "copySuccess": "Emails copiés dans le presse-papiers !",
+    "copyError": "Erreur lors de la copie des emails",
+    "noEmails": "Aucun email trouvé pour les critères sélectionnés.",
+    "noEmailsToCopy": "Aucun email à copier.",
+    "results": "Résultats",
+    "emailsCount": "{{count}} emails récupérés",
+    "contactsCount": "{{count}} contacts",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "countries": "Pays",
+    "languages": "Langues",
+    "loading": "Chargement...",
+    "noZones": "Aucun pays attribué. Contactez un administrateur.",
+    "byLanguage": "par langue",
+    "totalContacts": "{{count}} contacts filtrés",
+    "error": "Erreur: {{message}}"
+  },
   "adminZones": {
     "title": "Gestion des zones",
     "selectUser": "Sélectionner un utilisateur",

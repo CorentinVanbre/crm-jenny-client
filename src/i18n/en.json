@@ -233,6 +233,28 @@
     "french": "Français",
     "english": "English"
   },
+  "emails": {
+    "title": "Emails",
+    "fetch": "Fetch emails",
+    "fetching": "Fetching...",
+    "copy": "Copy emails",
+    "copySuccess": "Emails copied to clipboard!",
+    "copyError": "Error while copying emails",
+    "noEmails": "No email found for the selected criteria.",
+    "noEmailsToCopy": "No email to copy.",
+    "results": "Results",
+    "emailsCount": "{{count}} emails retrieved",
+    "contactsCount": "{{count}} contacts",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "countries": "Countries",
+    "languages": "Languages",
+    "loading": "Loading...",
+    "noZones": "No countries assigned. Contact an administrator.",
+    "byLanguage": "by language",
+    "totalContacts": "{{count}} filtered contacts",
+    "error": "Error: {{message}}"
+  },
   "adminZones": {
     "title": "Zone management",
     "selectUser": "Select a user",
