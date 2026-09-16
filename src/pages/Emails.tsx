@@ -135,11 +135,6 @@ export default function Emails() {
     return counts;
   }, [allContacts, sitePaysMap, loadingData, loadingZones, isAdmin, assignedSet]);
 
-  const totalAssignedContacts = useMemo(
-    () => Object.values(countByLanguage).reduce((a, b) => a + b, 0),
-    [countByLanguage]
-  );
-
   const toggleLanguage = (lang: Language) => {
     setSelectedLanguages(prev => {
       const next = new Set(prev);
@@ -246,20 +241,21 @@ export default function Emails() {
                 {LANGUAGES.map(lang => {
                   const active = selectedLanguages.has(lang);
                   return (
-                    <button
+                    <span
                       key={lang}
-                      type="button"
-                      onClick={() => toggleLanguage(lang)}
                       style={active ? tagActiveStyle : tagInactiveStyle}
+                      onClick={() => toggleLanguage(lang)}
+                      onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
+                      onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
                     >
                       {lang} ({countByLanguage[lang]})
-                    </button>
+                    </span>
                   );
                 })}
               </div>
             </div>
             <p style={mutedStyle}>
-              {t('emails.totalContacts', { count: totalAssignedContacts })}
+              {t('emails.totalContacts', { count: filteredContacts.length })}
             </p>
           </div>
 
@@ -270,7 +266,7 @@ export default function Emails() {
                   type="button"
                   onClick={handleFetch}
                   disabled={fetching}
-                  style={fetching ? disabledButtonStyle : primaryButtonStyle}
+                  style={fetching ? disabledButtonStyle : buttonStyle}
                 >
                   {fetching ? t('emails.fetching') : t('emails.fetch')}
                 </button>
@@ -419,25 +415,33 @@ const tagsRowStyle: React.CSSProperties = {
 };
 
 const tagBase: React.CSSProperties = {
-  padding: '6px 14px',
-  borderRadius: '20px',
+  height: '30px',
+  padding: '0 12px',
   border: '1px solid black',
+  borderRadius: '4px',
+  cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
   fontSize: '14px',
-  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+  transition: 'transform 0.2s ease',
 };
 
 const tagActiveStyle: React.CSSProperties = {
   ...tagBase,
-  backgroundColor: '#000',
-  color: '#fff',
+  backgroundColor: '#E5E5E4',
+  fontWeight: 'bold',
+  color: '#000000',
 };
 
 const tagInactiveStyle: React.CSSProperties = {
   ...tagBase,
-  backgroundColor: '#fff',
-  color: '#000',
+  backgroundColor: '#E5E5E4',
+  fontWeight: 200,
+  color: '#000000',
 };
 
 const resultsHeaderStyle: React.CSSProperties = {
@@ -527,12 +531,6 @@ const baseButton: React.CSSProperties = {
 };
 
 const buttonStyle: React.CSSProperties = { ...baseButton };
-
-const primaryButtonStyle: React.CSSProperties = {
-  ...baseButton,
-  backgroundColor: '#000',
-  color: '#fff',
-};
 
 const disabledButtonStyle: React.CSSProperties = {
   ...baseButton,
