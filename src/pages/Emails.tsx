@@ -136,8 +136,11 @@ export default function Emails() {
   }, [allContacts, sitePaysMap, loadingData, loadingZones, isAdmin, assignedSet]);
 
   const totalAssignedContacts = useMemo(
-    () => Object.values(countByLanguage).reduce((a, b) => a + b, 0),
-    [countByLanguage]
+    () => LANGUAGES.reduce(
+      (sum, lang) => (selectedLanguages.has(lang) ? sum + countByLanguage[lang] : sum),
+      0
+    ),
+    [countByLanguage, selectedLanguages]
   );
 
   const toggleLanguage = (lang: Language) => {
@@ -246,14 +249,15 @@ export default function Emails() {
                 {LANGUAGES.map(lang => {
                   const active = selectedLanguages.has(lang);
                   return (
-                    <button
+                    <span
                       key={lang}
-                      type="button"
+                      style={langTagStyle(active)}
                       onClick={() => toggleLanguage(lang)}
-                      style={active ? tagActiveStyle : tagInactiveStyle}
+                      onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.02)'}
+                      onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
                     >
                       {lang} ({countByLanguage[lang]})
-                    </button>
+                    </span>
                   );
                 })}
               </div>
@@ -270,7 +274,7 @@ export default function Emails() {
                   type="button"
                   onClick={handleFetch}
                   disabled={fetching}
-                  style={fetching ? disabledButtonStyle : primaryButtonStyle}
+                  style={fetching ? disabledButtonStyle : buttonStyle}
                 >
                   {fetching ? t('emails.fetching') : t('emails.fetch')}
                 </button>
@@ -418,27 +422,29 @@ const tagsRowStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 
-const tagBase: React.CSSProperties = {
-  padding: '6px 14px',
-  borderRadius: '20px',
+const tagBaseStyle: React.CSSProperties = {
+  height: '30px',
+  padding: '0 12px',
   border: '1px solid black',
+  borderRadius: '4px',
+  cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
   fontSize: '14px',
-  cursor: 'pointer',
+  marginLeft: '2px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  userSelect: 'none',
+  transition: 'transform 0.2s ease',
 };
 
-const tagActiveStyle: React.CSSProperties = {
-  ...tagBase,
-  backgroundColor: '#000',
-  color: '#fff',
-};
-
-const tagInactiveStyle: React.CSSProperties = {
-  ...tagBase,
-  backgroundColor: '#fff',
-  color: '#000',
-};
+const langTagStyle = (isSelected: boolean): React.CSSProperties => ({
+  ...tagBaseStyle,
+  backgroundColor: '#E5E5E4',
+  fontWeight: isSelected ? 'bold' : 200,
+  color: '#000000',
+});
 
 const resultsHeaderStyle: React.CSSProperties = {
   display: 'flex',
@@ -527,12 +533,6 @@ const baseButton: React.CSSProperties = {
 };
 
 const buttonStyle: React.CSSProperties = { ...baseButton };
-
-const primaryButtonStyle: React.CSSProperties = {
-  ...baseButton,
-  backgroundColor: '#000',
-  color: '#fff',
-};
 
 const disabledButtonStyle: React.CSSProperties = {
   ...baseButton,
