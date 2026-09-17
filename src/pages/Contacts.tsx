@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { useIsMobile } from '../lib/useIsMobile';
-import { extractContactFromText } from '../lib/aiContactExtract';
+import { extractContactFromText, extractContactFromImage, fileToDataUri, type ExtractedContact } from '../lib/aiContactExtract';
 import { Autocomplete } from '@react-google-maps/api';
 
 // Types
@@ -71,6 +71,10 @@ export default function Contacts() {
   const [showOnlyActive, setShowOnlyActive] = useState(false);
   const [useAIMode, setUseAIMode] = useState(false);
   const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const { allowedCountries, loadingZones } = useUserZones();
 
@@ -220,19 +224,18 @@ export default function Contacts() {
     setInitialFormData(null);
     setEmailExistsError(false);
     setIsAnalyzingAI(false);
+    setIsAnalyzingImage(false);
+    setImageError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   // Analyse IA du contenu des observations via Mistral (Edge Function contact-extract).
   // Ne remplit que les champs encore vides du formulaire.
-  const analyzeWithAI = async (text: string) => {
-    if (!text || !text.trim()) return;
-    setIsAnalyzingAI(true);
-    const extracted = await extractContactFromText(text);
-    setIsAnalyzingAI(false);
-    if (!extracted) return;
-
+  const applyExtractedContact = (extracted: ExtractedContact) => {
     const fields: (keyof typeof formData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
 
+    let extractedEmail = '';
     setFormData(prev => {
       const newFormData = { ...prev };
       fields.forEach(key => {
@@ -241,16 +244,30 @@ export default function Contacts() {
           newFormData[key] = value;
         }
       });
+      // Capturer l'email extrait (s'il a pré-rempli un champ vide) pour la
+      // vérification de disponibilité post-application.
+      if (extracted.email && !prev.email) {
+        extractedEmail = extracted.email;
+      }
       return newFormData;
     });
 
     // Vérifier la disponibilité de l'email extrait (s'il a pré-rempli un champ vide)
-    const extractedEmail = extracted.email && !formData.email ? extracted.email : '';
     if (extractedEmail) {
       // Marquer le champ email comme touché pour activer la bordure rouge en cas de doublon
       setTouchedFields(prev => new Set(prev).add('email'));
       checkEmailAvailability(extractedEmail);
     }
+  };
+
+  const analyzeWithAI = async (text: string) => {
+    if (!text || !text.trim()) return;
+    setIsAnalyzingAI(true);
+    const extracted = await extractContactFromText(text);
+    setIsAnalyzingAI(false);
+    if (!extracted) return;
+
+    applyExtractedContact(extracted);
   };
 
   // Gestion du collage dans observations (mode IA : analyse après collage)
@@ -269,6 +286,32 @@ export default function Contacts() {
   const handleAnalyze = () => {
     if (!useAIMode || !formData.observations.trim()) return;
     analyzeWithAI(formData.observations);
+  };
+
+  // Analyse d'une image (carte de visite) via la Edge Function contact-extract
+  // en mode vision (pixtral-12b-2409). Pré-remplit les champs vides du formulaire.
+  const analyzeImage = async (file: File) => {
+    setImageError('');
+    const dataUri = await fileToDataUri(file);
+    if (!dataUri) {
+      setImageError(t('contacts.imageInvalid'));
+      return;
+    }
+    setIsAnalyzingImage(true);
+    const extracted = await extractContactFromImage(dataUri);
+    setIsAnalyzingImage(false);
+    if (!extracted) {
+      setImageError(t('contacts.imageAnalyzeError'));
+      return;
+    }
+    applyExtractedContact(extracted);
+  };
+
+  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) analyzeImage(file);
+    // Réinitialise pour permettre de recharger le même fichier
+    e.target.value = '';
   };
 
     // Fonction de recherche pour les cartes
@@ -715,6 +758,49 @@ export default function Contacts() {
             </label>
           </div>
         </div>
+
+        {/* Carte de visite : charger une image / prendre une photo (mode IA) */}
+        {useAIMode && (
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isAnalyzingImage}
+                style={{ ...buttonStyle, opacity: isAnalyzingImage ? 0.5 : 1, cursor: isAnalyzingImage ? 'not-allowed' : 'pointer' }}
+              >
+                {isAnalyzingImage ? t('contacts.analyzing') : t('contacts.scanImage')}
+              </button>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={isAnalyzingImage}
+                style={{ ...buttonStyle, opacity: isAnalyzingImage ? 0.5 : 1, cursor: isAnalyzingImage ? 'not-allowed' : 'pointer' }}
+              >
+                {t('contacts.takePhoto')}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImagePick}
+                style={{ display: 'none' }}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImagePick}
+                style={{ display: 'none' }}
+              />
+            </div>
+            <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#555' }}>
+              {t('contacts.cardScanHint')}
+            </span>
+            {imageError && <span style={errorStyle}>{imageError}</span>}
+          </div>
+        )}
 
         {/* Grille principale */}
         <div style={{ ...mainGridStyle, gridTemplateColumns: isMobile ? '1fr' : '3fr 1fr' }}>
