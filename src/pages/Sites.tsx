@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
+import { isCountryAllowed } from '../lib/countryMatch';
 
 // Types
 interface Address {
@@ -422,8 +423,8 @@ export default function Sites() {
 
   // Fonction de filtrage
   const matchesFilters = (site: Site) => {
-    // Filtre par pays autorisés (zones de l'utilisateur)
-    if (allowedCountries && !allowedCountries.includes(site.pays)) return false;
+    // Filtre par pays autorisés (zones de l'utilisateur, tolérance aux noms étrangers)
+    if (allowedCountries && !isCountryAllowed(allowedCountries, site.pays)) return false;
     if (searchText) {
       const lowerSearch = searchText.toLowerCase();
       const textMatch = (

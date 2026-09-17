@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { CONTINENTS } from '../lib/countries';
 import { useIsMobile } from '../lib/useIsMobile';
+import { resolveToFrench } from '../lib/countryMatch';
 
 interface Site {
   id: string;
@@ -95,10 +96,11 @@ export default function Emails() {
     if (loadingData || loadingZones) return [];
 
     const countryFilter = (pays: string) => {
+      const canonical = resolveToFrench(pays) ?? pays;
       if (!isAdmin) {
-        if (!assignedSet.has(pays)) return false;
+        if (!assignedSet.has(canonical)) return false;
       }
-      if (selectedCountries.size > 0 && !selectedCountries.has(pays)) return false;
+      if (selectedCountries.size > 0 && !selectedCountries.has(canonical)) return false;
       return true;
     };
 
@@ -127,7 +129,8 @@ export default function Emails() {
     allContacts.forEach(c => {
       if (!c.email) return;
       const pays = sitePaysMap[c.site] || '';
-      if (!isAdmin && !assignedSet.has(pays)) return;
+      const canonical = resolveToFrench(pays) ?? pays;
+      if (!isAdmin && !assignedSet.has(canonical)) return;
       if (c.langue in counts) {
         counts[c.langue as Language] += 1;
       }

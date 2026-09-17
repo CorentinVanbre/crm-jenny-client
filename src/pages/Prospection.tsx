@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Autocomplete } from '@react-google-maps/api';
+import { isCountryAllowed } from '../lib/countryMatch';
 
 interface Suggestion {
   id: string;
@@ -90,7 +91,7 @@ export default function Prospection() {
   const matchesSearch = (s: Suggestion) => {
     if (!s.pays) {
       if (!isAdmin) return false;
-    } else if (allowedCountries && !allowedCountries.includes(s.pays)) {
+    } else if (allowedCountries && !isCountryAllowed(allowedCountries, s.pays)) {
       return false;
     }
     if (filterStatus === 'pending' && s.approved !== null) return false;
