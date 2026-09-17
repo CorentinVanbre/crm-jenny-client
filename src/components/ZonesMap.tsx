@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { GoogleMap } from '@react-google-maps/api';
 import { GEOJSON_TO_FRENCH } from '../lib/countryMapping';
+import { normalizeCountry } from '../lib/countryMatch';
 
 const GEOJSON_URL = 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json';
 let cachedGeoJson: any = null;
@@ -18,16 +19,12 @@ export default function ZonesMap({ allowedCountries }: { allowedCountries: strin
       .catch(err => console.error('Erreur chargement GeoJSON:', err));
   }, []);
 
-    // Normalisation : minuscules + sans accents
-  const normalize = (s: string): string =>
-    (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  const allowedNorm = allowedCountries.map(normalize);
+    const allowedNorm = allowedCountries.map(normalizeCountry);
 
   const styleFeature = (feature: google.maps.Data.Feature): google.maps.Data.StyleOptions => {
     const name = feature.getProperty('name') as string;
     const frenchName = name ? GEOJSON_TO_FRENCH[name] : undefined;
-    const allowed = !!frenchName && allowedNorm.includes(normalize(frenchName));
+    const allowed = !!frenchName && allowedNorm.includes(normalizeCountry(frenchName));
     return {
       fillColor: allowed ? '#3b82f6' : '#c9ccd1',
       fillOpacity: allowed ? 0.55 : 0.7,

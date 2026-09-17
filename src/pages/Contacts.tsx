@@ -5,6 +5,7 @@ import { useUserZones } from '../lib/userZones';
 import { useIsMobile } from '../lib/useIsMobile';
 import { extractContactFromText, extractContactFromImage, fileToDataUri, type ExtractedContact } from '../lib/aiContactExtract';
 import { Autocomplete } from '@react-google-maps/api';
+import { isCountryAllowed } from '../lib/countryMatch';
 
 // Types
 interface Site {
@@ -316,10 +317,10 @@ export default function Contacts() {
 
     // Fonction de recherche pour les cartes
   const matchesSearch = (contact: Contact) => {
-    // Filtre par pays autorisés (zones de l'utilisateur)
+    // Filtre par pays autorisés (zones de l'utilisateur, tolérance aux noms étrangers)
     if (allowedCountries) {
       const pays = sitePaysMap[contact.site];
-      if (!allowedCountries.includes(pays)) return false;
+      if (!isCountryAllowed(allowedCountries, pays)) return false;
     }
 
     if (showOnlyActive && !contact.contact_actif) {
