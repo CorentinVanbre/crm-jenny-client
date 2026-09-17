@@ -1,23 +1,28 @@
 // ============================================================================
 // Edge Function : contact-extract
-// Extrait les informations d'un contact (nom, prénom, fonction, emails,
-// téléphones, genre) à partir d'un texte libre (champ "observations") en
-// s'appuyant sur Mistral AI.
+// Extrait les informations d'un contact (nom, pr\u00e9nom, fonction, emails,
+// t\u00e9l\u00e9phones, genre) \u00e0 partir d'un texte libre (champ "observations") OU
+// d'une image (photo de carte de visite) en s'appuyant sur Mistral AI.
 //
 // Pipeline :
-//   1. Reçoit { text: string } (le contenu des observations).
-//   2. Demande à Mistral d'extraire les champs structurés.
-//   3. Renvoie un objet JSON normalisé :
+//   1. Re\u00e7oit { text?: string, image?: string }.
+//      - text  : contenu texte des observations (mode texte).
+//      - image : image encod\u00e9e en base64 (data URI ou base64 brut), par ex.
+//                une photo de carte de visite (mode vision).
+//   2. Demande \u00e0 Mistral d'extraire les champs structur\u00e9s.
+//        - mode texte  : mistral-small-latest
+//        - mode vision : pixtral-12b-2409 (mod\u00e8le multimodal)
+//   3. Renvoie un objet JSON normalis\u00e9 :
 //      { noms, prenom, fonction, email, num_mobile, num_fixe, genre }
 //
 // Secrets requis (supabase secrets set ...):
-//   - MISTRAL_API_KEY : clé API Mistral AI (https://console.mistral.ai)
+//   - MISTRAL_API_KEY : cl\u00e9 API Mistral AI (https://console.mistral.ai)
 //
 // Invocation :
 //   curl -i --request POST "$SUPABASE_URL/functions/v1/contact-extract" \
-//     --header "Authorization: Bearer $ANON_KEY" \
 //     --header "Content-Type: application/json" \
-//     --data '{"text":"..."}'
+//     --data '{"text":"..."}'            # mode texte
+//     --data '{"image":"data:image/..."}'  # mode vision
 // ============================================================================
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY") ?? "";
@@ -59,9 +64,43 @@ async function callMistralText(prompt: string): Promise<string> {
   return data?.choices?.[0]?.message?.content ?? "{}";
 }
 
+// Appel vision : envoie une image (data URI base64) \u00e0 pixtral-12b-2409.
+async function callMistralVision(imageDataUri: string, prompt: string): Promise<string> {
+  if (!MISTRAL_API_KEY) {
+    console.warn("MISTRAL_API_KEY manquant");
+    return "{}";
+  }
+  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MISTRAL_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "pixtral-12b-2409",
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: imageDataUri },
+        ],
+      }],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.warn(`Mistral vision failed (${res.status}): ${body}`);
+    return "{}";
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? "{}";
+}
+
 // Nettoie la sortie d'un LLM pour extraire un JSON valide :
 // - retire les fences markdown ```json ... ``` (ou ``` ... ```)
-// - si le JSON est incomplet, tente de compléter les crochets/accolades ouverts
+// - si le JSON est incomplet, tente de compl\u00e9ter les crochets/accolades ouverts
 function stripJsonFence(raw: string): string {
   let s = (raw ?? "").trim();
   if (!s) return "";
@@ -112,6 +151,64 @@ function clean(value: unknown): string {
   return value.trim();
 }
 
+// Normalise une image base64 en data URI attendue par Mistral.
+// Accepte d\u00e9j\u00e0 une data URI ("data:image/...;base64,...") ou du base64 brut
+// (on suppose alors image/jpeg).
+function toDataUri(image: string): string {
+  const s = image.trim();
+  if (s.startsWith("data:")) return s;
+  return `data:image/jpeg;base64,${s}`;
+}
+
+const EXTRACTION_PROMPT = `Tu es un assistant qui extrait les coordonn\u00e9es d'un contact \u00e0 partir d'un texte libre (notes, signature d'email, carte de visite, etc.).
+
+\u00c0 partir du texte ci-dessous, extrais les champs suivants si pr\u00e9sents :
+- noms : nom de famille (en MAJUSCULES)
+- prenom : pr\u00e9nom (capitale initiale)
+- fonction : intitul\u00e9 de poste / fonction
+- email : adresse email (en minuscules, sans accents)
+- num_mobile : num\u00e9ro de t\u00e9l\u00e9phone mobile (format international si possible, chiffres et + uniquement)
+- num_fixe : num\u00e9ro de t\u00e9l\u00e9phone fixe (chiffres et + uniquement)
+- genre : "Homme" ou "Femme" si d\u00e9ductible du pr\u00e9nom/titre, sinon cha\u00eene vide
+
+R\u00e8gles :
+- Ne remplis un champ QUE si l'information est clairement pr\u00e9sente dans le texte.
+- Si une information est absente ou incertaine, laisse le champ vide (cha\u00eene vide).
+- Ne d\u00e9double pas les num\u00e9ros : num_mobile = le 1er num\u00e9ro, num_fixe = un \u00e9ventuel 2e.
+- R\u00e9ponds UNIQUEMENT avec un objet JSON de la forme :
+  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":""}
+  sans markdown ni texte autour.
+
+Texte :
+"""
+${"%TEXT%"}
+"""`;
+
+function buildTextPrompt(text: string): string {
+  return EXTRACTION_PROMPT.replace("%TEXT%", text);
+}
+
+// Prompt vision : m\u00eame structure d'extraction, mais l'image est fournie \u00e0 part
+// dans le contenu du message (le prompt texte seul ne contient pas l'image).
+const VISION_PROMPT = `Tu es un assistant qui extrait les coordonn\u00e9es d'un contact \u00e0 partir d'une photo de carte de visite.
+
+\u00c0 partir de l'image ci-dessous, extrais les champs suivants si pr\u00e9sents :
+- noms : nom de famille (en MAJUSCULES)
+- prenom : pr\u00e9nom (capitale initiale)
+- fonction : intitul\u00e9 de poste / fonction
+- email : adresse email (en minuscules, sans accents)
+- num_mobile : num\u00e9ro de t\u00e9l\u00e9phone mobile (format international si possible, chiffres et + uniquement)
+- num_fixe : num\u00e9ro de t\u00e9l\u00e9phone fixe (chiffres et + uniquement)
+- genre : "Homme" ou "Femme" si d\u00e9ductible du pr\u00e9nom/titre, sinon cha\u00eene vide
+
+R\u00e8gles :
+- Ne remplis un champ QUE si l'information est clairement lisible sur la carte.
+- Si une information est absente, illisible ou incertaine, laisse le champ vide (cha\u00eene vide).
+- Ne d\u00e9double pas les num\u00e9ros : num_mobile = le 1er num\u00e9ro, num_fixe = un \u00e9ventuel 2e.
+- R\u00e9ponds UNIQUEMENT avec un objet JSON de la forme :
+  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":""}
+  sans markdown ni texte autour.`;
+
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -120,7 +217,7 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 Deno.serve(async (req) => {
-  // Pré-vérification CORS (preflight)
+  // Pr\u00e9-v\u00e9rification CORS (preflight)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
   }
@@ -133,9 +230,9 @@ Deno.serve(async (req) => {
     return json({ error: "Method not allowed" }, 405);
   }
 
-  // Accepte du JSON, que ce soit envoyé en application/json (invoke) ou en
-  // text/plain (fetch simple navigateur, pour éviter le preflight CORS).
-  let body: { text?: string };
+  // Accepte du JSON, que ce soit envoy\u00e9 en application/json (invoke) ou en
+  // text/plain (fetch simple navigateur, pour \u00e9viter le preflight CORS).
+  let body: { text?: string; image?: string };
   try {
     const raw = await req.text();
     body = raw ? JSON.parse(raw) : {};
@@ -144,36 +241,25 @@ Deno.serve(async (req) => {
   }
 
   const text = clean(body.text);
-  if (!text) {
-    return json({ error: "Missing 'text' field" }, 400);
+  const image = clean(body.image);
+
+  if (!text && !image) {
+    return json({ error: "Missing 'text' or 'image' field" }, 400);
   }
 
-  const prompt = `Tu es un assistant qui extrait les coordonnées d'un contact à partir d'un texte libre (notes, signature d'email, carte de visite, etc.).
-
-À partir du texte ci-dessous, extrais les champs suivants si présents :
-- noms : nom de famille (en MAJUSCULES)
-- prenom : prénom (capitale initiale)
-- fonction : intitulé de poste / fonction
-- email : adresse email (en minuscules, sans accents)
-- num_mobile : numéro de téléphone mobile (format international si possible, chiffres et + uniquement)
-- num_fixe : numéro de téléphone fixe (chiffres et + uniquement)
-- genre : "Homme" ou "Femme" si déductible du prénom/titre, sinon chaîne vide
-
-Règles :
-- Ne remplis un champ QUE si l'information est clairement présente dans le texte.
-- Si une information est absente ou incertaine, laisse le champ vide (chaîne vide).
-- Ne dédouble pas les numéros : num_mobile = le 1er numéro, num_fixe = un éventuel 2e.
-- Réponds UNIQUEMENT avec un objet JSON de la forme :
-  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":""}
-  sans markdown ni texte autour.
-
-Texte :
-"""
-${text}
-"""`;
+  // Limite de taille de l'image : ~8 Mo (base64) pour \u00e9viter les timeouts.
+  const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+  if (image && image.length > MAX_IMAGE_BYTES) {
+    return json({ error: "Image too large (max 8MB)" }, 413);
+  }
 
   try {
-    const raw = await callMistralText(prompt);
+    let raw: string;
+    if (image) {
+      raw = await callMistralVision(toDataUri(image), VISION_PROMPT);
+    } else {
+      raw = await callMistralText(buildTextPrompt(text));
+    }
     const parsed = parseMistralJson<ExtractedContact>(raw);
 
     const result: ExtractedContact = {
