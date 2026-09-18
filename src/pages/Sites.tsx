@@ -96,6 +96,7 @@ export default function Sites() {
   const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
   const [editSubmitMessage, setEditSubmitMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [isGroupSelected, setIsGroupSelected] = useState(false);
 
   // États pour la modale Ajouter Site
   const [showAddSiteModal, setShowAddSiteModal] = useState(false);
@@ -181,11 +182,6 @@ export default function Sites() {
   }, []);
 
   // Filtrer les groupes pour les dropdowns
-  const handleGroupSearch = (value: string) => {
-    setEditGroupData(prev => ({ ...prev, nom_groupe: value }));
-    setFilteredGroupes(value === '' ? groupes : groupes.filter(g => g.nom_groupe.toLowerCase().includes(value.toLowerCase())));
-  };
-
   const handleSiteGroupSearch = (value: string) => {
     setNewSiteData(prev => ({ ...prev, groupe: value }));
     setFilteredSiteGroupes(value === '' ? groupes : groupes.filter(g => g.nom_groupe.toLowerCase().includes(value.toLowerCase())));
@@ -196,7 +192,9 @@ export default function Sites() {
     setEditGroupData({ nom_groupe: groupe.nom_groupe, site_web: groupe.site_web || '' });
     setOriginalGroupName(groupe.nom_groupe);
     setEditGroupNameError('');
+    setIsGroupSelected(true);
     setShowGroupDropdown(false);
+    setFilteredGroupes([]);
   };
 
   const handleSelectSiteGroup = (groupe: Groupe) => {
@@ -215,11 +213,20 @@ export default function Sites() {
   const handleEditGroupNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setEditGroupData(prev => ({ ...prev, nom_groupe: value }));
-    setFilteredGroupes(value === '' ? groupes : groupes.filter(g => g.nom_groupe.toLowerCase().includes(value.toLowerCase())));
-    setShowGroupDropdown(true);
+
+    if (isGroupSelected) {
+      setShowGroupDropdown(false);
+    } else {
+      setFilteredGroupes(value === '' ? groupes : groupes.filter(g => g.nom_groupe.toLowerCase().includes(value.toLowerCase())));
+      setShowGroupDropdown(true);
+    }
 
     if (!value.trim()) {
       setEditGroupNameError('');
+      if (isGroupSelected) {
+        setIsGroupSelected(false);
+        setOriginalGroupName('');
+      }
       return;
     }
 
@@ -289,8 +296,10 @@ export default function Sites() {
       const formattedName = editGroupData.nom_groupe.trim();
       const formattedSiteWeb = editGroupData.site_web.trim();
 
+      const isRenamed = formattedName !== originalGroupName;
+
       const updateData: any = { site_web: formattedSiteWeb, updated_date: now };
-      if (formattedName.toLowerCase() !== originalGroupName.toLowerCase()) {
+      if (isRenamed) {
         updateData.nom_groupe = formattedName;
       }
 
@@ -300,16 +309,16 @@ export default function Sites() {
         .eq('ID', currentGroup.ID);
       if (groupError) throw groupError;
 
-      if (formattedName.toLowerCase() !== originalGroupName.toLowerCase()) {
+      if (isRenamed) {
         const { error: contactsError } = await supabase
           .from('contacts')
-          .update({ groupe: formattedName })
+          .update({ groupe: formattedName, updated_date: now })
           .eq('groupe', originalGroupName);
         if (contactsError) throw contactsError;
 
         const { error: sitesError } = await supabase
           .from('sites')
-          .update({ groupe: formattedName })
+          .update({ groupe: formattedName, updated_date: now })
           .eq('groupe', originalGroupName);
         if (sitesError) throw sitesError;
       }
@@ -381,6 +390,8 @@ export default function Sites() {
     setEditSubmitMessage(null);
     setIsEditingSubmitting(false);
     setShowGroupDropdown(false);
+    setIsGroupSelected(false);
+    setFilteredGroupes([]);
   };
 
   const resetSiteForm = () => {
@@ -1054,7 +1065,7 @@ export default function Sites() {
                 style={{ ...inputStyle, borderColor: editGroupNameError ? '#ff4444' : '#ddd' }}
                 placeholder={t('sites.groupSearchPlaceholder')}
               />
-              {showGroupDropdown && filteredGroupes.length > 0 && (
+              {showGroupDropdown && !isGroupSelected && filteredGroupes.length > 0 && (
                 <div style={dropdownStyle} onMouseDown={e => e.preventDefault()}>
                   {filteredGroupes.map(groupe => (
                     <div

@@ -35,6 +35,7 @@
     "recentTitle": "Recently added features:",
     "recentItems": [
       "Site renaming automatically propagated to its contacts",
+      "Group renaming propagated to associated sites and contacts",
       "Contact email extraction filtered by country and language",
       "Automatic contact form filling with AI",
       "Automatic site status update every morning",
