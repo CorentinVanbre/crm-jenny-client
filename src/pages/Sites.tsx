@@ -62,6 +62,7 @@ const DEFAULT_MAP_CENTER = { lat: 46.8, lng: 1.5 };
 export default function Sites() {
   // États principaux
   const [allSites, setAllSites] = useState<Site[]>([]);
+  const [allContacts, setAllContacts] = useState<{ groupe: string; site: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [selectedColors, setSelectedColors] = useState<string[]>(['Non visités', 'Visités', 'Visités il y a +18mois', 'A visiter', 'Fermés']);
@@ -170,6 +171,28 @@ export default function Sites() {
       .maybeSingle();
     return !!data;
   }, []);
+
+  // Récupérer tous les contacts (pour le comptage par groupe + site)
+  const fetchContactsCount = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('groupe, site');
+    if (error) console.error('Erreur:', error);
+    setAllContacts(data || []);
+  }, []);
+
+  // Compter les contacts d'un site en combinant groupe et site
+  const getSiteContactCount = useCallback((site: Site) => {
+    if (!site.groupe) {
+      return allContacts.filter(c =>
+        (c.site || '').toLowerCase() === site.noms.toLowerCase()
+      ).length;
+    }
+    return allContacts.filter(c =>
+      (c.site || '').toLowerCase() === site.noms.toLowerCase() &&
+      (c.groupe || '').toLowerCase() === site.groupe.toLowerCase()
+    ).length;
+  }, [allContacts]);
 
   // Récupérer tous les groupes
   const fetchGroupes = useCallback(async () => {
@@ -518,6 +541,7 @@ export default function Sites() {
         setGroupes(groupesData);
         setFilteredGroupes(groupesData);
         setFilteredSiteGroupes(groupesData);
+        await fetchContactsCount();
       } catch (err) {
         console.error('Erreur:', err);
       } finally {
@@ -525,7 +549,7 @@ export default function Sites() {
       }
     };
     fetchInitialData();
-  }, [fetchGroupes]);
+  }, [fetchGroupes, fetchContactsCount]);
 
   // Récupération des sites
   const fetchSites = useCallback(async () => {
@@ -546,12 +570,13 @@ export default function Sites() {
         }) || [];
         setAllSites(validSites);
       }
+      await fetchContactsCount();
     } catch (err) {
       console.error('Erreur:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchContactsCount]);
 
   // Fonction pour l'icône
   const getMarkerIcon = (couleur: string) => {
@@ -583,7 +608,7 @@ export default function Sites() {
       <div style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>
         {site.groupe} - {site.noms}
       </div>
-      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{site.nb_contact} {t(site.nb_contact > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</div>
+      <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{getSiteContactCount(site)} {t(getSiteContactCount(site) > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</div>
       <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{t('sites.lastVisit')}: {formatDate(site.datevisite) || t('common.never')}</div>
       <div style={{ textAlign: 'center', marginTop: '4px' }}><a href={`/sites/${site.id}`} target="_blank" style={{ fontSize: '13px' }}>{t('sites.seeMore')}</a></div>
     </div>
@@ -892,7 +917,7 @@ export default function Sites() {
                 alignItems: 'center',
                 justifyContent: 'space-between'
               }}>
-                <span style={{ fontWeight: 'bold' }}>{site.nb_contact} {t(site.nb_contact > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</span>
+                <span style={{ fontWeight: 'bold' }}>{getSiteContactCount(site)} {t(getSiteContactCount(site) > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</span>
                 <Link
                   to={`/sites/${site.id}`}
                   target="_blank"
