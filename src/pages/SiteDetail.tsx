@@ -177,7 +177,7 @@ export default function SiteDetail() {
           setOriginalGroupe(siteData.groupe || '');
 
           // Charger les contacts du site
-          await fetchContacts(siteData.noms);
+          await fetchContacts(siteData.groupe || '', siteData.noms);
         }
       } catch (err: any) {
         setError(`Erreur: ${err.message}`);
@@ -189,14 +189,17 @@ export default function SiteDetail() {
     fetchData();
   }, [id]);
 
-  // Charger les contacts du site
-  const fetchContacts = async (siteName: string) => {
+  // Charger les contacts du site (combinés par groupe et site)
+  const fetchContacts = async (groupeName: string, siteName: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contacts')
         .select('*')
         .ilike('site', siteName);
-
+      if (groupeName) {
+        query = query.ilike('groupe', groupeName);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setContacts(data || []);
     } catch (err: any) {
@@ -528,7 +531,7 @@ export default function SiteDetail() {
       }
       setContactConfirmMessage({ text: t('contacts.contactEdited'), isSuccess: true });
       resetContactForm();
-      if (site) await fetchContacts(site.noms);
+      if (site) await fetchContacts(site.groupe || '', site.noms);
     } catch (err: any) {
       setContactConfirmMessage({ text: `Erreur inattendue: ${err.message}`, isSuccess: false });
     }
@@ -580,12 +583,16 @@ export default function SiteDetail() {
         if (formData.noms !== site.noms) {
           contactUpdate.site = formData.noms;
         }
-        const { error: contactsError } = await supabase
+        let contactsQuery = supabase
           .from('contacts')
           .update(contactUpdate)
           .ilike('site', site.noms);
+        if (originalGroupe) {
+          contactsQuery = contactsQuery.ilike('groupe', originalGroupe);
+        }
+        const { error: contactsError } = await contactsQuery;
         if (contactsError) throw contactsError;
-        await fetchContacts(formData.noms);
+        await fetchContacts(formData.groupe, formData.noms);
       }
 
       const { data: updatedSite } = await supabase
