@@ -34,6 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Site renaming automatically propagated to its contacts",
       "Group renaming propagated to associated sites and contacts",
       "Contact email extraction filtered by country and language",
       "Automatic contact form filling with AI",
