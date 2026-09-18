@@ -555,21 +555,14 @@ export default function SiteDetail() {
         }
       }
 
-      if (formData.groupe !== originalGroupe && isEditing) {
-        updateData.groupe = formData.groupe;
-        const { error: contactsError } = await supabase
-          .from('contacts')
-          .update({ groupe: formData.groupe })
-          .ilike('site', site.noms);
-        if (contactsError) throw contactsError;
-        await fetchContacts(site.noms);
-      }
-
       if (isEditing) {
         updateData.noms = formData.noms;
         updateData.domaine = formData.domaine;
         updateData.adress = formData.adress;
         updateData.pays = formData.pays;
+        if (formData.groupe !== originalGroupe) {
+          updateData.groupe = formData.groupe;
+        }
       }
 
       const { error: updateError } = await supabase
@@ -578,6 +571,22 @@ export default function SiteDetail() {
         .eq('id', site.id);
 
       if (updateError) throw updateError;
+
+      if (isEditing && (formData.noms !== site.noms || formData.groupe !== originalGroupe)) {
+        const contactUpdate: any = { updated_date: new Date().toISOString() };
+        if (formData.groupe !== originalGroupe) {
+          contactUpdate.groupe = formData.groupe;
+        }
+        if (formData.noms !== site.noms) {
+          contactUpdate.site = formData.noms;
+        }
+        const { error: contactsError } = await supabase
+          .from('contacts')
+          .update(contactUpdate)
+          .ilike('site', site.noms);
+        if (contactsError) throw contactsError;
+        await fetchContacts(formData.noms);
+      }
 
       const { data: updatedSite } = await supabase
         .from('sites')
