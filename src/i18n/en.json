@@ -34,7 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
-      "Contact counting and display per site using group + site combination",
+      "Sorting prospecting suggestions by date or relevance score",
       "Site renaming automatically propagated to its contacts",
       "Group renaming propagated to associated sites and contacts",
       "Contact email extraction filtered by country and language",
@@ -287,6 +287,9 @@
     "searchPlaceholder": "Search by group, site, domain, country",
     "matchingCount": "{{count}} matching suggestions",
     "pendingOnly": "Pending only",
+    "sortBy": "Sort by:",
+    "sortByRelevance": "Relevance score",
+    "sortByDate": "Date",
     "loading": "Loading suggestions...",
     "noResults": "No suggestion found.",
     "address": "Address",
