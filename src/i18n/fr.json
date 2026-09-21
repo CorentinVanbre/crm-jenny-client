@@ -34,6 +34,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Chargement complet des suggestions de prospection (au-delà de 1000 lignes)",
       "Tri des suggestions de prospection par date ou taux de pertinence",
       "Modification du nom d'un site répercutée automatiquement sur ses contacts",
       "Renommage d'un groupe répercuté sur les sites et contacts associés",
