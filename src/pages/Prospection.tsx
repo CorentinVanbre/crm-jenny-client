@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import { useUserZones } from '../lib/userZones';
@@ -37,6 +37,7 @@ export default function Prospection() {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState<'pending' | 'all'>('pending');
+  const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
   // --- Modale d'analyse (création de site, identique à Contacts) ---
@@ -88,7 +89,7 @@ export default function Prospection() {
   // Filtrage par pays attribués (renforcé par RLS côté base, mais on filtre aussi côté client)
   const isAdmin = allowedCountries === null;
 
-  const matchesSearch = (s: Suggestion) => {
+  const matchesSearch = useCallback((s: Suggestion) => {
     if (!s.pays) {
       if (!isAdmin) return false;
     } else if (allowedCountries && !isCountryAllowed(allowedCountries, s.pays)) {
@@ -104,9 +105,17 @@ export default function Prospection() {
       (s.pays && s.pays.toLowerCase().includes(q)) ||
       (s.adress?.formatted && s.adress.formatted.toLowerCase().includes(q))
     );
-  };
+  }, [isAdmin, allowedCountries, filterStatus, searchText]);
 
-  const visibleSuggestions = suggestions.filter(matchesSearch);
+  const visibleSuggestions = useMemo(() => {
+    const filtered = suggestions.filter(matchesSearch);
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime();
+      }
+      return b.score - a.score;
+    });
+  }, [suggestions, matchesSearch, sortBy]);
 
   // --- Modération : refuser (bouton supprimer rouge) ---
   const handleRefuse = async (s: Suggestion) => {
@@ -290,6 +299,20 @@ export default function Prospection() {
             style={{ width: '16px', height: '16px' }}
           />
           {t('prospection.pendingOnly')}
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', whiteSpace: 'nowrap' }}>
+          {t('prospection.sortBy')}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'score' | 'date')}
+            style={{
+              padding: '6px', border: '1px solid #ddd', borderRadius: '4px',
+              fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px'
+            }}
+          >
+            <option value="score">{t('prospection.sortByRelevance')}</option>
+            <option value="date">{t('prospection.sortByDate')}</option>
+          </select>
         </label>
       </div>
 
