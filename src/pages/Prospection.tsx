@@ -19,7 +19,8 @@ interface Suggestion {
   score: number;
   score_reason: string;
   approved: string | null;
-  scanned_at: string;
+  scanned_at: string | null;
+  created_date?: string | null;
 }
 
 interface Groupe {
@@ -61,16 +62,24 @@ export default function Prospection() {
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('prospect_suggestions')
-        .select('*')
-        .order('score', { ascending: false });
-      if (error) {
-        console.error('Erreur chargement suggestions:', error.message);
-        setSuggestions([]);
-      } else {
-        setSuggestions(data || []);
+      const pageSize = 1000;
+      let allData: Suggestion[] = [];
+      while (true) {
+        const from = allData.length;
+        const { data, error } = await supabase
+          .from('prospect_suggestions')
+          .select('*')
+          .order('score', { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) {
+          console.error('Erreur chargement suggestions:', error.message);
+          setSuggestions([]);
+          return;
+        }
+        allData = allData.concat(data || []);
+        if (!data || data.length < pageSize) break;
       }
+      setSuggestions(allData);
     } finally {
       setLoading(false);
     }
@@ -107,13 +116,18 @@ export default function Prospection() {
     );
   }, [isAdmin, allowedCountries, filterStatus, searchText]);
 
+  const suggestionDate = (s: Suggestion): number => {
+    const t = new Date(s.scanned_at ?? s.created_date ?? '').getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+
   const visibleSuggestions = useMemo(() => {
     const filtered = suggestions.filter(matchesSearch);
     return [...filtered].sort((a, b) => {
       if (sortBy === 'date') {
-        return new Date(b.scanned_at).getTime() - new Date(a.scanned_at).getTime();
+        return suggestionDate(b) - suggestionDate(a);
       }
-      return b.score - a.score;
+      return (b.score ?? 0) - (a.score ?? 0);
     });
   }, [suggestions, matchesSearch, sortBy]);
 

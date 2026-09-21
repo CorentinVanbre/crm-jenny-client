@@ -34,6 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Full loading of prospecting suggestions (beyond 1000 rows)",
       "Sorting prospecting suggestions by date or relevance score",
       "Site renaming automatically propagated to its contacts",
       "Group renaming propagated to associated sites and contacts",
