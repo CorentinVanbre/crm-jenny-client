@@ -36,6 +36,14 @@ const SCORE_THRESHOLD = 25;
 const MAX_SUGGESTIONS_PER_RUN = 80;
 const MAX_CANDIDATES = 160;
 
+// Timeouts des appels HTTP externes (évite qu'un fetch bloqué consomme tout le
+// budget wall clock du worker Supabase, ~400 s, ce qui provoque un kill brutal
+// "shutdown" + 500 sans réponse du handler)
+const FETCH_TIMEOUT_MS = 15_000;
+const MISTRAL_TIMEOUT_MS = 60_000;
+// Budget maximal consacré au géocodage Nominatim avant insertion (safety net)
+const GEOCODE_BUDGET_MS = 60_000;
+
 // Diagnostics de run (remplis au fil de l'exécution)
 let mistralKeyPresent = !!(MISTRAL_API_KEY);
 let mistralCallOk = true;
@@ -129,19 +137,26 @@ async function serperSearch(query: string, count = 10): Promise<Candidate[]> {
     return [];
   }
   const num = Math.min(Math.max(count, 1), 10);
-  const res = await fetch("https://google.serper.dev/search", {
-    method: "POST",
-    headers: {
-      "X-API-KEY": SERPER_API_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ q: query, num }),
-  });
-  if (!res.ok) {
-    console.warn(`Serper search failed (${res.status}): ${await res.text()}`);
+  let data: { organic?: Array<{ title?: string; link?: string; snippet?: string }> };
+  try {
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ q: query, num }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.warn(`Serper search failed (${res.status}): ${await res.text()}`);
+      return [];
+    }
+    data = await res.json();
+  } catch (err) {
+    console.warn(`Serper search error (${query}): ${String(err)}`);
     return [];
   }
-  const data = await res.json();
   const items = (data?.organic ?? []) as Array<{
     title?: string;
     link?: string;
@@ -280,17 +295,36 @@ async function scoreCandidates(
 S suggestions bien reçues (favorise ce type) :\n${positives.join("\n") || "(aucune)"}\nSuggestions refusées (à éviter / pénaliser) :\n${negatives.join("\n") || "(aucune)"}\n`
     : "";
 
-  const scored: ScoredCandidate[] = [];
-  // On score par lots pour limiter la taille des prompts
+  type ScoreResult = {
+    index: number;
+    site_nom?: string;
+    groupe?: string;
+    domaine?: string;
+    score?: number;
+    pays?: string;
+    raison?: string;
+  };
+
+  // On score par lots pour limiter la taille des prompts ; les lots sont
+  // interrogés en parallèle par vagues (sans dépasser le budget wall clock)
   const BATCH = 8;
+  const PARALLEL_BATCHES = 4;
+  const batches: Candidate[][] = [];
   for (let i = 0; i < candidates.length; i += BATCH) {
-    const batch = candidates.slice(i, i + BATCH);
-    const items = batch
-      .map(
-        (c, idx) =>
-          `${idx}: ${c.noms} — ${c.source_url}\n   ${c.snippet}`
-      )
-      .join("\n");
+    batches.push(candidates.slice(i, i + BATCH));
+  }
+
+  const batchResults: Array<Array<ScoreResult>> = [];
+  for (let v = 0; v < batches.length; v += PARALLEL_BATCHES) {
+    const wave = batches.slice(v, v + PARALLEL_BATCHES);
+    const waveResults = await Promise.all(
+      wave.map(async (batch) => {
+        const items = batch
+          .map(
+            (c, idx) =>
+              `${idx}: ${c.noms} — ${c.source_url}\n   ${c.snippet}`
+          )
+          .join("\n");
 
     const prompt = `Tu es un expert en prospection industrielle (broyeurs à boulets / fours rotatifs).
 
@@ -310,30 +344,31 @@ ${items}
 
 Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"","domaine":"...","score":0,"pays":"...","raison":"..."}]} sans markdown ni texte autour.`;
 
-    const raw = await callMistralText(prompt);
-    type ScoreResult = {
-      index: number;
-      site_nom?: string;
-      groupe?: string;
-      domaine?: string;
-      score?: number;
-      pays?: string;
-      raison?: string;
-    };
-    const parsed = parseMistralJson<{ results: Array<ScoreResult> }>(raw);
-    if (!parsed && raw) {
-      console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
-      diag.raw_samples.push(raw.slice(0, 120));
-    } else if (parsed) {
-      diag.mistral_results += parsed.results?.length ?? 0;
-      if (diag.raw_samples.length < 2 && raw) {
-        diag.raw_samples.push(raw.slice(0, 120));
-      }
+        const raw = await callMistralText(prompt);
+        const parsed = parseMistralJson<{ results: Array<ScoreResult> }>(raw);
+        if (!parsed && raw) {
+          console.warn("score parse failed: raw non JSON, début=", raw.slice(0, 80));
+          if (diag.raw_samples.length < 2) diag.raw_samples.push(raw.slice(0, 120));
+        }
+        if (parsed) {
+          if (diag.raw_samples.length < 2 && raw) {
+            diag.raw_samples.push(raw.slice(0, 120));
+          }
+        }
+        return parsed?.results ?? [];
+      })
+    );
+    for (const results of waveResults) {
+      batchResults.push(results);
+      diag.mistral_results += results.length;
     }
+  }
 
-    const results = parsed?.results ?? [];
+  const scored: ScoredCandidate[] = [];
+  batches.forEach((batch, bIdx) => {
+    const results = batchResults[bIdx] ?? [];
     if (results.length === 0 && batch.length > 0) {
-      console.warn(`batch ${i / BATCH}: 0 résultats Mistral pour ${batch.length} candidats`);
+      console.warn(`batch ${bIdx}: 0 résultats Mistral pour ${batch.length} candidats`);
     }
     batch.forEach((c, idx) => {
       const r: ScoreResult = results.find((x) => x.index === idx) ?? { index: idx };
@@ -374,7 +409,7 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
         noms: nomFinal,
         groupe: groupeFinal,
         domaine: r.domaine ?? "Autre",
-        pays: r.pays ?? "",
+        pays: normalizeCountry(r.pays ?? ""),
         adress: "",
         latitude: "",
         longitude: "",
@@ -382,7 +417,7 @@ Renvoie UNIQUEMENT un objet JSON {"results":[{"index":0,"site_nom":"","groupe":"
         score_reason: r.raison ?? "",
       });
     });
-  }
+  });
   return { scored, diag };
 }
 
@@ -398,6 +433,117 @@ function clampScore(n: number): number {
   if (isNaN(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));
 }
+
+// --- Normalisation des noms de pays ----------------------------------------
+// Aligne l'orthographe des pays renvoyés par Nominatim/Mistral sur celle
+// utilisée dans user_zones (noms français de référence, cf. countries.ts).
+// Ex: "Vietnam" -> "Viêt Nam", "france" -> "France", "United States" -> "États-Unis".
+
+const COUNTRY_NORMALIZE: Record<string, string> = {
+  // Variantes anglaises / Nominatim -> français
+  "United States": "États-Unis", "United States of America": "États-Unis",
+  "United Kingdom": "Royaume-Uni", "Russia": "Russie", "China": "Chine",
+  "Japan": "Japon", "South Korea": "Corée du Sud", "North Korea": "Corée du Nord",
+  "Vietnam": "Viêt Nam", "Viet Nam": "Viêt Nam",
+  "India": "Inde", "Indonesia": "Indonésie", "Thailand": "Thaïlande",
+  "Malaysia": "Malaisie", "Philippines": "Philippines", "Pakistan": "Pakistan",
+  "Bangladesh": "Bangladesh", "Turkey": "Turquie", "Iran": "Iran", "Iraq": "Irak",
+  "Saudi Arabia": "Arabie saoudite", "United Arab Emirates": "Émirats arabes unis",
+  "Israel": "Israël", "Egypt": "Égypte", "Algeria": "Algérie", "Morocco": "Maroc",
+  "Tunisia": "Tunisie", "Libya": "Libye", "Nigeria": "Nigeria", "Kenya": "Kenya",
+  "Ethiopia": "Éthiopie", "Ghana": "Ghana", "South Africa": "Afrique du Sud",
+  "Tanzania": "Tanzanie", "Uganda": "Ouganda", "Cameroon": "Cameroun",
+  "Senegal": "Sénégal", "Zimbabwe": "Zimbabwe", "Zambia": "Zambie",
+  "Mozambique": "Mozambique", "Angola": "Angola", "Namibia": "Namibie",
+  "Botswana": "Botswana", "Madagascar": "Madagascar", "Sudan": "Soudan",
+  "South Sudan": "Soudan du Sud", "Mali": "Mali", "Niger": "Niger",
+  "Burkina Faso": "Burkina Faso", "Chad": "Tchad", "Mauritania": "Mauritanie",
+  "Gabon": "Gabon", "Togo": "Togo", "Benin": "Bénin", "Liberia": "Liberia",
+  "Sierra Leone": "Sierra Leone", "Somalia": "Somalie", "Rwanda": "Rwanda",
+  "Burundi": "Burundi", "Malawi": "Malawi", "Lesotho": "Lesotho",
+  "Eswatini": "Eswatini (ex-Swaziland)",
+  // Europe
+  "France": "France", "Germany": "Allemagne", "Spain": "Espagne", "Italy": "Italie",
+  "Portugal": "Portugal", "Belgium": "Belgique", "Netherlands": "Pays-Bas",
+  "Switzerland": "Suisse", "Austria": "Autriche", "Poland": "Pologne",
+  "Sweden": "Suède", "Norway": "Norvège", "Denmark": "Danemark",
+  "Finland": "Finlande", "Ireland": "Irlande", "Iceland": "Islande",
+  "Greece": "Grèce", "Croatia": "Croatie", "Bulgaria": "Bulgarie",
+  "Romania": "Roumanie", "Hungary": "Hongrie", "Czech Republic": "République tchèque",
+  "Czechia": "République tchèque", "Slovakia": "Slovaquie", "Slovenia": "Slovénie",
+  "Serbia": "Serbie", "Bosnia and Herzegovina": "Bosnie-Herzégovine",
+  "Albania": "Albanie", "North Macedonia": "Macédoine du Nord", "Moldova": "Moldavie",
+  "Montenegro": "Monténégro", "Ukraine": "Ukraine", "Belarus": "Bielorussie",
+  "Estonia": "Estonie", "Latvia": "Lettonie", "Lithuania": "Lituanie",
+  "Luxembourg": "Luxembourg", "Malta": "Malte", "Cyprus": "Chypre",
+  // Amériques
+  "Canada": "Canada", "Mexico": "Mexique", "Brazil": "Brésil",
+  "Argentina": "Argentine", "Chile": "Chili", "Colombia": "Colombie",
+  "Peru": "Pérou", "Venezuela": "Venezuela", "Bolivia": "Bolivie",
+  "Ecuador": "Équateur", "Paraguay": "Paraguay", "Uruguay": "Uruguay",
+  "Costa Rica": "Costa Rica", "Panama": "Panama", "Guatemala": "Guatemala",
+  "Honduras": "Honduras", "Nicaragua": "Nicaragua", "El Salvador": "Salvador",
+  "Cuba": "Cuba", "Dominican Republic": "République dominicaine",
+  "Haiti": "Haïti", "Jamaica": "Jamaïque", "Bahamas": "Bahamas",
+  "Trinidad and Tobago": "Trinité-et-Tobago",
+  // Océanie
+  "Australia": "Australie", "New Zealand": "Nouvelle-Zélande",
+  "Papua New Guinea": "Papouasie-Nouvelle-Guinée", "Fiji": "Fidji",
+  "Vanuatu": "Vanuatu", "Solomon Islands": "Salomon",
+};
+
+// Variantes françaises courantes (fautes / formes alternatives)
+const COUNTRY_FRENCH_VARIANTS: Record<string, string> = {
+  "vietnam": "Viêt Nam", "viet nam": "Viêt Nam", "viet-nam": "Viêt Nam",
+  "france": "France", "fr": "France",
+  "etats-unis": "États-Unis", "etats unis": "États-Unis", "usa": "États-Unis",
+  "royaume uni": "Royaume-Uni", "royaume-uni": "Royaume-Uni", "uk": "Royaume-Uni",
+  "pays bas": "Pays-Bas", "pays-bas": "Pays-Bas",
+  "republique tcheque": "République tchèque",
+  "coree du sud": "Corée du Sud", "coree du nord": "Corée du Nord",
+  "emirats arabes unis": "Émirats arabes unis",
+  "afrique du sud": "Afrique du Sud",
+  "nouvelle zelande": "Nouvelle-Zélande", "nouvelle-zelande": "Nouvelle-Zélande",
+  "bosnie herzegovine": "Bosnie-Herzégovine",
+  "macedoine du nord": "Macédoine du Nord",
+  "republique dominicaine": "République dominicaine",
+  "trinite et tobago": "Trinité-et-Tobago",
+  "papouasie nouvelle guinee": "Papouasie-Nouvelle-Guinée",
+  "guinee equatoriale": "Guinée équatoriale",
+  "guinee-bissau": "Guinée-Bissau",
+  "saint vincent et les grenadines": "Saint-Vincent-et-les-Grenadines",
+  "saint christophe et nevis": "Saint-Christophe-et-Niévès",
+  "birmanie": "Birmanie (Myanmar)", "myanmar": "Birmanie (Myanmar)",
+  "eswatini": "Eswatini (ex-Swaziland)", "swaziland": "Eswatini (ex-Swaziland)",
+  "congo": "Congo (Brazzaville)", "congo brazzaville": "Congo (Brazzaville)",
+  "congo rdc": "Congo (RDC / Kinshasa)", "rdc": "Congo (RDC / Kinshasa)",
+  "congo kinshasa": "Congo (RDC / Kinshasa)",
+};
+
+function normalizeCountry(raw: string): string {
+  const s = (raw ?? "").trim();
+  if (!s) return "";
+  // 1. Match exact (insensible à la casse) dans le mapping anglais->français
+  const key = s.toLowerCase();
+  for (const [k, v] of Object.entries(COUNTRY_NORMALIZE)) {
+    if (k.toLowerCase() === key) return v;
+  }
+  // 2. Variantes françaises
+  for (const [k, v] of Object.entries(COUNTRY_FRENCH_VARIANTS)) {
+    if (k === key) return v;
+  }
+  // 3. Si déjà un nom français valide (présent dans les valeurs), le garder tel quel
+  const frenchValues = new Set(Object.values(COUNTRY_NORMALIZE).map((v) => v.toLowerCase()));
+  if (frenchValues.has(key)) {
+    // retourne la forme canonique (première occurrence)
+    for (const v of Object.values(COUNTRY_NORMALIZE)) {
+      if (v.toLowerCase() === key) return v;
+    }
+  }
+  // 4. Sinon on retourne le nom original (non normalisé) — évite de perdre l'info
+  return s;
+}
+
 
 // Nettoie la sortie d'un LLM pour extraire un JSON valide :
 // - retire les fences markdown ```json ... ``` (ou ``` ... ```)
@@ -460,45 +606,61 @@ async function callMistralText(prompt: string): Promise<string> {
     mistralError = "MISTRAL_API_KEY manquant";
     return "[]";
   }
-  const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${MISTRAL_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "mistral-small-latest",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    console.warn(`Mistral failed (${res.status}): ${body}`);
+  try {
+    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${MISTRAL_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "mistral-small-latest",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [{ role: "user", content: prompt }],
+      }),
+      signal: AbortSignal.timeout(MISTRAL_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn(`Mistral failed (${res.status}): ${body}`);
+      mistralCallOk = false;
+      mistralError = `Mistral ${res.status}: ${body.slice(0, 200)}`;
+      return "[]";
+    }
+    const data = await res.json();
+    return data?.choices?.[0]?.message?.content ?? "[]";
+  } catch (err) {
+    console.warn(`Mistral call error: ${String(err)}`);
     mistralCallOk = false;
-    mistralError = `Mistral ${res.status}: ${body.slice(0, 200)}`;
+    mistralError = String(err).slice(0, 200);
     return "[]";
   }
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content ?? "[]";
 }
 
 // --- Géocodage (OpenStreetMap Nominatim, gratuit) ---------------------------
 
-async function geocode(
-  query: string
-): Promise<{ pays: string; adress: string; latitude: string; longitude: string }> {
+interface GeoResult {
+  pays: string;
+  adress: string;
+  latitude: string;
+  longitude: string;
+}
+
+const emptyGeo: GeoResult = { pays: "", adress: "", latitude: "", longitude: "" };
+
+async function geocode(query: string): Promise<GeoResult> {
   if (!query.trim()) {
-    return { pays: "", adress: "", latitude: "", longitude: "" };
+    return emptyGeo;
   }
   const url =
     `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(query)}`;
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "crm-jenny-prospect/1.0" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) return { pays: "", adress: "", latitude: "", longitude: "" };
+    if (!res.ok) return emptyGeo;
     const arr = (await res.json()) as Array<{
       lat?: string;
       lon?: string;
@@ -506,7 +668,7 @@ async function geocode(
       address?: { country?: string };
     }>;
     const first = arr?.[0];
-    if (!first) return { pays: "", adress: "", latitude: "", longitude: "" };
+    if (!first) return emptyGeo;
     return {
       pays: first.address?.country ?? "",
       adress: first.display_name ?? "",
@@ -514,7 +676,7 @@ async function geocode(
       longitude: first.lon ?? "",
     };
   } catch {
-    return { pays: "", adress: "", latitude: "", longitude: "" };
+    return emptyGeo;
   }
 }
 
@@ -582,12 +744,17 @@ Deno.serve(async (req) => {
     const queries = await generateQueries(groupes, sites);
     console.log(`Requêtes générées: ${queries.length}`);
 
-    // 3. Recherche web (Serper.dev = vrais résultats Google)
+    // 3. Recherche web (Serper.dev = vrais résultats Google), par vagues
+    // parallèles pour tenir dans le budget wall clock du worker
     const allCandidates: Candidate[] = [];
-    for (const q of queries) {
-      const found = await serperSearch(q, 10);
-      for (const c of found) {
-        allCandidates.push(c);
+    const SERPER_WAVE = 8;
+    for (let w = 0; w < queries.length; w += SERPER_WAVE) {
+      const wave = queries.slice(w, w + SERPER_WAVE);
+      const results = await Promise.all(wave.map((q) => serperSearch(q, 10)));
+      for (const found of results) {
+        for (const c of found) {
+          allCandidates.push(c);
+        }
       }
       // Limite globale de candidats
       if (allCandidates.length >= MAX_CANDIDATES) break;
@@ -621,15 +788,27 @@ Deno.serve(async (req) => {
       .slice(0, 5)
       .map((c) => ({ noms: c.noms, score: c.score, domaine: c.domaine, pays: c.pays }));
 
-    // 5. Géocodage des suggestions retenues
+    // 5. Géocodage des suggestions retenues, borné dans le temps
+    // (budget wall clock du worker limité : on insère même si le géocodage
+    // incomplet, le pays manquant est complété à la validation)
+    const geoCache = new Map<string, GeoResult>();
+    const geoDeadline = Date.now() + GEOCODE_BUDGET_MS;
     for (const c of kept) {
+      if (Date.now() >= geoDeadline) {
+        console.warn("Géocodage interrompu : budget temps atteint");
+        break;
+      }
       // pays déjà suggéré par le scorer ? sinon géocodage par nom+domaine
       const q = c.pays
         ? `${c.noms}, ${c.pays}`
         : `${c.noms}`;
-      const geo = await geocode(q);
+      let geo = geoCache.get(q);
+      if (!geo) {
+        geo = await geocode(q);
+        geoCache.set(q, geo);
+      }
       if (geo.pays) {
-        c.pays = geo.pays;
+        c.pays = normalizeCountry(geo.pays);
         c.adress = geo.adress;
         c.latitude = geo.latitude;
         c.longitude = geo.longitude;
@@ -638,9 +817,13 @@ Deno.serve(async (req) => {
       if (!c.pays) {
         try {
           const host = new URL(c.source_url).hostname;
-          const geo2 = await geocode(host);
+          let geo2 = geoCache.get(host);
+          if (!geo2) {
+            geo2 = await geocode(host);
+            geoCache.set(host, geo2);
+          }
           if (geo2.pays) {
-            c.pays = geo2.pays;
+            c.pays = normalizeCountry(geo2.pays);
             if (!c.adress) c.adress = geo2.adress;
             if (!c.latitude) c.latitude = geo2.latitude;
             if (!c.longitude) c.longitude = geo2.longitude;
