@@ -744,12 +744,17 @@ Deno.serve(async (req) => {
     const queries = await generateQueries(groupes, sites);
     console.log(`Requêtes générées: ${queries.length}`);
 
-    // 3. Recherche web (Serper.dev = vrais résultats Google)
+    // 3. Recherche web (Serper.dev = vrais résultats Google), par vagues
+    // parallèles pour tenir dans le budget wall clock du worker
     const allCandidates: Candidate[] = [];
-    for (const q of queries) {
-      const found = await serperSearch(q, 10);
-      for (const c of found) {
-        allCandidates.push(c);
+    const SERPER_WAVE = 8;
+    for (let w = 0; w < queries.length; w += SERPER_WAVE) {
+      const wave = queries.slice(w, w + SERPER_WAVE);
+      const results = await Promise.all(wave.map((q) => serperSearch(q, 10)));
+      for (const found of results) {
+        for (const c of found) {
+          allCandidates.push(c);
+        }
       }
       // Limite globale de candidats
       if (allCandidates.length >= MAX_CANDIDATES) break;
