@@ -34,6 +34,8 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Adding a contact directly from the SiteDetail page",
+      "AI pre-filling of a contact's gender and language",
       "Full loading of prospecting suggestions (beyond 1000 rows)",
       "Sorting prospecting suggestions by date or relevance score",
       "Site renaming automatically propagated to its contacts",
@@ -121,6 +123,7 @@
     "visitHistory": "Visit history",
     "siteContacts": "Site contacts",
     "copyEmails": "Copy emails",
+    "addContact": "Add contact",
     "noActiveEmail": "No active contact email found.",
     "emailsCopied": "Emails copied to clipboard!",
     "copyError": "Error while copying emails",

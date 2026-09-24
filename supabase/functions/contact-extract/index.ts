@@ -35,6 +35,7 @@ interface ExtractedContact {
   num_mobile?: string;
   num_fixe?: string;
   genre?: string;
+  langue?: string;
 }
 
 async function callMistralText(prompt: string): Promise<string> {
@@ -170,13 +171,14 @@ const EXTRACTION_PROMPT = `Tu es un assistant qui extrait les coordonn\u00e9es d
 - num_mobile : num\u00e9ro de t\u00e9l\u00e9phone mobile (format international si possible, chiffres et + uniquement)
 - num_fixe : num\u00e9ro de t\u00e9l\u00e9phone fixe (chiffres et + uniquement)
 - genre : "Homme" ou "Femme" si d\u00e9ductible du pr\u00e9nom/titre, sinon cha\u00eene vide
+- langue : "Fran\u00e7ais", "Anglais" ou "Espagnol" selon la langue de l'intitul\u00e9 de poste (ex : "maintenance manager" = Anglais, "responsable production" = Fran\u00e7ais), sinon cha\u00eene vide
 
 R\u00e8gles :
 - Ne remplis un champ QUE si l'information est clairement pr\u00e9sente dans le texte.
 - Si une information est absente ou incertaine, laisse le champ vide (cha\u00eene vide).
 - Ne d\u00e9double pas les num\u00e9ros : num_mobile = le 1er num\u00e9ro, num_fixe = un \u00e9ventuel 2e.
 - R\u00e9ponds UNIQUEMENT avec un objet JSON de la forme :
-  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":""}
+  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":"","langue":""}
   sans markdown ni texte autour.
 
 Texte :
@@ -200,13 +202,14 @@ const VISION_PROMPT = `Tu es un assistant qui extrait les coordonn\u00e9es d'un 
 - num_mobile : num\u00e9ro de t\u00e9l\u00e9phone mobile (format international si possible, chiffres et + uniquement)
 - num_fixe : num\u00e9ro de t\u00e9l\u00e9phone fixe (chiffres et + uniquement)
 - genre : "Homme" ou "Femme" si d\u00e9ductible du pr\u00e9nom/titre, sinon cha\u00eene vide
+- langue : "Fran\u00e7ais", "Anglais" ou "Espagnol" selon la langue de l'intitul\u00e9 de poste (ex : "maintenance manager" = Anglais, "responsable production" = Fran\u00e7ais), sinon cha\u00eene vide
 
 R\u00e8gles :
 - Ne remplis un champ QUE si l'information est clairement lisible sur la carte.
 - Si une information est absente, illisible ou incertaine, laisse le champ vide (cha\u00eene vide).
 - Ne d\u00e9double pas les num\u00e9ros : num_mobile = le 1er num\u00e9ro, num_fixe = un \u00e9ventuel 2e.
 - R\u00e9ponds UNIQUEMENT avec un objet JSON de la forme :
-  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":""}
+  {"noms":"","prenom":"","fonction":"","email":"","num_mobile":"","num_fixe":"","genre":"","langue":""}
   sans markdown ni texte autour.`;
 
 const CORS_HEADERS: Record<string, string> = {
@@ -270,6 +273,7 @@ Deno.serve(async (req) => {
       num_mobile: clean(parsed?.num_mobile).replace(/[^\d+]/g, ""),
       num_fixe: clean(parsed?.num_fixe).replace(/[^\d+]/g, ""),
       genre: clean(parsed?.genre),
+      langue: clean(parsed?.langue),
     };
 
     return json({ ok: true, contact: result });

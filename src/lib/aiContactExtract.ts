@@ -6,6 +6,7 @@ export interface ExtractedContact {
   num_mobile?: string;
   num_fixe?: string;
   genre?: string;
+  langue?: string;
 }
 
 // Appelle l'Edge Function contact-extract (Mistral) pour extraire les champs
