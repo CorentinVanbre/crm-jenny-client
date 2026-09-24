@@ -87,8 +87,9 @@ export default function SiteDetail() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
-  // États pour la modale d'édition d'un contact
+  // États pour la modale d'édition / d'ajout d'un contact
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [contactModalMode, setContactModalMode] = useState<'closed' | 'edit' | 'add'>('closed');
   const [contactFormData, setContactFormData] = useState({
     noms: '',
     prenom: '',
@@ -347,7 +348,7 @@ export default function SiteDetail() {
     setIsAnalyzingContactAI(false);
     if (!extracted) return;
 
-    const fields: (keyof typeof contactFormData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
+    const fields: (keyof typeof contactFormData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre', 'langue'];
 
     setContactFormData(prev => {
       const newFormData = { ...prev };
@@ -438,6 +439,8 @@ export default function SiteDetail() {
   });
 
   const handleOpenEditContact = (contact: Contact) => {
+    resetContactForm();
+    setContactModalMode('edit');
     setEditingContactId(contact.id);
     const initial = {
       noms: contact.noms || '',
@@ -463,6 +466,7 @@ export default function SiteDetail() {
   };
 
   const resetContactForm = () => {
+    setContactModalMode('closed');
     setEditingContactId(null);
     setContactFormData({
       noms: '', prenom: '', groupe: '', site: '', fonction: '',
@@ -477,6 +481,74 @@ export default function SiteDetail() {
     setContactConfirmMessage(null);
     setUseContactAIMode(false);
     setIsAnalyzingContactAI(false);
+  };
+
+  // Ouvrir la modale d'ajout d'un contact, pré-remplie avec le groupe et le
+  // site de la page SiteDetail actuellement ouverte
+  const handleOpenAddContact = () => {
+    if (!site) return;
+    resetContactForm();
+    setContactModalMode('add');
+    const prefilled = {
+      noms: '', prenom: '',
+      groupe: site.groupe || '',
+      site: site.noms || '',
+      fonction: '',
+      num_mobile: '', email: '', observations: '', num_fixe: '',
+      langue: '', genre: '', contact_actif: true
+    };
+    setContactFormData(prefilled);
+    setInitialContactData(prefilled);
+    setTouchedContactFields(new Set());
+    setContactErrors({});
+    setContactEmailError('');
+    setContactEmailExistsError(false);
+    setContactConfirmMessage(null);
+    setUseContactAIMode(false);
+    setIsAnalyzingContactAI(false);
+  };
+
+  const handleSubmitContactAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateContactForm()) {
+      setContactConfirmMessage({ text: t('contacts.fillAllRequired'), isSuccess: false });
+      return;
+    }
+    if (!areContactRequiredFieldsFilled() || contactEmailExistsError || isCheckingContactEmail) return;
+
+    // Dernière vérification de disponibilité de l'email avant enregistrement
+    if (contactFormData.email && isValidContactEmail(contactFormData.email) && !hasContactEmailSpecialChars(contactFormData.email)) {
+      setIsCheckingContactEmail(true);
+      const exists = await checkContactEmailExists(contactFormData.email);
+      setIsCheckingContactEmail(false);
+      if (exists) {
+        setContactEmailExistsError(true);
+        setTouchedContactFields(prev => new Set(prev).add('email'));
+        return;
+      }
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const formattedData = formatContactDataForSave(contactFormData);
+      const contactData = {
+        ...formattedData,
+        owner: user?.id || null,
+        updated_date: new Date().toISOString()
+      };
+      const { error } = await supabase
+        .from('contacts')
+        .insert([{ ...contactData, id: crypto.randomUUID(), created_date: new Date().toISOString() }]);
+      if (error) {
+        setContactConfirmMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+        return;
+      }
+      setContactConfirmMessage({ text: t('contacts.contactSaved'), isSuccess: true });
+      resetContactForm();
+      if (site) await fetchContacts(site.groupe || '', site.noms);
+    } catch (err: any) {
+      setContactConfirmMessage({ text: `Erreur inattendue: ${err.message}`, isSuccess: false });
+    }
   };
 
   const handleContactGroupeSearch = (value: string) => {
@@ -1154,25 +1226,33 @@ export default function SiteDetail() {
         );
       })()}
 
-      {/* En-tête des contacts avec bouton Copier emails */}
-      {contacts.length > 0 && (
-        <div style={contactsHeaderStyle}>
-          <h2 style={{
-            fontFamily: 'Barlow, sans-serif',
-            fontWeight: 'bold',
-            fontSize: '18px',
-            margin: 0
-          }}>
-            {t('siteDetail.siteContacts')}
-          </h2>
+      {/* En-tête des contacts avec boutons Ajouter contact et Copier emails */}
+      <div style={contactsHeaderStyle}>
+        <h2 style={{
+          fontFamily: 'Barlow, sans-serif',
+          fontWeight: 'bold',
+          fontSize: '18px',
+          margin: 0
+        }}>
+          {t('siteDetail.siteContacts')}
+        </h2>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
-            onClick={handleCopyEmails}
+            onClick={handleOpenAddContact}
             style={copyButtonStyle}
           >
-            {t('siteDetail.copyEmails')}
+            {t('siteDetail.addContact')}
           </button>
+          {contacts.length > 0 && (
+            <button
+              onClick={handleCopyEmails}
+              style={copyButtonStyle}
+            >
+              {t('siteDetail.copyEmails')}
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Message de copie */}
       {copyMessage && (
@@ -1243,8 +1323,8 @@ export default function SiteDetail() {
         </div>
       )}
 
-      {/* Modale d'édition d'un contact */}
-      {editingContactId && (
+      {/* Modale d'édition / d'ajout d'un contact */}
+      {(editingContactId || contactModalMode === 'add') && (
         <>
           <div style={{
             position: 'fixed',
@@ -1254,7 +1334,7 @@ export default function SiteDetail() {
             zIndex: 999
           }} onClick={resetContactForm} />
           <form
-            onSubmit={handleSubmitContactEdit}
+            onSubmit={editingContactId ? handleSubmitContactEdit : handleSubmitContactAdd}
             onClick={e => e.stopPropagation()}
             style={{
               position: 'fixed',
@@ -1275,7 +1355,7 @@ export default function SiteDetail() {
             {/* En-tête avec titre et contact actif */}
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '10px' : 0, marginBottom: '15px' }}>
               <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '18px', margin: 0 }}>
-                {t('contacts.editTitle')}
+                {editingContactId ? t('contacts.editTitle') : t('contacts.addTitle')}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', cursor: 'pointer' }}>
@@ -1520,7 +1600,7 @@ export default function SiteDetail() {
               </div>
             )}
 
-            {/* Boutons Modifier et Annuler */}
+            {/* Boutons Enregistrer/Modifier et Annuler */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button
@@ -1534,7 +1614,7 @@ export default function SiteDetail() {
                     opacity: hasContactFormChanged && areContactRequiredFieldsFilled() && !contactEmailExistsError ? 1 : 0.5
                   }}
                 >
-                  {isCheckingContactEmail ? t('contacts.checking') : t('contacts.edit')}
+                  {isCheckingContactEmail ? t('contacts.checking') : (editingContactId ? t('contacts.edit') : t('contacts.save'))}
                 </button>
                 {contactEmailExistsError && (
                   <span style={{ color: 'red', fontSize: '14px', fontWeight: 'bold' }}>{t('contacts.alreadyExists')}</span>

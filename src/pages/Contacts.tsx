@@ -234,7 +234,7 @@ export default function Contacts() {
   // Analyse IA du contenu des observations via Mistral (Edge Function contact-extract).
   // Ne remplit que les champs encore vides du formulaire.
   const applyExtractedContact = (extracted: ExtractedContact) => {
-    const fields: (keyof typeof formData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre'];
+    const fields: (keyof typeof formData)[] = ['noms', 'prenom', 'fonction', 'email', 'num_mobile', 'num_fixe', 'genre', 'langue'];
 
     let extractedEmail = '';
     setFormData(prev => {
