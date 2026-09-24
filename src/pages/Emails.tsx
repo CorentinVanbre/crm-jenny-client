@@ -54,26 +54,48 @@ export default function Emails() {
 
   const assignedSet = useMemo(() => new Set(assignedCountries), [assignedCountries]);
 
+  const fetchAllPages = useCallback(async <T,>(table: 'sites' | 'contacts', select: string): Promise<T[]> => {
+    let all: T[] = [];
+    let offset = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(select)
+        .range(offset, offset + batchSize - 1);
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        all = [...all, ...data];
+        offset += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return all;
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoadingData(true);
     setError(null);
     try {
-      const [sitesRes, contactsRes] = await Promise.all([
-        supabase.from('sites').select('id, noms, groupe, pays'),
-        supabase.from('contacts').select('id, noms, prenom, groupe, site, email, langue, contact_actif'),
+      const [sites, contacts] = await Promise.all([
+        fetchAllPages<Site>('sites', 'id, noms, groupe, pays'),
+        fetchAllPages<Contact>('contacts', 'id, noms, prenom, groupe, site, email, langue, contact_actif'),
       ]);
 
-      if (sitesRes.error) throw sitesRes.error;
-      if (contactsRes.error) throw contactsRes.error;
-
-      setAllSites(sitesRes.data || []);
-      setAllContacts(contactsRes.data || []);
+      setAllSites(sites);
+      setAllContacts(contacts);
     } catch (err: any) {
       setError(err.message || String(err));
     } finally {
       setLoadingData(false);
     }
-  }, []);
+  }, [fetchAllPages]);
 
   useEffect(() => {
     fetchData();
