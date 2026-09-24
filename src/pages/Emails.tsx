@@ -288,7 +288,7 @@ export default function Emails() {
                 })}
               </div>
             </div>
-            <p style={mutedStyle}>
+            <p style={counterTextStyle}>
               {t('emails.totalContacts', { count: totalAssignedContacts })}
             </p>
             <label style={countryLabelStyle}>
@@ -322,7 +322,7 @@ export default function Emails() {
                   {t('emails.copy')}
                 </button>
               </div>
-              <span style={mutedStyle}>
+              <span style={counterTextStyle}>
                 {t('emails.emailsCount', { count: results.length })}
                 {hasFetched && duplicateCount > 0 && (
                   <> — {t('emails.duplicatesIgnored', { count: duplicateCount })}</>
@@ -447,6 +447,11 @@ const mutedStyle: React.CSSProperties = {
   marginBottom: '4px',
 };
 
+const counterTextStyle: React.CSSProperties = {
+  ...mutedStyle,
+  color: '#000000',
+};
+
 const langRowStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
@@ -528,7 +533,7 @@ const continentHeaderStyle: React.CSSProperties = {
 const countStyle: React.CSSProperties = {
   marginLeft: '10px',
   fontSize: '13px',
-  color: '#666',
+  color: '#000000',
   fontWeight: 200,
 };
 
