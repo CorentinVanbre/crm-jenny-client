@@ -39,8 +39,10 @@ export default function Emails() {
 
   const [selectedLanguages, setSelectedLanguages] = useState<Set<Language>>(new Set(LANGUAGES));
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set());
+  const [activeOnly, setActiveOnly] = useState(true);
 
   const [results, setResults] = useState<string[]>([]);
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const [hasFetched, setHasFetched] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
@@ -114,33 +116,31 @@ export default function Emails() {
     return map;
   }, [allSites]);
 
+  const matchesCountryFilter = useCallback((pays: string) => {
+    const canonical = resolveToFrench(pays) ?? pays;
+    if (!isAdmin && !assignedSet.has(canonical)) return false;
+    if (selectedCountries.size > 0 && !selectedCountries.has(canonical)) return false;
+    return true;
+  }, [isAdmin, assignedSet, selectedCountries]);
+
   const filteredContacts = useMemo(() => {
     if (loadingData || loadingZones) return [];
 
-    const countryFilter = (pays: string) => {
-      const canonical = resolveToFrench(pays) ?? pays;
-      if (!isAdmin) {
-        if (!assignedSet.has(canonical)) return false;
-      }
-      if (selectedCountries.size > 0 && !selectedCountries.has(canonical)) return false;
-      return true;
-    };
-
     return allContacts.filter(c => {
       if (!c.email) return false;
+      if (activeOnly && !c.contact_actif) return false;
       const pays = sitePaysMap[c.site] || '';
-      if (!countryFilter(pays)) return false;
+      if (!matchesCountryFilter(pays)) return false;
       if (selectedLanguages.size > 0 && !selectedLanguages.has(c.langue as Language)) return false;
       return true;
     });
   }, [
     allContacts,
     sitePaysMap,
+    matchesCountryFilter,
     loadingData,
     loadingZones,
-    isAdmin,
-    assignedSet,
-    selectedCountries,
+    activeOnly,
     selectedLanguages,
   ]);
 
@@ -150,15 +150,15 @@ export default function Emails() {
 
     allContacts.forEach(c => {
       if (!c.email) return;
+      if (activeOnly && !c.contact_actif) return;
       const pays = sitePaysMap[c.site] || '';
-      const canonical = resolveToFrench(pays) ?? pays;
-      if (!isAdmin && !assignedSet.has(canonical)) return;
+      if (!matchesCountryFilter(pays)) return;
       if (c.langue in counts) {
         counts[c.langue as Language] += 1;
       }
     });
     return counts;
-  }, [allContacts, sitePaysMap, loadingData, loadingZones, isAdmin, assignedSet]);
+  }, [allContacts, sitePaysMap, matchesCountryFilter, loadingData, loadingZones, activeOnly]);
 
   const totalAssignedContacts = useMemo(
     () => LANGUAGES.reduce(
@@ -225,6 +225,7 @@ export default function Emails() {
     try {
       const emails = filteredContacts.map(c => c.email).filter(Boolean);
       const unique = Array.from(new Set(emails));
+      setDuplicateCount(emails.length - unique.length);
       setResults(unique);
     } catch (err: any) {
       setError(err.message || String(err));
@@ -290,6 +291,15 @@ export default function Emails() {
             <p style={mutedStyle}>
               {t('emails.totalContacts', { count: totalAssignedContacts })}
             </p>
+            <label style={countryLabelStyle}>
+              <input
+                type="checkbox"
+                checked={activeOnly}
+                onChange={(e) => setActiveOnly(e.target.checked)}
+                style={{ marginRight: '6px', cursor: 'pointer' }}
+              />
+              {t('emails.activeOnly')}
+            </label>
           </div>
 
           <div style={cardStyle}>
@@ -314,6 +324,9 @@ export default function Emails() {
               </div>
               <span style={mutedStyle}>
                 {t('emails.emailsCount', { count: results.length })}
+                {hasFetched && duplicateCount > 0 && (
+                  <> — {t('emails.duplicatesIgnored', { count: duplicateCount })}</>
+                )}
               </span>
             </div>
 
