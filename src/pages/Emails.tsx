@@ -39,6 +39,7 @@ export default function Emails() {
 
   const [selectedLanguages, setSelectedLanguages] = useState<Set<Language>>(new Set(LANGUAGES));
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set());
+  const [activeOnly, setActiveOnly] = useState(true);
 
   const [results, setResults] = useState<string[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
@@ -127,6 +128,7 @@ export default function Emails() {
 
     return allContacts.filter(c => {
       if (!c.email) return false;
+      if (activeOnly && !c.contact_actif) return false;
       const pays = sitePaysMap[c.site] || '';
       if (!matchesCountryFilter(pays)) return false;
       if (selectedLanguages.size > 0 && !selectedLanguages.has(c.langue as Language)) return false;
@@ -138,6 +140,7 @@ export default function Emails() {
     matchesCountryFilter,
     loadingData,
     loadingZones,
+    activeOnly,
     selectedLanguages,
   ]);
 
@@ -147,6 +150,7 @@ export default function Emails() {
 
     allContacts.forEach(c => {
       if (!c.email) return;
+      if (activeOnly && !c.contact_actif) return;
       const pays = sitePaysMap[c.site] || '';
       if (!matchesCountryFilter(pays)) return;
       if (c.langue in counts) {
@@ -154,7 +158,7 @@ export default function Emails() {
       }
     });
     return counts;
-  }, [allContacts, sitePaysMap, matchesCountryFilter, loadingData, loadingZones]);
+  }, [allContacts, sitePaysMap, matchesCountryFilter, loadingData, loadingZones, activeOnly]);
 
   const totalAssignedContacts = useMemo(
     () => LANGUAGES.reduce(
@@ -287,6 +291,15 @@ export default function Emails() {
             <p style={mutedStyle}>
               {t('emails.totalContacts', { count: totalAssignedContacts })}
             </p>
+            <label style={countryLabelStyle}>
+              <input
+                type="checkbox"
+                checked={activeOnly}
+                onChange={(e) => setActiveOnly(e.target.checked)}
+                style={{ marginRight: '6px', cursor: 'pointer' }}
+              />
+              {t('emails.activeOnly')}
+            </label>
           </div>
 
           <div style={cardStyle}>

@@ -34,6 +34,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Filtre \"Actifs uniquement\" activé par défaut dans la page Emails",
       "Affichage du nombre de doublons ignorés lors de la récupération des emails",
       "Chargement complet des contacts de la page Emails (au-delà de 1000 lignes)",
       "Carte des zones dynamique dans la gestion des zones (page admin)",
@@ -275,6 +276,7 @@
     "noZones": "Aucun pays attribué. Contactez un administrateur.",
     "byLanguage": "par langue",
     "totalContacts": "{{count}} contacts filtrés",
+    "activeOnly": "Actifs uniquement",
     "error": "Erreur: {{message}}"
   },
   "adminZones": {
