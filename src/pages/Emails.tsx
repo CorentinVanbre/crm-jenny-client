@@ -41,6 +41,7 @@ export default function Emails() {
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set());
 
   const [results, setResults] = useState<string[]>([]);
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const [hasFetched, setHasFetched] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [copyMsg, setCopyMsg] = useState<string | null>(null);
@@ -114,33 +115,29 @@ export default function Emails() {
     return map;
   }, [allSites]);
 
+  const matchesCountryFilter = useCallback((pays: string) => {
+    const canonical = resolveToFrench(pays) ?? pays;
+    if (!isAdmin && !assignedSet.has(canonical)) return false;
+    if (selectedCountries.size > 0 && !selectedCountries.has(canonical)) return false;
+    return true;
+  }, [isAdmin, assignedSet, selectedCountries]);
+
   const filteredContacts = useMemo(() => {
     if (loadingData || loadingZones) return [];
-
-    const countryFilter = (pays: string) => {
-      const canonical = resolveToFrench(pays) ?? pays;
-      if (!isAdmin) {
-        if (!assignedSet.has(canonical)) return false;
-      }
-      if (selectedCountries.size > 0 && !selectedCountries.has(canonical)) return false;
-      return true;
-    };
 
     return allContacts.filter(c => {
       if (!c.email) return false;
       const pays = sitePaysMap[c.site] || '';
-      if (!countryFilter(pays)) return false;
+      if (!matchesCountryFilter(pays)) return false;
       if (selectedLanguages.size > 0 && !selectedLanguages.has(c.langue as Language)) return false;
       return true;
     });
   }, [
     allContacts,
     sitePaysMap,
+    matchesCountryFilter,
     loadingData,
     loadingZones,
-    isAdmin,
-    assignedSet,
-    selectedCountries,
     selectedLanguages,
   ]);
 
@@ -151,14 +148,13 @@ export default function Emails() {
     allContacts.forEach(c => {
       if (!c.email) return;
       const pays = sitePaysMap[c.site] || '';
-      const canonical = resolveToFrench(pays) ?? pays;
-      if (!isAdmin && !assignedSet.has(canonical)) return;
+      if (!matchesCountryFilter(pays)) return;
       if (c.langue in counts) {
         counts[c.langue as Language] += 1;
       }
     });
     return counts;
-  }, [allContacts, sitePaysMap, loadingData, loadingZones, isAdmin, assignedSet]);
+  }, [allContacts, sitePaysMap, matchesCountryFilter, loadingData, loadingZones]);
 
   const totalAssignedContacts = useMemo(
     () => LANGUAGES.reduce(
@@ -225,6 +221,7 @@ export default function Emails() {
     try {
       const emails = filteredContacts.map(c => c.email).filter(Boolean);
       const unique = Array.from(new Set(emails));
+      setDuplicateCount(emails.length - unique.length);
       setResults(unique);
     } catch (err: any) {
       setError(err.message || String(err));
@@ -314,6 +311,9 @@ export default function Emails() {
               </div>
               <span style={mutedStyle}>
                 {t('emails.emailsCount', { count: results.length })}
+                {hasFetched && duplicateCount > 0 && (
+                  <> — {t('emails.duplicatesIgnored', { count: duplicateCount })}</>
+                )}
               </span>
             </div>
 

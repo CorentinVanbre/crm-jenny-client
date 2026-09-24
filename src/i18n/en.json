@@ -34,6 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Display of the number of duplicates ignored when retrieving emails",
       "Full loading of Emails page contacts (beyond 1000 rows)",
       "Dynamic zones map in zone management (admin page)",
       "Emails page zone backgrounds harmonized with other pages",
@@ -264,6 +265,7 @@
     "noEmailsToCopy": "No email to copy.",
     "results": "Results",
     "emailsCount": "{{count}} emails retrieved",
+    "duplicatesIgnored": "{{count}} duplicates ignored",
     "contactsCount": "{{count}} contacts",
     "selectAll": "Select all",
     "deselectAll": "Deselect all",

@@ -34,6 +34,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Affichage du nombre de doublons ignorés lors de la récupération des emails",
       "Chargement complet des contacts de la page Emails (au-delà de 1000 lignes)",
       "Carte des zones dynamique dans la gestion des zones (page admin)",
       "Harmonisation du fond des zones de la page Emails avec les autres pages",
@@ -264,6 +265,7 @@
     "noEmailsToCopy": "Aucun email à copier.",
     "results": "Résultats",
     "emailsCount": "{{count}} emails récupérés",
+    "duplicatesIgnored": "{{count}} doublons ignorés",
     "contactsCount": "{{count}} contacts",
     "selectAll": "Tout sélectionner",
     "deselectAll": "Tout désélectionner",
