@@ -385,7 +385,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#fff',
+  backgroundColor: '#A6A6A6',
   border: '1px solid #ddd',
   borderRadius: '8px',
   padding: '20px',
