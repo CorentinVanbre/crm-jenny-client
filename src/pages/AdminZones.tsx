@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { CONTINENTS } from '../lib/countries';
 import { useIsMobile } from '../lib/useIsMobile';
+import ZonesMap from '../components/ZonesMap';
 
 interface Profile {
   id: string;
@@ -141,6 +142,11 @@ export default function AdminZones() {
   );
 
   const hasChanges = zonesChanged || mapChanged;
+
+  const selectedCountries = useMemo(
+    () => CONTINENTS.flatMap(c => c.pays).filter(p => selected.has(p)),
+    [selected]
+  );
 
   const toggleCountry = (pays: string) => {
     setSelected(prev => {
@@ -353,6 +359,11 @@ export default function AdminZones() {
           ))}
         </select>
         {loadingUsers && <p style={mutedStyle}>Chargement des utilisateurs...</p>}
+        {selectedUserId && (
+          <div style={{ marginTop: '15px' }}>
+            <ZonesMap allowedCountries={selectedCountries} />
+          </div>
+        )}
       </div>
 
       {msg && <div style={messageStyle(msg.isSuccess)}>{msg.text}</div>}

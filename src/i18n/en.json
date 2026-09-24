@@ -34,6 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Dynamic zones map in zone management (admin page)",
       "Emails page zone backgrounds harmonized with other pages",
       "Adding a contact directly from the SiteDetail page",
       "AI pre-filling of a contact's gender and language",
