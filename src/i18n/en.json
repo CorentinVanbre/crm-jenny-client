@@ -35,7 +35,7 @@
     "recentTitle": "Recently added features:",
     "recentItems": [
       "New \"Information search / commercial watch\" section in the Prospecting page (AI to come)",
-      "Prospecting suggestions displayed as a list with batches of 50",
+      "Prospecting suggestions displayed as a list with page-by-page browsing of 50 and column sorting (relevance, country)",
       "\"Active only\" filter enabled by default in the Emails page",
       "Display of the number of duplicates ignored when retrieving emails",
       "Full loading of Emails page contacts (beyond 1000 rows)",
@@ -301,7 +301,6 @@
     "watchSection": "Information search / commercial watch",
     "watchDescription": "Research information on existing sites: news, projects, expansions, contacts, relevant events (upcoming AI feature).",
     "watchPlaceholder": "Commercial watch on existing sites will be available here soon (AI).",
-    "loadMore": "Show more ({{shown}}/{{total}} displayed)",
     "groupSite": "Group / Site",
     "searchPlaceholder": "Search by group, site, domain, country",
     "matchingCount": "{{count}} matching suggestions",
@@ -336,6 +335,9 @@
       "Calcination": "Calcination",
       "Incinération": "Incineration",
       "Autre": "Other"
-    }
+    },
+    "prevPage": "Previous 50",
+    "nextPage": "Next {{count}}",
+    "pageCount": "Page {{page}}/{{total}}"
   }
 }

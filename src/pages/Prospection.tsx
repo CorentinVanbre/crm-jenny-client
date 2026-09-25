@@ -41,7 +41,8 @@ export default function Prospection() {
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const PAGE_SIZE = 50;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [columnSort, setColumnSort] = useState<{ col: 'score' | 'pays'; dir: 'asc' | 'desc' } | null>(null);
 
   // --- Modale d'analyse (création de site, identique à Contacts) ---
   const [editingSuggestion, setEditingSuggestion] = useState<Suggestion | null>(null);
@@ -119,23 +120,49 @@ export default function Prospection() {
   }, [isAdmin, allowedCountries, filterStatus, searchText]);
 
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [searchText, filterStatus, sortBy]);
+    setPageIndex(0);
+  }, [searchText, filterStatus, sortBy, columnSort]);
 
   const suggestionDate = (s: Suggestion): number => {
     const t = new Date(s.scanned_at ?? s.created_date ?? '').getTime();
     return Number.isNaN(t) ? 0 : t;
   };
 
+  // Tri sur le total des résultats filtrés (les colonnes cliquables prennent le pas sur le select de tri)
   const visibleSuggestions = useMemo(() => {
-    const filtered = suggestions.filter(matchesSearch);
-    return [...filtered].sort((a, b) => {
-      if (sortBy === 'date') {
-        return suggestionDate(b) - suggestionDate(a);
+    const filtered = [...suggestions.filter(matchesSearch)];
+    if (columnSort) {
+      const factor = columnSort.dir === 'asc' ? 1 : -1;
+      if (columnSort.col === 'pays') {
+        filtered.sort((a, b) => (a.pays || '').localeCompare(b.pays || '') * factor);
+      } else {
+        filtered.sort((a, b) => ((a.score ?? 0) - (b.score ?? 0)) * factor);
       }
-      return (b.score ?? 0) - (a.score ?? 0);
+    } else if (sortBy === 'date') {
+      filtered.sort((a, b) => suggestionDate(b) - suggestionDate(a));
+    } else {
+      filtered.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    }
+    return filtered;
+  }, [suggestions, matchesSearch, sortBy, columnSort]);
+
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(visibleSuggestions.length / PAGE_SIZE) - 1);
+    setPageIndex(p => Math.min(p, maxPage));
+  }, [visibleSuggestions.length]);
+
+  // Premier clic : ordre croissant / alphabétique ; second clic : ordre inverse
+  const handleColumnSort = (col: 'score' | 'pays') => {
+    setColumnSort(prev => {
+      if (prev?.col === col) {
+        return { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      }
+      return { col, dir: 'asc' };
     });
-  }, [suggestions, matchesSearch, sortBy]);
+  };
+
+  const pageStart = pageIndex * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, visibleSuggestions.length);
 
   // --- Modération : refuser (bouton supprimer rouge) ---
   const handleRefuse = async (s: Suggestion) => {
@@ -295,8 +322,26 @@ export default function Prospection() {
         {t('prospection.subtitle')}
       </p>
 
-      {/* Barre de recherche + filtres */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '15px' }}>
+      {message && message.text && (
+        <div style={{
+          padding: '10px', margin: '10px 0', borderRadius: '4px',
+          fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+          backgroundColor: message.isSuccess ? '#d4edda' : '#f8d7da',
+          color: message.isSuccess ? '#155724' : '#721c24',
+          border: `1px solid ${message.isSuccess ? '#c3e6cb' : '#f5c6cb'}`
+        }}>
+          {message.text}
+        </div>
+      )}
+
+      {/* --- Section 1 : Prospection des sites --- */}
+      <section>
+        <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '15px' }}>
+          {t('prospection.sitesSection')}
+        </h3>
+
+        {/* Barre de recherche + filtres (sous le titre de section) */}
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '15px' }}>
         <input
           type="text"
           placeholder={t('prospection.searchPlaceholder')}
@@ -336,48 +381,34 @@ export default function Prospection() {
         </label>
       </div>
 
-      {message && message.text && (
-        <div style={{
-          padding: '10px', margin: '10px 0', borderRadius: '4px',
-          fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-          backgroundColor: message.isSuccess ? '#d4edda' : '#f8d7da',
-          color: message.isSuccess ? '#155724' : '#721c24',
-          border: `1px solid ${message.isSuccess ? '#c3e6cb' : '#f5c6cb'}`
-        }}>
-          {message.text}
-        </div>
-      )}
-
-      {/* --- Section 1 : Prospection des sites --- */}
-      <section>
-        <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '15px' }}>
-          {t('prospection.sitesSection')}
-        </h3>
-
         {loading || loadingZones ? (
           <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.loading')}</p>
         ) : visibleSuggestions.length === 0 ? (
           <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.noResults')}</p>
         ) : (
           <>
-            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#A6A6A6' }}>
               {!isMobile && (
                 <div style={{ display: 'flex', gap: '10px', padding: '8px 10px', backgroundColor: '#E5E5E4', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
                   <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.groupSite')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.relevance')}</span>
+                  <span style={{ ...sortableHeaderStyle }} onClick={() => handleColumnSort('score')}>
+                    {t('prospection.relevance')}{columnSort?.col === 'score' ? (columnSort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </span>
                   <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.address')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.country')}</span>
+                  <span style={{ ...sortableHeaderStyle }} onClick={() => handleColumnSort('pays')}>
+                    {t('prospection.country')}{columnSort?.col === 'pays' ? (columnSort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </span>
                   <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.source')}</span>
                   <span style={{ ...listHeaderStyle, width: '270px' }} />
                 </div>
               )}
-              {visibleSuggestions.slice(0, visibleCount).map((s) => (
+              {visibleSuggestions.slice(pageStart, pageEnd).map((s) => (
                 <div
                   key={s.id}
                   style={{
                     display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '6px' : '10px',
                     padding: '10px', borderTop: '1px solid #eee', alignItems: isMobile ? 'stretch' : 'center',
-                    backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : 'transparent',
+                    backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : '#A6A6A6',
                     opacity: s.approved ? 0.8 : 1,
                   }}
                 >
@@ -480,19 +511,37 @@ export default function Prospection() {
               ))}
             </div>
 
-            {/* Affichage par paquets de 50 : bouton pour afficher les 50 suivants */}
-            {visibleSuggestions.length > visibleCount && (
-              <div style={{ textAlign: 'center', margin: '15px 0' }}>
+            {/* Affichage par paquets de 50 : les 50 précédentes sont masquées au chargement des suivantes */}
+            {visibleSuggestions.length > PAGE_SIZE && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', margin: '15px 0' }}>
                 <button
                   type="button"
-                  onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                  onClick={() => setPageIndex(p => Math.max(0, p - 1))}
+                  disabled={pageIndex === 0}
                   style={{
                     height: '32px', padding: '0 20px', border: '1px solid #000', borderRadius: '4px',
-                    backgroundColor: '#E5E5E4', cursor: 'pointer',
+                    backgroundColor: '#E5E5E4', cursor: pageIndex === 0 ? 'not-allowed' : 'pointer',
+                    opacity: pageIndex === 0 ? 0.5 : 1,
                     fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
                   }}
                 >
-                  {t('prospection.loadMore', { shown: visibleCount, total: visibleSuggestions.length })}
+                  {t('prospection.prevPage')}
+                </button>
+                <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>
+                  {t('prospection.pageCount', { page: pageIndex + 1, total: Math.ceil(visibleSuggestions.length / PAGE_SIZE) })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPageIndex(p => p + 1)}
+                  disabled={pageEnd >= visibleSuggestions.length}
+                  style={{
+                    height: '32px', padding: '0 20px', border: '1px solid #000', borderRadius: '4px',
+                    backgroundColor: '#E5E5E4', cursor: pageEnd >= visibleSuggestions.length ? 'not-allowed' : 'pointer',
+                    opacity: pageEnd >= visibleSuggestions.length ? 0.5 : 1,
+                    fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+                  }}
+                >
+                  {t('prospection.nextPage', { count: Math.min(PAGE_SIZE, visibleSuggestions.length - pageEnd) })}
                 </button>
               </div>
             )}
@@ -737,6 +786,13 @@ const listHeaderStyle: React.CSSProperties = {
   fontWeight: 'bold',
   fontSize: '13px',
   color: '#000',
+};
+
+const sortableHeaderStyle: React.CSSProperties = {
+  ...listHeaderStyle,
+  flex: 1,
+  cursor: 'pointer',
+  userSelect: 'none',
 };
 
 const modalTitleStyle: React.CSSProperties = {
