@@ -34,6 +34,8 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Nouvelle section « Recherche d’information / veille commerciale » dans la page Prospection (IA à venir)",
+      "Suggestions de prospection affichées en liste avec affichage par paquets de 50",
       "Filtre \"Actifs uniquement\" activé par défaut dans la page Emails",
       "Affichage du nombre de doublons ignorés lors de la récupération des emails",
       "Chargement complet des contacts de la page Emails (au-delà de 1000 lignes)",
@@ -295,6 +297,12 @@
   "prospection": {
     "title": "Prospection",
     "subtitle": "Suggestions de sites et groupes issues du scan IA hebdomadaire (broyeurs à boulets / fours rotatifs).",
+    "sitesSection": "Prospection des sites",
+    "watchSection": "Recherche d’information / veille commerciale",
+    "watchDescription": "Rechercher des informations sur les sites existants : actualités, projets, extensions, contacts, événements pertinents (fonctionnalité IA à venir).",
+    "watchPlaceholder": "La veille commerciale sur les sites existants sera bientôt disponible ici (IA).",
+    "loadMore": "Afficher la suite ({{shown}}/{{total}} affichées)",
+    "groupSite": "Groupe / Site",
     "searchPlaceholder": "Rechercher par groupe, site, domaine, pays",
     "matchingCount": "{{count}} suggestions correspondantes",
     "pendingOnly": "En attente uniquement",
