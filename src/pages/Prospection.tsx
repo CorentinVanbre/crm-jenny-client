@@ -40,6 +40,8 @@ export default function Prospection() {
   const [filterStatus, setFilterStatus] = useState<'pending' | 'all'>('pending');
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // --- Modale d'analyse (création de site, identique à Contacts) ---
   const [editingSuggestion, setEditingSuggestion] = useState<Suggestion | null>(null);
@@ -115,6 +117,10 @@ export default function Prospection() {
       (s.adress?.formatted && s.adress.formatted.toLowerCase().includes(q))
     );
   }, [isAdmin, allowedCountries, filterStatus, searchText]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchText, filterStatus, sortBy]);
 
   const suggestionDate = (s: Suggestion): number => {
     const t = new Date(s.scanned_at ?? s.created_date ?? '').getTime();
@@ -281,7 +287,7 @@ export default function Prospection() {
   };
 
   return (
-    <div style={{ padding: '10px', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', boxSizing: 'border-box' }}>
+    <div style={{ padding: '10px', width: 'calc(100% - 20px)', maxWidth: isMobile ? '100%' : '1200px', margin: '0 auto', boxSizing: 'border-box' }}>
       <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '15px' }}>
         {t('prospection.title')}
       </h2>
@@ -342,113 +348,178 @@ export default function Prospection() {
         </div>
       )}
 
-      {loading || loadingZones ? (
-        <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.loading')}</p>
-      ) : visibleSuggestions.length === 0 ? (
-        <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.noResults')}</p>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', alignItems: 'start' }}>
-          {visibleSuggestions.map((s) => (
-            <div
-              key={s.id}
-              style={{
-                backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : '#A6A6A6',
-                border: '1px solid #ddd', borderRadius: '8px', padding: '10px',
-                boxShadow: '1px 1px 1px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column',
-                opacity: s.approved ? 0.8 : 1,
-              }}
-            >
-              {/* En-tête : Groupe - Site suggéré */}
-              <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '16px', marginBottom: '10px', textAlign: 'center' }}>
-                {s.groupe} — {s.noms}
-              </h3>
+      {/* --- Section 1 : Prospection des sites --- */}
+      <section>
+        <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '15px' }}>
+          {t('prospection.sitesSection')}
+        </h3>
 
-              <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '5px 0' }}>
-                <strong>{t('prospection.address')}:</strong> {s.adress?.formatted || t('prospection.unknown')}
-              </p>
-              <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '5px 0' }}>
-                <strong>{t('prospection.domain')}:</strong> {s.domaine}
-              </p>
-              <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '5px 0' }}>
-                <strong>{t('prospection.country')}:</strong> {s.pays || t('prospection.unknown')}
-              </p>
-
-              {/* Taux de fiabilité */}
-              <div style={{ margin: '8px 0' }}>
-                <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', marginBottom: '4px' }}>
-                  <strong>{t('prospection.relevance')}:</strong> {s.score}/100
+        {loading || loadingZones ? (
+          <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.loading')}</p>
+        ) : visibleSuggestions.length === 0 ? (
+          <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.noResults')}</p>
+        ) : (
+          <>
+            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+              {!isMobile && (
+                <div style={{ display: 'flex', gap: '10px', padding: '8px 10px', backgroundColor: '#E5E5E4', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
+                  <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.groupSite')}</span>
+                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.relevance')}</span>
+                  <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.address')}</span>
+                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.country')}</span>
+                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.source')}</span>
+                  <span style={{ ...listHeaderStyle, width: '270px' }} />
                 </div>
-                <div style={{ height: '8px', backgroundColor: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${s.score}%`, height: '100%', backgroundColor: scoreColor(s.score) }} />
-                </div>
-                {s.score_reason && (
-                  <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#444', marginTop: '4px' }}>
-                    {s.score_reason}
+              )}
+              {visibleSuggestions.slice(0, visibleCount).map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '6px' : '10px',
+                    padding: '10px', borderTop: '1px solid #eee', alignItems: isMobile ? 'stretch' : 'center',
+                    backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : 'transparent',
+                    opacity: s.approved ? 0.8 : 1,
+                  }}
+                >
+                  {/* Groupe + site */}
+                  <div style={{ flex: 2, minWidth: 0 }}>
+                    <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '14px' }}>
+                      {s.groupe} — {s.noms}
+                    </span>
+                    {isMobile && s.approved && (
+                      <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '12px', marginLeft: '8px', color: s.approved === 'approved' ? '#008000' : s.approved === 'existing' ? '#cc9900' : '#cc0000' }}>
+                        {s.approved === 'approved' ? t('prospection.statusApproved') : s.approved === 'existing' ? t('prospection.statusExisting') : t('prospection.statusRefused')}
+                      </span>
+                    )}
+                    {s.domaine && (
+                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#444' }}>
+                        {t('prospection.domain')}: {s.domaine}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {s.source_url && (
-                <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', margin: '5px 0', wordBreak: 'break-all' }}>
-                  <strong>{t('prospection.source')}:</strong>{' '}
-                  <a href={s.source_url} target="_blank" rel="noopener noreferrer" style={{ color: '#000', textDecoration: 'underline' }}>
-                    {t('prospection.openSource')}
-                  </a>
-                </p>
-              )}
+                  {/* Taux de pertinence */}
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
+                      {s.score}/100
+                    </div>
+                    <div style={{ height: '6px', backgroundColor: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${s.score}%`, height: '100%', backgroundColor: scoreColor(s.score) }} />
+                    </div>
+                    {s.score_reason && (
+                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', color: '#444', marginTop: '2px' }}>
+                        {s.score_reason}
+                      </div>
+                    )}
+                  </div>
 
-              {s.approved && (
-                <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', margin: '5px 0', color: s.approved === 'approved' ? '#008000' : s.approved === 'existing' ? '#cc9900' : '#cc0000' }}>
-                  {s.approved === 'approved' ? t('prospection.statusApproved') : s.approved === 'existing' ? t('prospection.statusExisting') : t('prospection.statusRefused')}
-                </p>
-              )}
+                  {/* Adresse */}
+                  <div style={{ flex: 2, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', wordBreak: 'break-word' }}>
+                    {s.adress?.formatted || t('prospection.unknown')}
+                  </div>
 
-              {/* Boutons */}
-              <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  onClick={() => handleRefuse(s)}
-                  disabled={!!s.approved}
-                  style={{
-                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
-                    backgroundColor: s.approved === 'refused' ? '#b30000' : '#ff4444', color: '#fff',
-                    cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
-                    fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
-                  }}
-                >
-                  {t('prospection.refuse')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExisting(s)}
-                  disabled={!!s.approved}
-                  style={{
-                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
-                    backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: '#000',
-                    cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
-                    fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
-                  }}
-                >
-                  {t('prospection.existing')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAnalyze(s)}
-                  disabled={s.approved === 'approved'}
-                  style={{
-                    flex: 1, height: '30px', padding: '0 6px', border: '1px solid #000', borderRadius: '4px',
-                    backgroundColor: s.approved === 'approved' ? '#007700' : '#00b35a', color: '#fff',
-                    cursor: s.approved === 'approved' ? 'not-allowed' : 'pointer', opacity: s.approved === 'approved' ? 0.6 : 1,
-                    fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px',
-                  }}
-                >
-                  {t('prospection.analyze')}
-                </button>
-              </div>
+                  {/* Pays */}
+                  <div style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
+                    {s.pays || t('prospection.unknown')}
+                  </div>
+
+                  {/* Source de la suggestion */}
+                  <div style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
+                    {s.source_url ? (
+                      <a href={s.source_url} target="_blank" rel="noopener noreferrer" style={{ color: '#000', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                        {t('prospection.openSource')}
+                      </a>
+                    ) : (
+                      t('prospection.unknown')
+                    )}
+                  </div>
+
+                  {/* Boutons : Supprimer, Déjà existant, Analyser */}
+                  <div style={{ display: 'flex', gap: '6px', justifyContent: isMobile ? 'flex-end' : 'flex-end', width: isMobile ? '100%' : '270px', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRefuse(s)}
+                      disabled={!!s.approved}
+                      style={{
+                        height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
+                        backgroundColor: s.approved === 'refused' ? '#b30000' : '#ff4444', color: '#fff',
+                        cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
+                        fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('prospection.refuse')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleExisting(s)}
+                      disabled={!!s.approved}
+                      style={{
+                        height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
+                        backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: '#000',
+                        cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
+                        fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('prospection.existing')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAnalyze(s)}
+                      disabled={s.approved === 'approved'}
+                      style={{
+                        height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
+                        backgroundColor: s.approved === 'approved' ? '#007700' : '#00b35a', color: '#fff',
+                        cursor: s.approved === 'approved' ? 'not-allowed' : 'pointer', opacity: s.approved === 'approved' ? 0.6 : 1,
+                        fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('prospection.analyze')}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+
+            {/* Affichage par paquets de 50 : bouton pour afficher les 50 suivants */}
+            {visibleSuggestions.length > visibleCount && (
+              <div style={{ textAlign: 'center', margin: '15px 0' }}>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                  style={{
+                    height: '32px', padding: '0 20px', border: '1px solid #000', borderRadius: '4px',
+                    backgroundColor: '#E5E5E4', cursor: 'pointer',
+                    fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
+                  }}
+                >
+                  {t('prospection.loadMore', { shown: visibleCount, total: visibleSuggestions.length })}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      {/* --- Section 2 : Recherche d'information / veille commerciale (IA à venir) --- */}
+      <section style={{ marginTop: '40px' }}>
+        <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '10px' }}>
+          {t('prospection.watchSection')}
+        </h3>
+        <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: '#333', marginBottom: '15px' }}>
+          {t('prospection.watchDescription')}
+        </p>
+        <div
+          style={{
+            padding: '30px 20px', border: '2px dashed #bbb', borderRadius: '8px',
+            backgroundColor: '#f5f5f5', textAlign: 'center',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+          }}
+        >
+          <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: '#555' }}>
+            {t('prospection.watchPlaceholder')}
+          </span>
         </div>
-      )}
+      </section>
 
       {/* Modale d'analyse (création de site, identique à Contacts) */}
       {showModal && (
@@ -659,6 +730,13 @@ const modalStyle: React.CSSProperties = {
   maxHeight: '90vh',
   overflowY: 'auto',
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+};
+
+const listHeaderStyle: React.CSSProperties = {
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 'bold',
+  fontSize: '13px',
+  color: '#000',
 };
 
 const modalTitleStyle: React.CSSProperties = {
