@@ -23,6 +23,8 @@ interface Suggestion {
   created_date?: string | null;
 }
 
+type SortKey = 'groupe' | 'score' | 'address' | 'country' | 'date' | 'source';
+
 interface Groupe {
   ID: string;
   nom_groupe: string;
@@ -38,7 +40,7 @@ export default function Prospection() {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState<'pending' | 'all'>('pending');
-  const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
+  const [sort, setSort] = useState<{ key: SortKey; asc: boolean }>({ key: 'score', asc: false });
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const PAGE_SIZE = 50;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -120,22 +122,58 @@ export default function Prospection() {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [searchText, filterStatus, sortBy]);
+  }, [searchText, filterStatus, sort]);
 
   const suggestionDate = (s: Suggestion): number => {
-    const t = new Date(s.scanned_at ?? s.created_date ?? '').getTime();
+    const t = new Date(s.created_date ?? s.scanned_at ?? '').getTime();
     return Number.isNaN(t) ? 0 : t;
+  };
+
+  const compareText = (a: string | undefined | null, b: string | undefined | null): number => {
+    const va = (a ?? '').toLowerCase();
+    const vb = (b ?? '').toLowerCase();
+    if (va === vb) return 0;
+    return va < vb ? -1 : 1;
+  };
+
+  const compareSuggestions = (a: Suggestion, b: Suggestion): number => {
+    let r = 0;
+    switch (sort.key) {
+      case 'groupe':
+        r = compareText(a.groupe, b.groupe) || compareText(a.noms, b.noms);
+        break;
+      case 'score':
+        r = (a.score ?? 0) - (b.score ?? 0);
+        break;
+      case 'address':
+        r = compareText(a.adress?.formatted, b.adress?.formatted);
+        break;
+      case 'country':
+        r = compareText(a.pays, b.pays);
+        break;
+      case 'date':
+        r = suggestionDate(a) - suggestionDate(b);
+        break;
+      case 'source':
+        r = compareText(a.source_url, b.source_url);
+        break;
+    }
+    return sort.asc ? r : -r;
+  };
+
+  const handleSortClick = (key: SortKey) => {
+    setSort(prev => prev.key === key ? { key, asc: !prev.asc } : { key, asc: true });
+  };
+
+  const sortIndicator = (key: SortKey): string => {
+    if (sort.key !== key) return '';
+    return sort.asc ? ' \u25b2' : ' \u25bc';
   };
 
   const visibleSuggestions = useMemo(() => {
     const filtered = suggestions.filter(matchesSearch);
-    return [...filtered].sort((a, b) => {
-      if (sortBy === 'date') {
-        return suggestionDate(b) - suggestionDate(a);
-      }
-      return (b.score ?? 0) - (a.score ?? 0);
-    });
-  }, [suggestions, matchesSearch, sortBy]);
+    return [...filtered].sort(compareSuggestions);
+  }, [suggestions, matchesSearch, sort]);
 
   // --- Modération : refuser (bouton supprimer rouge) ---
   const handleRefuse = async (s: Suggestion) => {
@@ -320,20 +358,6 @@ export default function Prospection() {
           />
           {t('prospection.pendingOnly')}
         </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', whiteSpace: 'nowrap' }}>
-          {t('prospection.sortBy')}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'score' | 'date')}
-            style={{
-              padding: '6px', border: '1px solid #ddd', borderRadius: '4px',
-              fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px'
-            }}
-          >
-            <option value="score">{t('prospection.sortByRelevance')}</option>
-            <option value="date">{t('prospection.sortByDate')}</option>
-          </select>
-        </label>
       </div>
 
       {message && message.text && (
@@ -363,12 +387,23 @@ export default function Prospection() {
             <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
               {!isMobile && (
                 <div style={{ display: 'flex', gap: '10px', padding: '8px 10px', backgroundColor: '#E5E5E4', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
-                  <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.groupSite')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.relevance')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.address')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.country')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.createdDate')}</span>
-                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.source')}</span>
+                  {([
+                    ['groupe', t('prospection.groupSite'), 2],
+                    ['score', t('prospection.relevance'), 1],
+                    ['address', t('prospection.address'), 2],
+                    ['country', t('prospection.country'), 1],
+                    ['date', t('prospection.createdDate'), 1],
+                    ['source', t('prospection.source'), 1],
+                  ] as [SortKey, string, number][]).map(([key, label, flex]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleSortClick(key)}
+                      style={{ ...listHeaderStyle, flex, background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}
+                    >
+                      {label}{sortIndicator(key)}
+                    </button>
+                  ))}
                   <span style={{ ...listHeaderStyle, width: '270px' }} />
                 </div>
               )}

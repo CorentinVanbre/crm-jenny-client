@@ -34,6 +34,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Sorting of prospecting suggestions by clicking on column titles (ascending/descending)",
       "Creation date column for suggestions in the Prospecting page",
       "Fixed group input in the SiteDetail page (field displayed [object Object])",
       "New \"Information search / commercial watch\" section in the Prospecting page (AI to come)",
@@ -308,9 +309,6 @@
     "searchPlaceholder": "Search by group, site, domain, country",
     "matchingCount": "{{count}} matching suggestions",
     "pendingOnly": "Pending only",
-    "sortBy": "Sort by:",
-    "sortByRelevance": "Relevance score",
-    "sortByDate": "Date",
     "loading": "Loading suggestions...",
     "noResults": "No suggestion found.",
     "address": "Address",
