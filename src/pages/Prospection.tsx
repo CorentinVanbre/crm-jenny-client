@@ -367,6 +367,7 @@ export default function Prospection() {
                   <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.relevance')}</span>
                   <span style={{ ...listHeaderStyle, flex: 2 }}>{t('prospection.address')}</span>
                   <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.country')}</span>
+                  <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.createdDate')}</span>
                   <span style={{ ...listHeaderStyle, flex: 1 }}>{t('prospection.source')}</span>
                   <span style={{ ...listHeaderStyle, width: '270px' }} />
                 </div>
@@ -421,6 +422,13 @@ export default function Prospection() {
                   {/* Pays */}
                   <div style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
                     {s.pays || t('prospection.unknown')}
+                  </div>
+
+                  {/* Date de création */}
+                  <div style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
+                    {(s.created_date || s.scanned_at)
+                      ? new Date(s.created_date ?? s.scanned_at!).toLocaleDateString()
+                      : t('prospection.unknown')}
                   </div>
 
                   {/* Source de la suggestion */}
