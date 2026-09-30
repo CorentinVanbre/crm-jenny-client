@@ -1064,7 +1064,7 @@ export default function SiteDetail() {
             <input
               type="text"
               value={formData.groupe}
-              onChange={handleGroupSearch}
+              onChange={(e) => handleGroupSearch(e.target.value)}
               onFocus={() => {
                 setShowGroupDropdown(true);
                 setFilteredGroupes(groupes);

@@ -34,6 +34,8 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Colonne date de création des suggestions dans la page Prospection",
+      "Correction de la saisie du groupe dans la page SiteDetail (le champ affichait [object Object])",
       "Nouvelle section « Recherche d’information / veille commerciale » dans la page Prospection (IA à venir)",
       "Suggestions de prospection affichées en liste avec affichage par paquets de 50",
       "Filtre \"Actifs uniquement\" activé par défaut dans la page Emails",
@@ -316,6 +318,7 @@
     "country": "Pays",
     "relevance": "Taux de pertinence",
     "source": "Source",
+    "createdDate": "Date de création",
     "openSource": "Ouvrir la source",
     "unknown": "Inconnu",
     "refuse": "Supprimer",
