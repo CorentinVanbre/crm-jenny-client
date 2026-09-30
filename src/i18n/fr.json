@@ -34,6 +34,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Tri des suggestions de prospection en cliquant sur le titre des colonnes (ascendant/descendant)",
       "Colonne date de création des suggestions dans la page Prospection",
       "Correction de la saisie du groupe dans la page SiteDetail (le champ affichait [object Object])",
       "Nouvelle section « Recherche d’information / veille commerciale » dans la page Prospection (IA à venir)",
@@ -308,9 +309,6 @@
     "searchPlaceholder": "Rechercher par groupe, site, domaine, pays",
     "matchingCount": "{{count}} suggestions correspondantes",
     "pendingOnly": "En attente uniquement",
-    "sortBy": "Trier par :",
-    "sortByRelevance": "Taux de pertinence",
-    "sortByDate": "Date",
     "loading": "Chargement des suggestions...",
     "noResults": "Aucune suggestion trouvée.",
     "address": "Adresse",
