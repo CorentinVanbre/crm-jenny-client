@@ -33,6 +33,8 @@ export interface TripStep {
   manual?: boolean;
   manualDate?: boolean;
   meetingMinutes?: number;
+  legKm?: number;
+  legMinutes?: number;
 }
 
 export interface TripPreferences {
@@ -390,7 +392,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       const durEntry = legEntry.minutes;
       originLabel = 'Lille (gare)';
       originDetail = `Train international depuis ${origin.city} (${entry.name})`;
-      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}${legEntry.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
       hubArrival = t + durEntry;
 
       // Correspondance nationale si la gare d'entrée est éloignée des sites :
@@ -399,7 +401,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         const kmEntryHub = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng });
         const legNat = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng }, trainMin(kmEntryHub), kmEntryHub);
         const durNat = legNat.minutes;
-        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}${legNat.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
+        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
         hubArrival = hubArrival + 20 + durNat;
       }
     } else {
@@ -408,9 +410,9 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       const toOrigin = flight.origin.toOriginMin;
       const legToAirport = await realLeg(flight.origin.kind === 'car' ? 'driving' : 'transit', { lat: origin.lat, lng: origin.lng }, { lat: flight.origin.lat, lng: flight.origin.lng }, toOrigin, haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: flight.origin.lat, lng: flight.origin.lng }));
       if (flight.origin.kind === 'car') {
-        steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: `~${Math.round(legToAirport.km)} km, ~${fmtDurationHM(legToAirport.minutes)}${legToAirport.source === 'directions' ? ' (itinéraire réel Google)' : ''}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: `~${Math.round(legToAirport.km)} km, ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       } else {
-        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}${legToAirport.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       }
       t += legToAirport.minutes;
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
@@ -443,7 +445,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         day += 1;
         start = DEFAULT_DAY_START + drive;
       }
-      steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}${leg.source === 'directions' ? ' (itinéraire réel Google)' : ''}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive) });
+      steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive), legKm: km, legMinutes: drive });
       steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${fmtDurationHM(meetingMin)}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
       currentPos = { lat: site.lat, lng: site.lng };
       clock = start + meetingMin;
@@ -459,7 +461,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       day += 1;
       backArrive = DEFAULT_DAY_START + driveBack;
     }
-    steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}${legBack.source === 'directions' ? ' (itinéraire réel Google)' : ''}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack) });
+    steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack), legKm: kmBack, legMinutes: driveBack });
 
     if (outboundMode === 'train') {
       const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
@@ -467,12 +469,12 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       if (hub.name !== entry.name) {
         const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
         const legNatBack = await realLeg('transit', { lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng }, trainMin(kmNatBack), kmNatBack);
-        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}${legNatBack.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
         returnClock = returnClock + 15 + legNatBack.minutes;
       }
       const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
       const legBackIntl = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng }, trainMin(kmEntryLille), kmEntryLille);
-      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}${legBackIntl.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
+      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
@@ -525,7 +527,11 @@ interface RebuildPoint {
   name: string;
 }
 
-export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[], hub?: { lat: number; lng: number }): TripStep[] => {
+// Cache des liaisons déjà calculées (durées réelles API conservées) : clé "from→to".
+// Seules les liaisons absentes du cache sont recalculées via l'API.
+const legKey = (from: string, to: string) => `${(from || '').toLowerCase()}→${(to || '').toLowerCase()}`;
+
+export const rebuildTripSteps = async (steps: TripStep[], orderedMeetings: TripStep[], hub?: { lat: number; lng: number }): Promise<TripStep[]> => {
   if (!orderedMeetings.length) return steps;
 
   // Tout ce qui précède la première réunion (train/avion aller + location) est conservé tel quel
@@ -539,14 +545,33 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
 
   // Les anciens trajets "car" ENTRE les réunions sont supprimés : ils seront
   // recalculés ci-dessous selon le nouvel ordre des visites clients.
-  const hubName = outbound.length ? (outbound[outbound.length - 1].to || 'Hub') : 'Hub';
-
+  // Les étapes manuelles sont préservées : chacune est rattachée à la réunion
+  // qu'elle suivait (clé = nom du site de la réunion précédente ; '' = avant
+  // la toute première réunion).
+  const legCache = new Map<string, { km: number; minutes: number }>();
+  steps.filter(st => st.type === 'car').forEach(st => {
+    if (st.legKm != null && st.legMinutes != null && st.from && st.to) {
+      legCache.set(legKey(st.from, st.to), { km: st.legKm, minutes: st.legMinutes });
+    }
+  });
+  const manualAfter = new Map<string, TripStep[]>();
+  let currentKey = '';
+  steps.slice(firstMeetingIdx >= 0 ? firstMeetingIdx : 0, lastMeetingIdx >= 0 ? lastMeetingIdx + 1 : steps.length).forEach(st => {
+    if (st.type === 'meeting') {
+      currentKey = st.siteName || st.label;
+    } else if (st.manual) {
+      const list = manualAfter.get(currentKey) || [];
+      list.push(st);
+      manualAfter.set(currentKey, list);
+    }
+  });
   // Le trajet "car" aller (hub -> 1er site) fait partie du bloc à recalculer :
   // on le retire d'outbound, il sera régénéré selon le nouvel ordre.
   const lastCarIdx = outbound.map(st => st.type).lastIndexOf('car');
+  const hubName = lastCarIdx >= 0 ? (outbound[lastCarIdx].from || 'Hub') : (outbound.length ? (outbound[outbound.length - 1].to || 'Hub') : 'Hub');
   if (lastCarIdx >= 0) outbound.splice(lastCarIdx, 1);
 
-  const rebuilt: TripStep[] = [...outbound];
+  const rebuilt: TripStep[] = [...outbound, ...(manualAfter.get('') || [])];
   let current: RebuildPoint = { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0, name: hubName };
   let prevName = hubName;
 
@@ -555,14 +580,18 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
   let day = lastOutbound?.day ?? 1;
   let clock = (lastOutbound?.time ? timeToMin(lastOutbound.time) : DEFAULT_DAY_START - 45) + 45;
 
-  orderedMeetings.forEach((m) => {
+  for (const m of orderedMeetings) {
     if (m.lat == null || m.lng == null) {
       rebuilt.push(m);
-      return;
+      continue;
     }
     const meetingMin = m.meetingMinutes ?? DEFAULT_MEETING_MIN;
-    const km = haversineKm(current, { lat: m.lat, lng: m.lng });
-    const drive = driveMin(km);
+    const nextName = m.siteName || m.label;
+    const cached = legCache.get(legKey(prevName, nextName));
+    const kmEst = haversineKm(current, { lat: m.lat, lng: m.lng });
+    const leg = cached ?? (await realLeg('driving', current, { lat: m.lat, lng: m.lng }, driveMin(kmEst), kmEst));
+    const km = leg.km;
+    const drive = leg.minutes;
     let arrive = clock + drive;
     if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) {
       day += 1;
@@ -575,34 +604,40 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
     }
     rebuilt.push({
       type: 'car',
-      label: `Voiture → ${m.siteName || m.label}`,
-      detail: `~${Math.round(km)} km, ~${Math.floor(drive / 60)}h${drive % 60}min`,
+      label: `Voiture → ${nextName}`,
+      detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}`,
       from: prevName,
-      to: m.siteName || m.label,
+      to: nextName,
       day,
       time: fmtHHMM(start - drive),
+      legKm: km,
+      legMinutes: drive,
     });
     rebuilt.push({ ...m, from: prevName, day, time: fmtHHMM(start) });
-    prevName = m.siteName || m.label;
+    (manualAfter.get(nextName) || []).forEach(ms => rebuilt.push(ms));
+    prevName = nextName;
     current = { lat: m.lat, lng: m.lng, name: prevName };
     clock = start + meetingMin;
-  });
+  }
 
   // Trajet retour : recalcule le jour du premier tronçon (voiture -> hub), puis
   // décale les tronçons suivants (train/avion) du même écart de jours.
   const firstReturn = returnSteps[0];
   const origFirstReturnDay = firstReturn?.day ?? day;
   let returnDay = day;
-  const kmBack = haversineKm(current, { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0 });
-  const backArrive = clock + driveMin(kmBack);
-  const backDrive = driveMin(kmBack);
+  const kmBackEst = haversineKm(current, { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0 });
+  const cachedBack = legCache.get(legKey(prevName, firstReturn?.to || hubName));
+  const legBackR = cachedBack ?? (await realLeg('driving', current, { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0 }, driveMin(kmBackEst), kmBackEst));
+  const kmBack = legBackR.km;
+  const backDrive = legBackR.minutes;
+  const backArrive = clock + backDrive;
   if (backArrive > 21 * 60) {
     returnDay += 1;
   }
   const dayDelta = returnDay - origFirstReturnDay;
   const adaptedReturn = returnSteps.map((st, i) => {
     if (i === 0 && st.type === 'car' && st.label.toLowerCase().includes('retour')) {
-      return { ...st, from: prevName, day: returnDay, time: fmtHHMM(backArrive - backDrive) };
+      return { ...st, from: prevName, day: returnDay, time: fmtHHMM(backArrive - backDrive), legKm: kmBack, legMinutes: backDrive };
     }
     if (st.type === 'car' && st.label.toLowerCase().includes('retour')) {
       return { ...st, from: prevName };
@@ -638,4 +673,42 @@ export const propagateDates = (steps: TripStep[], startDate: string | null): Tri
     if (st.manualDate || st.day == null) return st;
     return { ...st, scheduledDate: addDaysISO(startDate, st.day - 1) };
   });
+};
+
+// Réajuste en cascade les étapes qui suivent une modification d'horaire ou de
+// durée de réunion : chaque étape suivante est décalée pour rester cohérente
+// (fin de réunion -> trajet -> réunion suivante), en respectant les contraintes
+// (réunion au plus tôt 8h30, dernier RDV au plus tard 15h, nuit -> jour +1).
+// Les étapes dont l'utilisateur a saisi manuellement l'horaire (scheduledTime
+// non vide) ne sont pas déplacées ; elles servent de nouveau point d'ancrage.
+export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep[] => {
+  const out = steps.map(st => ({ ...st }));
+  if (editIndex < 0 || editIndex >= out.length - 1) return out;
+  const edited = out[editIndex];
+  const anchor = edited.scheduledTime || edited.time;
+  if (!anchor) return out;
+  let day = edited.day ?? 1;
+  let clock = timeToMin(anchor);
+  if (edited.type === 'meeting') clock += edited.meetingMinutes ?? DEFAULT_MEETING_MIN;
+  for (let i = editIndex + 1; i < out.length; i++) {
+    const st = out[i];
+    if (st.scheduledTime) { clock = timeToMin(st.scheduledTime); day = st.day ?? day; if (st.type === 'meeting') clock += st.meetingMinutes ?? DEFAULT_MEETING_MIN; continue; }
+    const legMin = st.legMinutes ?? (st.type === 'car' ? driveMin(haversineKm({ lat: st.lat ?? 0, lng: st.lng ?? 0 }, { lat: st.lat ?? 0, lng: st.lng ?? 0 })) : 0);
+    if (st.type === 'meeting') {
+      const meetingMin = st.meetingMinutes ?? DEFAULT_MEETING_MIN;
+      let arrive = clock + legMin;
+      if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) { day += 1; arrive = DEFAULT_DAY_START; }
+      let start = Math.max(arrive, EARLIEST_MIN);
+      if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
+      out[i] = { ...st, day, time: fmtHHMM(start) };
+      clock = start + meetingMin;
+    } else {
+      if (legMin > 0) {
+        let depart = clock;
+        if (depart % 1440 > 23 * 60) { day += 1; depart = DEFAULT_DAY_START - legMin < 0 ? DEFAULT_DAY_START : depart; }
+        out[i] = { ...st, day, time: fmtHHMM(depart) };
+      }
+    }
+  }
+  return out;
 };

@@ -1607,9 +1607,8 @@ export default function Sites() {
             <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', textAlign: 'center', marginBottom: '15px', color: '#555' }}>
               {directionsStatus() === 'ok'
                 ? `✅ ${t('sites.tripDirectionsOk')} (${directionsDiag().ok})`
-                : `⚠️ ${t('sites.tripDirectionsFallback')} · ${t('sites.tripDirectionsDiag', { ok: directionsDiag().ok, failed: directionsDiag().failed, error: directionsDiag().lastError || '-' })}`}
+                : `⚠️ ${t('sites.tripDirectionsFallback')} · ${t('sites.tripDirectionsDiag', { ok: directionsDiag().ok, failed: directionsDiag().failed, driving: directionsDiag().drivingFailed, transit: directionsDiag().transitFailed, error: directionsDiag().lastError || '-', call: directionsDiag().lastCall || '-' })}`}
             </p>
-
             {visitPlans.map((plan, pi) => (
               <div key={pi} style={{ backgroundColor: '#E5E5E4', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
                 <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>

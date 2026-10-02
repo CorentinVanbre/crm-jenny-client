@@ -12,7 +12,8 @@
     "open": "Open",
     "never": "Never",
     "error": "Error",
-    "notConnected": "Not connected"
+    "notConnected": "Not connected",
+    "confirm": "Confirm"
   },
   "header": {
     "sites": "Sites",
@@ -105,9 +106,9 @@
     "tripSave": "Save trip",
     "tripSaved": "Trip saved! Find it in the Visit page.",
     "aiVisitGenerating": "Generating trip…",
-    "tripDirectionsOk": "Real routes and durations (Google Directions)",
-    "tripDirectionsFallback": "Local estimates: Google Directions unavailable (API key or quota)",
-    "tripDirectionsDiag": "Google: {ok} OK / {failed} failed · last status: {error}"
+    "tripDirectionsOk": "Real routes and durations",
+    "tripDirectionsFallback": "Local estimates (real routes unavailable)",
+    "tripDirectionsDiag": "{{ok}} OK / {{failed}} failed (driving {{driving}}, transit {{transit}}) · status: {{error}} · last call: {{call}}"
   },
   "siteDetail": {
     "loading": "Loading...",
@@ -378,7 +379,10 @@
     "visitOrder": "Visit order",
     "meetingMinutes": "Meeting duration (min)",
     "roadbook": "Roadbook",
-    "timeQuarterlyHint": "Times in 15-minute steps."
+    "timeQuarterlyHint": "Times in 15-minute steps.",
+    "renameStep": "Rename this step",
+    "renameStepShort": "✎",
+    "renameStepTitle": "Edit step"
   },
   "help": {
     "title": "Help — Feature guide",
@@ -625,6 +629,13 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visite page: times pre-filled from computed trip, following steps auto-adjusted when a time or meeting duration changes",
+      "PDF: map auto-zoomed to fit the whole trip; fixed Confirm button label",
+      "Visit reordering: real durations and distances kept, only modified legs are recalculated",
+      "Visit reordering: manual steps are now preserved",
+      "Visite page: move arrows for manual steps (anywhere in the plan) and rename any step at any time",
+      "Automatic fallback to Google driving route when no transit itinerary is found (international legs)",
+      "Fixed Google Directions diagnostic display (i18n interpolation)",
       "Detailed Google Directions diagnostic in the trip proposal (exact status, OK/failed calls)",
       "Real routes and schedules via Google Directions (visible diagnostic in the trip proposal)",
       "Real durations and routes via the Google Directions API for trip generation (driving and transit), with automatic fallback to estimates",
