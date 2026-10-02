@@ -1,9 +1,9 @@
 // ============================================================================
 // Google Directions : durées et distances réelles pour le planificateur de
-// visites. Utilise le Directions Service de l'API Maps JavaScript (chargée
-// par la carte). Fallback silencieux sur les estimations locales si le
-// service échoue. Statut détaillé exposé pour diagnostic (voir le modal de
-// proposition de trajet sur la page Sites).
+// visites. Utilise la Distance Matrix puis le Directions Service de l'API
+// Maps JavaScript (chargée par la carte). Fallback silencieux sur les
+// estimations locales si tout échoue. Statut détaillé exposé pour
+// diagnostic (voir le modal de proposition de trajet sur la page Sites).
 // ============================================================================
 
 export interface RouteLeg {
@@ -31,10 +31,21 @@ interface DirectionsLeg {
 interface DirectionsResult {
   legs?: DirectionsLeg[];
 }
+interface DistanceMatrixElement {
+  status?: string;
+  duration?: { value: number };
+  distance?: { value: number };
+}
+interface DistanceMatrixResult {
+  rows?: { elements?: DistanceMatrixElement[] }[];
+}
 interface GoogleMapsRuntime {
   maps?: {
     DirectionsService?: new () => {
       route: (req: Record<string, unknown>, cb: (res: DirectionsResult | null, status: string) => void) => void;
+    };
+    DistanceMatrixService?: new () => {
+      getDistanceMatrix: (req: Record<string, unknown>, cb: (res: DistanceMatrixResult | null, status: string) => void) => void;
     };
     TravelMode?: Record<string, string>;
   };
@@ -71,7 +82,7 @@ const mapsRuntime = (): GoogleMapsRuntime['maps'] | null =>
 const waitForMaps = async (): Promise<GoogleMapsRuntime['maps'] | null> => {
   for (let i = 0; i < 25; i++) {
     const maps = mapsRuntime();
-    if (maps?.DirectionsService && maps?.TravelMode) return maps;
+    if (maps?.TravelMode && (maps?.DistanceMatrixService || maps?.DirectionsService)) return maps;
     await new Promise((r) => setTimeout(r, 200));
   }
   return null;
@@ -84,8 +95,9 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
 
   const maps = await waitForMaps();
   const Service = maps?.DirectionsService;
+  const Matrix = maps?.DistanceMatrixService;
   const TravelMode = maps?.TravelMode;
-  if (!Service || !TravelMode) {
+  if (!TravelMode || (!Service && !Matrix)) {
     lastStatus = 'no-maps';
     lastError = 'API Maps JavaScript non chargée';
     return null;
@@ -101,40 +113,79 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
 
   return new Promise<RouteLeg | null>((resolve) => {
     try {
-      const service = new Service();
-      service.route(
-        {
-          origin: { lat: from.lat, lng: from.lng },
-          destination: { lat: to.lat, lng: to.lng },
-          travelMode,
-        },
-        (res: DirectionsResult | null, status: string) => {
-          if (status !== 'OK' || !res?.legs?.length) {
-            lastStatus = 'error';
-            lastError = status;
-            failedCount++;
-            if (mode === 'driving') drivingFailed++;
-            else transitFailed++;
-            resolve(null);
-            return;
-          }
-          const leg = res.legs[0];
-          if (!leg.duration?.value || !leg.distance?.value) {
-            lastStatus = 'error';
-            lastError = 'legs sans durée/distance';
-            failedCount++;
-            resolve(null);
-            return;
-          }
-          const result: RouteLeg = {
-            km: leg.distance.value / 1000,
-            minutes: Math.round(leg.duration.value / 60),
-            source: 'directions',
-          };
+      const done = (result: RouteLeg | null, err: string) => {
+        if (result) {
           lastStatus = 'ok';
           okCount++;
           cache.set(key, result);
-          resolve(result);
+        } else {
+          lastStatus = 'error';
+          lastError = err;
+          failedCount++;
+          if (mode === 'driving') drivingFailed++;
+          else transitFailed++;
+        }
+        resolve(result);
+      };
+
+      const mkLeg = (km: number, seconds: number): RouteLeg => ({
+        km: km / 1000,
+        minutes: Math.round(seconds / 60),
+        source: 'directions',
+      });
+
+      // 1) Distance Matrix : le plus fiable pour un simple couple origine/destination
+      if (Matrix) {
+        const matrix = new Matrix();
+        matrix.getDistanceMatrix(
+          {
+            origins: [{ lat: from.lat, lng: from.lng }],
+            destinations: [{ lat: to.lat, lng: to.lng }],
+            travelMode,
+          },
+          (res: DistanceMatrixResult | null, status: string) => {
+            const el = status === 'OK' ? res?.rows?.[0]?.elements?.[0] : undefined;
+            if (el?.status === 'OK' && el.duration?.value && el.distance?.value) {
+              done(mkLeg(el.distance.value, el.duration.value), '');
+              return;
+            }
+            // 2) Directions Service en secours (ex. transit indisponible en Matrix)
+            if (Service) {
+              const service = new Service();
+              service.route(
+                { origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, travelMode },
+                (dres: DirectionsResult | null, dstatus: string) => {
+                  const dleg = dstatus === 'OK' ? dres?.legs?.[0] : undefined;
+                  if (dstatus === 'OK' && dleg?.duration?.value && dleg?.distance?.value) {
+                    done(mkLeg(dleg.distance.value, dleg.duration.value), '');
+                  } else {
+                    done(null, `matrix ${el?.status ?? status} / directions ${dstatus}`);
+                  }
+                },
+              );
+            } else {
+              done(null, `matrix ${el?.status ?? status}`);
+            }
+          },
+        );
+        return;
+      }
+
+      // Directions seul si pas de Distance Matrix
+      if (!Service) {
+        done(null, 'service indisponible');
+        return;
+      }
+      const service = new Service();
+      service.route(
+        { origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, travelMode },
+        (res: DirectionsResult | null, status: string) => {
+          const leg = status === 'OK' ? res?.legs?.[0] : undefined;
+          if (status === 'OK' && leg?.duration?.value && leg?.distance?.value) {
+            done(mkLeg(leg.distance.value, leg.duration.value), '');
+          } else {
+            done(null, status);
+          }
         },
       );
     } catch (e) {
