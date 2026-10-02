@@ -6,7 +6,7 @@ import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 import { isCountryAllowed } from '../lib/countryMatch';
-import { planTrip, TripSite, TripPlan, tripPlanTitle } from '../lib/tripPlanner';
+import { planTrip, TripSite, TripPlan, tripPlanTitle, TripPreferences } from '../lib/tripPlanner';
 
 // Types
 interface Address {
@@ -59,6 +59,19 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 const DEFAULT_MAP_CENTER = { lat: 46.8, lng: 1.5 };
+
+// Géocodage léger de la ville d'origine (fallback Lille si indisponible)
+const geocodeCity = async (city: string): Promise<{ lat: number; lng: number } | null> => {
+  if (!city) return null;
+  try {
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) return null;
+    const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
+    const j = await r.json();
+    const loc = j?.results?.[0]?.geometry?.location;
+    if (loc) return { lat: loc.lat, lng: loc.lng };
+  } catch { /* fallback */ }
+  return null;
+};
 
 export default function Sites() {
   // États principaux
@@ -128,6 +141,7 @@ export default function Sites() {
   const [tripName, setTripName] = useState('');
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [tripSaveMessage, setTripSaveMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [tripPrefs, setTripPrefs] = useState<TripPreferences | null>(null);
 
   // Initialiser l'Autocomplete pour l'adresse
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
@@ -547,6 +561,24 @@ export default function Sites() {
           setAllSites(validSites);
         }
 
+        if (session?.user) {
+          const { data: prefs } = await supabase
+            .from('visit_preferences')
+            .select('origin_city, preferred_stations, preferred_airports')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          if (prefs) {
+            const geo = await geocodeCity(prefs.origin_city);
+            setTripPrefs({
+              originCity: prefs.origin_city,
+              originLat: geo?.lat ?? 50.6292,
+              originLng: geo?.lng ?? 2.7575,
+              preferredStations: prefs.preferred_stations || [],
+              preferredAirports: prefs.preferred_airports || [],
+            });
+          }
+        }
+
         const groupesData = await fetchGroupes();
         setGroupes(groupesData);
         setFilteredGroupes(groupesData);
@@ -643,7 +675,7 @@ export default function Sites() {
       lat: parseFloat(s.latitude),
       lng: parseFloat(s.longitude),
     }));
-    setVisitPlans(planTrip(tripSites));
+    setVisitPlans(planTrip(tripSites, tripPrefs || undefined));
     setShowTripModal(true);
   };
 
@@ -664,6 +696,7 @@ export default function Sites() {
         plans: visitPlans,
         steps,
         status: 'draft',
+        start_date: null,
         created_date: now,
         updated_date: now,
       }]);
@@ -794,7 +827,7 @@ export default function Sites() {
   return (
     <div style={{ padding: '10px', width: '100%', boxSizing: 'border-box' }}>
       {/* Carte Google Maps */}
-      <div ref={mapContainerRef} style={{ width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto 20px', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden' }}>
+      <div ref={mapContainerRef} style={{ position: 'relative', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto 20px', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden' }}>
         <GoogleMap
           mapContainerStyle={{ width: `${mapDimensions.width}px`, height: `${mapDimensions.height}px` }}
           zoom={initialZoom}
@@ -829,6 +862,40 @@ export default function Sites() {
             </InfoWindow>
           ))}
         </GoogleMap>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            zIndex: 10,
+            backgroundColor: 'rgba(229, 229, 228, 0.92)',
+            border: '1px solid #000',
+            borderRadius: '4px',
+            padding: '5px 10px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+          }}
+        >
+          <label style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            fontFamily: 'Barlow, sans-serif',
+            fontWeight: aiVisitMode ? 'bold' : 200,
+            fontSize: '14px',
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}>
+            <input
+              type="checkbox"
+              checked={aiVisitMode}
+              onChange={(e) => {
+                setAiVisitMode(e.target.checked);
+                if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
+              }}
+              style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            {t('sites.aiVisitMode')}
+          </label>
+        </div>
       </div>
 
       {/* Zone de recherche */}
@@ -844,33 +911,9 @@ export default function Sites() {
         {isMobile ? (
           <>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-              <label style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontFamily: 'Barlow, sans-serif',
-                fontWeight: aiVisitMode ? 'bold' : 200,
-                fontSize: '14px',
-                cursor: 'pointer',
-                justifyContent: 'center',
-                marginBottom: '10px',
-                userSelect: 'none',
-              }}>
-                <input
-                  type="checkbox"
-                  checked={aiVisitMode}
-                  onChange={(e) => {
-                    setAiVisitMode(e.target.checked);
-                    if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
-                  }}
-                  style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                {t('sites.aiVisitMode')}
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
-              </div>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
@@ -931,27 +974,6 @@ export default function Sites() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  fontFamily: 'Barlow, sans-serif',
-                  fontWeight: aiVisitMode ? 'bold' : 200,
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  marginRight: '12px',
-                  userSelect: 'none',
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={aiVisitMode}
-                    onChange={(e) => {
-                      setAiVisitMode(e.target.checked);
-                      if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
-                    }}
-                    style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
-                  />
-                  {t('sites.aiVisitMode')}
-                </label>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
