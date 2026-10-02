@@ -539,6 +539,20 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
 
   // Les anciens trajets "car" ENTRE les réunions sont supprimés : ils seront
   // recalculés ci-dessous selon le nouvel ordre des visites clients.
+  // Les étapes manuelles sont préservées : chacune est rattachée à la réunion
+  // qu'elle suivait (clé = nom du site de la réunion précédente ; '' = avant
+  // la toute première réunion).
+  const manualAfter = new Map<string, TripStep[]>();
+  let currentKey = '';
+  steps.slice(firstMeetingIdx >= 0 ? firstMeetingIdx : 0, lastMeetingIdx >= 0 ? lastMeetingIdx + 1 : steps.length).forEach(st => {
+    if (st.type === 'meeting') {
+      currentKey = st.siteName || st.label;
+    } else if (st.manual) {
+      const list = manualAfter.get(currentKey) || [];
+      list.push(st);
+      manualAfter.set(currentKey, list);
+    }
+  });
   const hubName = outbound.length ? (outbound[outbound.length - 1].to || 'Hub') : 'Hub';
 
   // Le trajet "car" aller (hub -> 1er site) fait partie du bloc à recalculer :
@@ -546,7 +560,7 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
   const lastCarIdx = outbound.map(st => st.type).lastIndexOf('car');
   if (lastCarIdx >= 0) outbound.splice(lastCarIdx, 1);
 
-  const rebuilt: TripStep[] = [...outbound];
+  const rebuilt: TripStep[] = [...outbound, ...(manualAfter.get('') || [])];
   let current: RebuildPoint = { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0, name: hubName };
   let prevName = hubName;
 
@@ -583,6 +597,7 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
       time: fmtHHMM(start - drive),
     });
     rebuilt.push({ ...m, from: prevName, day, time: fmtHHMM(start) });
+    (manualAfter.get(m.siteName || m.label) || []).forEach(ms => rebuilt.push(ms));
     prevName = m.siteName || m.label;
     current = { lat: m.lat, lng: m.lng, name: prevName };
     clock = start + meetingMin;

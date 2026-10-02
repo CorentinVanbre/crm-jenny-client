@@ -628,6 +628,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visit reordering: manual steps are now preserved",
       "Visite page: move arrows for manual steps (anywhere in the plan) and rename any step at any time",
       "Automatic fallback to Google driving route when no transit itinerary is found (international legs)",
       "Fixed Google Directions diagnostic display (i18n interpolation)",
