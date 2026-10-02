@@ -428,43 +428,75 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[],
   let current: RebuildPoint = { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0, name: hubName };
   let prevName = hubName;
 
+  // Horloge de départ : juste après la prise en charge de la voiture de location
+  const lastOutbound = outbound[outbound.length - 1];
+  let day = lastOutbound?.day ?? 1;
+  let clock = (lastOutbound?.time ? timeToMin(lastOutbound.time) : DEFAULT_DAY_START - 45) + 45;
+
   orderedMeetings.forEach((m) => {
     if (m.lat == null || m.lng == null) {
       rebuilt.push(m);
       return;
     }
+    const meetingMin = m.meetingMinutes ?? DEFAULT_MEETING_MIN;
     const km = haversineKm(current, { lat: m.lat, lng: m.lng });
     const drive = driveMin(km);
+    let arrive = clock + drive;
+    if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) {
+      day += 1;
+      arrive = DEFAULT_DAY_START + drive;
+    }
+    let start = Math.max(arrive, EARLIEST_MIN);
+    if (start > LATEST_START_MIN) {
+      day += 1;
+      start = DEFAULT_DAY_START + drive;
+    }
     rebuilt.push({
       type: 'car',
       label: `Voiture → ${m.siteName || m.label}`,
       detail: `~${Math.round(km)} km, ~${Math.floor(drive / 60)}h${drive % 60}min`,
       from: prevName,
       to: m.siteName || m.label,
-      day: m.day,
-      time: fmtHHMM(meetingStartMin(m) - drive),
+      day,
+      time: fmtHHMM(start - drive),
     });
-    rebuilt.push({ ...m, from: prevName });
+    rebuilt.push({ ...m, from: prevName, day, time: fmtHHMM(start) });
     prevName = m.siteName || m.label;
     current = { lat: m.lat, lng: m.lng, name: prevName };
+    clock = start + meetingMin;
   });
 
-  // Adapter le départ du trajet retour : depuis le dernier site visité
-  const adaptedReturn = returnSteps.map(st => {
+  // Trajet retour : recalcule le jour du premier tronçon (voiture -> hub), puis
+  // décale les tronçons suivants (train/avion) du même écart de jours.
+  const firstReturn = returnSteps[0];
+  const origFirstReturnDay = firstReturn?.day ?? day;
+  let returnDay = day;
+  const kmBack = haversineKm(current, { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0 });
+  const backArrive = clock + driveMin(kmBack);
+  const backDrive = driveMin(kmBack);
+  if (backArrive > 21 * 60) {
+    returnDay += 1;
+  }
+  const dayDelta = returnDay - origFirstReturnDay;
+  const adaptedReturn = returnSteps.map((st, i) => {
+    if (i === 0 && st.type === 'car' && st.label.toLowerCase().includes('retour')) {
+      return { ...st, from: prevName, day: returnDay, time: fmtHHMM(backArrive - backDrive) };
+    }
     if (st.type === 'car' && st.label.toLowerCase().includes('retour')) {
       return { ...st, from: prevName };
     }
-    return st;
+    return st.day != null ? { ...st, day: st.day + dayDelta } : st;
   });
 
   return [...rebuilt, ...adaptedReturn];
 };
 
-const meetingStartMin = (m: TripStep): number => {
-  if (!m.time) return 8 * 60 + 30;
-  const [h, min] = m.time.split(':').map(Number);
+const timeToMin = (time: string): number => {
+  const [h, min] = time.split(':').map(Number);
   return h * 60 + min;
 };
+
+
 
 // Addition de jours sur une date ISO (YYYY-MM-DD)
 export const addDaysISO = (isoDate: string, days: number): string => {
