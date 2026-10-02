@@ -5,7 +5,7 @@ import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 import { supabase } from '../supabaseClient';
 import { useIsMobile } from '../lib/useIsMobile';
 import type { TripStep } from '../lib/tripPlanner';
-import { rebuildTripSteps, propagateDates } from '../lib/tripPlanner';
+import { rebuildTripSteps, propagateDates, cascadeAfterEdit } from '../lib/tripPlanner';
 
 interface VisitTrip {
   id: string;
@@ -221,7 +221,10 @@ export default function Visite() {
 
   const updateStep = async (trip: VisitTrip, index: number, patch: Partial<TripStep>) => {
     const steps = trip.steps.map((s, i) => i === index ? { ...s, ...patch } : s);
-    await persistSteps(trip, steps);
+    const cascaded = (patch.scheduledTime != null || patch.meetingMinutes != null)
+      ? cascadeAfterEdit(steps, index)
+      : steps;
+    await persistSteps(trip, cascaded);
   };
 
   // Réordonnancement : uniquement les visites clients (meetings).
@@ -729,7 +732,7 @@ export default function Visite() {
                             title={t('visite.scheduledDate')}
                           />
                           <select
-                            value={step.scheduledTime || ''}
+                            value={step.scheduledTime || step.time || ''}
                             onChange={(e) => updateStep(trip, index, { scheduledTime: e.target.value })}
                             style={{ ...inputStyle, width: 'auto' }}
                             title={t('visite.scheduledTime')}

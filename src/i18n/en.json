@@ -629,6 +629,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visite page: times pre-filled from computed trip, following steps auto-adjusted when a time or meeting duration changes",
       "PDF: map auto-zoomed to fit the whole trip; fixed Confirm button label",
       "Visit reordering: real durations and distances kept, only modified legs are recalculated",
       "Visit reordering: manual steps are now preserved",

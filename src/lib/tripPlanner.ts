@@ -674,3 +674,41 @@ export const propagateDates = (steps: TripStep[], startDate: string | null): Tri
     return { ...st, scheduledDate: addDaysISO(startDate, st.day - 1) };
   });
 };
+
+// Réajuste en cascade les étapes qui suivent une modification d'horaire ou de
+// durée de réunion : chaque étape suivante est décalée pour rester cohérente
+// (fin de réunion -> trajet -> réunion suivante), en respectant les contraintes
+// (réunion au plus tôt 8h30, dernier RDV au plus tard 15h, nuit -> jour +1).
+// Les étapes dont l'utilisateur a saisi manuellement l'horaire (scheduledTime
+// non vide) ne sont pas déplacées ; elles servent de nouveau point d'ancrage.
+export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep[] => {
+  const out = steps.map(st => ({ ...st }));
+  if (editIndex < 0 || editIndex >= out.length - 1) return out;
+  const edited = out[editIndex];
+  const anchor = edited.scheduledTime || edited.time;
+  if (!anchor) return out;
+  let day = edited.day ?? 1;
+  let clock = timeToMin(anchor);
+  if (edited.type === 'meeting') clock += edited.meetingMinutes ?? DEFAULT_MEETING_MIN;
+  for (let i = editIndex + 1; i < out.length; i++) {
+    const st = out[i];
+    if (st.scheduledTime) { clock = timeToMin(st.scheduledTime); day = st.day ?? day; if (st.type === 'meeting') clock += st.meetingMinutes ?? DEFAULT_MEETING_MIN; continue; }
+    const legMin = st.legMinutes ?? (st.type === 'car' ? driveMin(haversineKm({ lat: st.lat ?? 0, lng: st.lng ?? 0 }, { lat: st.lat ?? 0, lng: st.lng ?? 0 })) : 0);
+    if (st.type === 'meeting') {
+      const meetingMin = st.meetingMinutes ?? DEFAULT_MEETING_MIN;
+      let arrive = clock + legMin;
+      if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) { day += 1; arrive = DEFAULT_DAY_START; }
+      let start = Math.max(arrive, EARLIEST_MIN);
+      if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
+      out[i] = { ...st, day, time: fmtHHMM(start) };
+      clock = start + meetingMin;
+    } else {
+      if (legMin > 0) {
+        let depart = clock;
+        if (depart % 1440 > 23 * 60) { day += 1; depart = DEFAULT_DAY_START - legMin < 0 ? DEFAULT_DAY_START : depart; }
+        out[i] = { ...st, day, time: fmtHHMM(depart) };
+      }
+    }
+  }
+  return out;
+};

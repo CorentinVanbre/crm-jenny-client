@@ -629,6 +629,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page Visite : horaires pré-remplis depuis le trajet calculé, et ajustement automatique des étapes suivantes lors d'un changement d'horaire ou de durée de réunion",
       "PDF : carte zoomée automatiquement sur le trajet complet ; bouton « Confirmer » corrigé",
       "Réordonnancement des visites : durées et distances réelles conservées, seuls les trajets modifiés sont recalculés",
       "Réordonnancement des visites : les étapes manuelles sont désormais conservées",
