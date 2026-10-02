@@ -103,7 +103,10 @@
     "tripLocalCar": "{{km}} km de route au total",
     "tripName": "Nom du voyage",
     "tripSave": "Enregistrer le voyage",
-    "tripSaved": "Voyage enregistré ! Retrouvez-le dans la page Visite."
+    "tripSaved": "Voyage enregistré ! Retrouvez-le dans la page Visite.",
+    "aiVisitGenerating": "Génération du trajet…",
+    "tripDirectionsOk": "Itinéraires et durées réels (Google Directions)",
+    "tripDirectionsFallback": "Estimations locales : Google Directions indisponible (clé API ou quota)"
   },
   "siteDetail": {
     "loading": "Chargement...",
@@ -621,6 +624,9 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Itinéraires et horaires réels via Google Directions (diagnostic visible dans la proposition de trajet)",
+      "Durées et itinéraires réels via l’API Google Directions pour la génération des trajets (voiture et transports en commun), avec repli automatique sur les estimations",
+      "Correction de l’affichage des durées de trajet en voiture dans le programme de visite",
       "Suggestions de trajet plus intelligentes : train international jusqu’à la gare d’entrée du pays (ex. St Pancras), puis correspondance en train national vers la gare la plus proche des sites avant la voiture",
       "Sélection du hub de voyage intelligente : aéroport le plus proche des sites (ex. Séville), garde-fou pour les destinations lointaines (outre-mer)",
       "Page « Aide » : fenêtres dépliables par page et par thème, avec barre de recherche par mots clés",
