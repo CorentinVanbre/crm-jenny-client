@@ -58,17 +58,7 @@ const STEP_ICONS: Record<string, string> = {
 
 // Export PDF : ouvre un document imprimable (roadbook + carte statique de l'ordre
 // de visite) et déclenche l'impression / enregistrement en PDF par l'utilisateur.
-const staticMapUrl = (pts: { lat: number; lng: number; label: string; kind: string }[], numbers: Record<string, number>): string => {
-  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) return '';
-  const size = '640x400';
-  const markers = pts.map(p =>
-    p.kind === 'meeting' && numbers[p.label]
-      ? `markers=color:red%7Clabel:${numbers[p.label]}%7C${p.lat},${p.lng}`
-      : `markers=color:gray%7C${p.lat},${p.lng}`
-  ).join('&');
-  const path = pts.length > 1 ? `&path=color:0x000000ff%7Cweight:2%7C${pts.map(p => `${p.lat},${p.lng}`).join('%7C')}` : '';
-  return `https://maps.googleapis.com/maps/api/staticmap?size=${size}&${markers}${path}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
-};
+const esc = (v: string) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export default function Visite() {
   const { t } = useTranslation();
@@ -274,17 +264,20 @@ export default function Visite() {
     const meetings = trip.steps.filter(st => st.type === 'meeting');
     const numbers: Record<string, number> = {};
     meetings.forEach((m, i) => { numbers[m.siteName || m.label] = i + 1; });
-    const mapUrl = staticMapUrl(pts, numbers);
 
     const stepsHtml = trip.steps.map((st, i) => {
       const num = st.type === 'meeting' && numbers[st.siteName || st.label] ? `${numbers[st.siteName || st.label]}. ` : '';
       return `<tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${i + 1}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${STEP_ICONS[st.type] || ''} ${st.type === 'meeting' ? `<b>${num}${st.label}</b>` : st.label}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${st.day ? `Jour ${st.day}` : ''} ${st.scheduledDate ? `· ${st.scheduledDate.split('-').reverse().join('/')}` : ''} ${st.scheduledTime || st.time ? `· ${st.scheduledTime || st.time}` : ''}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${st.detail || ''}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #bbb;">${i + 1}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #bbb;">${STEP_ICONS[st.type] || ''} ${st.type === 'meeting' ? `<b>${num}${esc(st.label)}</b>` : esc(st.label)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #bbb;">${st.day ? `Jour ${st.day}` : ''} ${st.scheduledDate ? `· ${st.scheduledDate.split('-').reverse().join('/')}` : ''} ${st.scheduledTime || st.time ? `· ${st.scheduledTime || st.time}` : ''}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #bbb;">${esc(st.detail || '')}</td>
       </tr>`;
     }).join('');
+
+    const orderHtml = meetings.map((m, i) => `<div style="padding:3px 0;">${i + 1}. ${esc(m.siteName || m.label)}</div>`).join('');
+    const center = mapCenterFor(pts);
+    const mapInit = JSON.stringify({ pts: pts.map(p => ({ lat: p.lat, lng: p.lng, label: esc(p.label), kind: p.kind, num: numbers[p.label] || 0 })), center });
 
     const win = window.open('', '_blank');
     if (!win) return;
@@ -292,32 +285,98 @@ export default function Visite() {
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>${trip.name}</title>
+          <title>${esc(trip.name)}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,200;0,400;0,700;1,700&display=swap" rel="stylesheet" />
           <style>
-            body { font-family: Barlow, Arial, sans-serif; padding: 24px; color: #111; }
-            h1 { font-size: 22px; margin-bottom: 4px; }
-            h2 { font-size: 16px; margin-top: 20px; }
-            table { width: 100%; border-collapse: collapse; font-size: 13px; }
-            th { text-align: left; border-bottom: 2px solid #000; padding: 4px 8px; }
-            img.map { max-width: 100%; border: 1px solid #ccc; margin-top: 8px; }
-            .meta { color: #444; font-size: 13px; margin-bottom: 16px; }
+            body { font-family: 'Barlow', Arial, sans-serif; font-weight: 200; padding: 0; color: #000; background: #E5E5E4; }
+            .page { max-width: 860px; margin: 0 auto; padding: 28px 32px; background: #E5E5E4; }
+            .banner { background: #A6A6A6; border: 1px solid #000; border-radius: 8px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+            .logo { font-size: 28px; font-weight: bold; font-style: italic; }
+            .trip-title { text-align: right; }
+            .trip-title h1 { font-size: 20px; font-weight: bold; margin: 0; }
+            .trip-title .meta { font-size: 12px; color: #222; }
+            h2 { font-size: 16px; font-weight: bold; margin: 22px 0 8px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+            th { text-align: left; background: #A6A6A6; border-bottom: 2px solid #000; padding: 6px 8px; font-weight: bold; }
+            .order-box { background: #A6A6A6; border: 1px solid #000; border-radius: 6px; padding: 10px 16px; font-size: 13px; }
+            .card { background: #A6A6A6; border: 1px solid #000; border-radius: 8px; padding: 10px; }
+            #map { height: 380px; width: 100%; border-radius: 6px; border: 1px solid #000; }
+            @media print { body { background: #fff; } .page { padding: 0; } #map { min-height: 340px; } }
           </style>
         </head>
         <body>
-          <h1>${trip.name}</h1>
-          <div class="meta">${trip.countries} · ${formatDate(trip.created_date)}${trip.start_date ? ` · Départ : ${trip.start_date.split('-').reverse().join('/')}` : ''}</div>
-          <h2>${t('visite.visitOrder')}</h2>
-          ${meetings.map((m, i) => `<div>${i + 1}. ${m.siteName || m.label}</div>`).join('')}
-          ${mapUrl ? `<h2>${t('visite.roadbook')}</h2><img class="map" src="${mapUrl}" />` : ''}
-          <h2>${t('visite.stepsTitle')}</h2>
-          <table>
-            <thead><tr><th>#</th><th>Étape</th><th>Quand</th><th>Détail</th></tr></thead>
-            <tbody>${stepsHtml}</tbody>
-          </table>
+          <div class="page">
+            <div class="banner">
+              <div class="logo">JENNY</div>
+              <div class="trip-title">
+                <h1>${esc(trip.name)}</h1>
+                <div class="meta">${esc(trip.countries)} · ${formatDate(trip.created_date)}${trip.start_date ? ` · Départ : ${trip.start_date.split('-').reverse().join('/')}` : ''}</div>
+              </div>
+            </div>
+            <h2>${t('visite.visitOrder')}</h2>
+            <div class="order-box">${orderHtml}</div>
+            <h2>${t('visite.roadbook')}</h2>
+            <div class="card"><div id="map"></div></div>
+            <h2>${t('visite.stepsTitle')}</h2>
+            <table>
+              <thead><tr><th>#</th><th>Étape</th><th>Quand</th><th>Détail</th></tr></thead>
+              <tbody>${stepsHtml}</tbody>
+            </table>
+          </div>
+          <script>
+            window.__tripData = ${mapInit};
+          </script>
         </body>
       </html>`);
     win.document.close();
-    setTimeout(() => { win.focus(); win.print(); }, mapUrl ? 800 : 100);
+
+    interface TripPointData { lat: number; lng: number; label: string; kind: string; num: number }
+    interface TripWin extends Window { __tripData?: { pts: TripPointData[]; center: { lat: number; lng: number } } }
+    const loadMap = () => {
+      const w = win as unknown as TripWin;
+      type GoogleMapsNS = {
+        Map: new (el: Element, opts: Record<string, unknown>) => unknown;
+        Polyline: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
+        Marker: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
+      };
+      const g = (w as unknown as { google?: { maps: GoogleMapsNS } }).google?.maps;
+      if (!g) { setTimeout(loadMap, 300); return; }
+      const data = w.__tripData;
+      if (!data) { setTimeout(() => { win.focus(); win.print(); }, 200); return; }
+      const mapEl = w.document.getElementById('map');
+      if (!mapEl) return;
+      const map = new g.Map(mapEl, {
+        zoom: 5,
+        center: data.center,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'none',
+      });
+      const path = data.pts.map((p) => ({ lat: p.lat, lng: p.lng }));
+      if (path.length > 1) {
+        const pl = new g.Polyline({ path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
+        pl.setMap(map);
+      }
+      data.pts.forEach((p) => {
+        const mk = new g.Marker({
+          position: { lat: p.lat, lng: p.lng },
+          title: p.label,
+          label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined,
+        });
+        mk.setMap(map);
+      });
+      setTimeout(() => { w.focus(); w.print(); }, 900);
+    };
+
+    if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+      const script = win.document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&loading=async`;
+      script.onload = loadMap;
+      script.onerror = () => setTimeout(() => { win.focus(); win.print(); }, 200);
+      win.document.head.appendChild(script);
+    } else {
+      setTimeout(() => { win.focus(); win.print(); }, 200);
+    }
   };
 
   const buttonStyle = {
