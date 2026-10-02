@@ -36,7 +36,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
-      "\"Help\" page: feature guide for every page of the site",
+      "\"Help\" page: collapsible windows by page and theme, with keyword search bar",
       "Visit reordering: days and times fully rescheduled; PDF without visit-order box, developer credit in header",
       "PDF export of the roadbook with dynamic map and Jenny branding (colors, logo)",
       "Visit page: free-text stations/airports, standard and per-site meeting duration, 15-minute time steps, departure date fix, visit numbering, PDF export of the roadbook with map",
@@ -411,108 +411,243 @@
   "help": {
     "title": "Help — Feature guide",
     "subtitle": "Find here an explanation of all the features of every JENNY page.",
+    "searchPlaceholder": "Search by keywords...",
+    "searchResults": "Search results (by relevance):",
+    "searchNoResults": "No results for this search.",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
     "pages": [
       {
         "title": "Home",
         "description": "Overview of JENNY and the list of recently added features.",
-        "features": [
-          "Tool overview and mission: optimize your commercial performance.",
-          "\"Recently added features\" section: follow the latest site updates."
+        "themes": [
+          {
+            "title": "Tool overview",
+            "features": [
+              "Overview of JENNY and its mission: optimize your commercial performance.",
+              "Presentation of the key principles: organize, plan, perform."
+            ]
+          },
+          {
+            "title": "Recent features",
+            "features": [
+              "\"Recently added features\" section: follow the latest site updates.",
+              "The list is updated on every significant site update."
+            ]
+          }
         ]
       },
       {
         "title": "Sites",
         "description": "Management of industrial sites and groups, with an interactive map and AI-assisted visit planning.",
-        "features": [
-          "Site list with search by name, group or country and matching site counter.",
-          "Group creation and editing; renaming a group is propagated to associated sites and contacts.",
-          "Site creation: name, group, domain, status color, address (automatic lookup), country and observations.",
-          "Status colors: Not visited, Visited, Visited 18+ months ago, To visit, Closed.",
-          "Contact count per site and last visit history.",
-          "Renaming a site is automatically propagated to its contacts.",
-          "AI visit mode: click the pins of the sites to visit on the map, then generate an optimized trip (train preferred, plane if needed, rental car on site) and save it as a travel project."
+        "themes": [
+          {
+            "title": "Site list and search",
+            "features": [
+              "Site list with search by name, group or country and matching site counter.",
+              "Status colors: Not visited, Visited, Visited 18+ months ago, To visit, Closed.",
+              "Contact count per site and last visit history."
+            ]
+          },
+          {
+            "title": "Groups and site creation",
+            "features": [
+              "Group creation and editing; renaming a group is propagated to associated sites and contacts.",
+              "Site creation: name, group, domain, status color, address (automatic lookup), country and observations.",
+              "Renaming a site is automatically propagated to its contacts."
+            ]
+          },
+          {
+            "title": "AI visit mode",
+            "features": [
+              "Click the pins of the sites to visit on the map, then generate an optimized trip (train preferred, plane if needed, rental car on site).",
+              "Save the generated trip as a travel project and find it in the Visit page."
+            ]
+          }
         ]
       },
       {
         "title": "Site detail",
         "description": "Full site sheet: information, visit history and associated contacts.",
-        "features": [
-          "Editing of site information (name, group, domain, color, country, address, observations, last visit date).",
-          "Visit history of the site.",
-          "Site contact list with function, emails, phone numbers and active/inactive status.",
-          "Adding a contact directly from the site sheet.",
-          "One-click copy of all active contact emails of the site."
+        "themes": [
+          {
+            "title": "Site information",
+            "features": [
+              "Editing of information: name, group, domain, color, country, address, observations, last visit date.",
+              "Visit history of the site."
+            ]
+          },
+          {
+            "title": "Site contacts",
+            "features": [
+              "Site contact list with function, emails, phone numbers and active/inactive status.",
+              "Adding a contact directly from the site sheet.",
+              "One-click copy of all active contact emails of the site."
+            ]
+          }
         ]
       },
       {
         "title": "Contacts",
         "description": "Complete management of your contact directory.",
-        "features": [
-          "Contact list with search, \"Active only\" filter and matching contact counter.",
-          "Adding and editing contacts: last name, first name, function, gender, group, site, phones (landline and mobile), language, email and observations.",
-          "AI mode: import a business card photo to pre-fill the fields automatically (including gender and language).",
-          "Deactivating a contact (e.g. leaving the company) without deleting it."
+        "themes": [
+          {
+            "title": "Contact list and search",
+            "features": [
+              "Contact list with search and matching contact counter.",
+              "\"Active only\" filter and active/inactive status per contact."
+            ]
+          },
+          {
+            "title": "Adding and editing a contact",
+            "features": [
+              "Fields: last name, first name, function, gender, group, site, phones (landline and mobile), language, email and observations.",
+              "Deactivating a contact (e.g. leaving the company) without deleting it."
+            ]
+          },
+          {
+            "title": "AI mode (business card)",
+            "features": [
+              "Import a business card photo to pre-fill the fields automatically (including gender and language).",
+              "Duplicate check before saving."
+            ]
+          }
         ]
       },
       {
         "title": "Emails",
         "description": "Quick extraction of your contacts' emails based on your zones.",
-        "features": [
-          "Email retrieval filtered by country and language.",
-          "\"Active only\" filter enabled by default, country/language selection and select/deselect all.",
-          "Copy of retrieved emails to the clipboard, with ignored duplicates count.",
-          "Full loading of contacts, even beyond 1000 rows."
+        "themes": [
+          {
+            "title": "Filters and retrieval",
+            "features": [
+              "Email retrieval filtered by country and language.",
+              "\"Active only\" filter enabled by default, country/language selection and select/deselect all.",
+              "Full loading of contacts, even beyond 1000 rows."
+            ]
+          },
+          {
+            "title": "Copying emails",
+            "features": [
+              "Copy of retrieved emails to the clipboard in one click.",
+              "Display of the number of duplicates ignored during retrieval."
+            ]
+          }
         ]
       },
       {
         "title": "Prospecting",
         "description": "Prospecting suggestions from the weekly AI scan (ball mills / rotary kilns).",
-        "features": [
-          "List of site and group suggestions with search and \"Pending only\" filter.",
-          "Display in batches of 50 suggestions, full loading beyond 1000 rows.",
-          "Sorting by clicking on column titles (ascending/descending), including relevance rate and creation date.",
-          "For each suggestion: open the source, delete, or analyze to create the site (statuses Approved / Refused / Already in database).",
-          "\"Information search / commercial watch\" section on existing sites (AI feature coming soon)."
+        "themes": [
+          {
+            "title": "Suggestion list",
+            "features": [
+              "List of site and group suggestions with search and \"Pending only\" filter.",
+              "Display in batches of 50 suggestions, full loading beyond 1000 rows.",
+              "\"Information search / commercial watch\" section on existing sites (AI feature coming soon)."
+            ]
+          },
+          {
+            "title": "Sorting suggestions",
+            "features": [
+              "Sorting by clicking on column titles (ascending/descending).",
+              "Sorting by relevance rate or by creation date."
+            ]
+          },
+          {
+            "title": "Handling a suggestion",
+            "features": [
+              "Open the source, delete, or analyze to create the site.",
+              "Statuses: Approved / Refused / Already in database."
+            ]
+          }
         ]
       },
       {
         "title": "Visit",
         "description": "Management of your client travel projects created from the Sites page AI visit mode.",
-        "features": [
-          "List of your trips with status (Draft, Planned, Done), visited countries and total mileage.",
-          "Travel preferences: origin city, preferred departure stations and airports (free entry worldwide).",
-          "Trip steps: add, rename, visit date and time (15-minute steps), standard or per-site meeting duration.",
-          "Reordering of client visits: days and times are fully rescheduled automatically, transfers adapted.",
-          "Dynamic trip map and PDF export of the roadbook (Jenny branding, map included).",
-          "Deleting a travel project."
+        "themes": [
+          {
+            "title": "Travel projects",
+            "features": [
+              "List of your trips with status (Draft, Planned, Done), visited countries and total mileage.",
+              "Deleting a travel project.",
+              "Dynamic trip map and PDF export of the roadbook (Jenny branding, map included)."
+            ]
+          },
+          {
+            "title": "Travel preferences",
+            "features": [
+              "Origin city, preferred departure stations and airports (free entry worldwide).",
+              "Standard meeting duration or customized per site."
+            ]
+          },
+          {
+            "title": "Trip steps",
+            "features": [
+              "Add and rename steps, visit date and time (15-minute steps).",
+              "Reordering of client visits: days and times are fully rescheduled automatically, transfers adapted."
+            ]
+          }
         ]
       },
       {
         "title": "My profile",
         "description": "Management of your personal account.",
-        "features": [
-          "Email change (with email confirmation) and password change.",
-          "Preferred language (French / English) applied to the whole site.",
-          "Personal information and list of countries assigned to you (zones)."
+        "themes": [
+          {
+            "title": "Credentials",
+            "features": [
+              "Email change (with email confirmation) and password change.",
+              "Password reset in case you forget it."
+            ]
+          },
+          {
+            "title": "Preferences and information",
+            "features": [
+              "Preferred language (French / English) applied to the whole site.",
+              "Personal information and list of countries assigned to you (zones)."
+            ]
+          }
         ]
       },
       {
         "title": "Zone management (admin)",
         "description": "Admin-only page to assign countries to users.",
-        "features": [
-          "User selection and assignment of their countries (zones of action).",
-          "Select all / deselect all, then save.",
-          "Dynamic map of assigned zones.",
-          "These zones determine which contacts and emails each user can see in the Emails and Contacts pages."
+        "themes": [
+          {
+            "title": "Zone assignment",
+            "features": [
+              "User selection and assignment of their countries (zones of action).",
+              "Select all / deselect all, then save.",
+              "Dynamic map of assigned zones."
+            ]
+          },
+          {
+            "title": "Impact of zones",
+            "features": [
+              "These zones determine which contacts and emails each user can see in the Emails and Contacts pages."
+            ]
+          }
         ]
       },
       {
         "title": "Login / Reset",
         "description": "Access to your JENNY account.",
-        "features": [
-          "Sign in with your email and password.",
-          "Password reset in case you forget it.",
-          "Log out from the \"My account\" menu."
+        "themes": [
+          {
+            "title": "Sign in and sign out",
+            "features": [
+              "Sign in with your email and password.",
+              "Log out from the \"My account\" menu."
+            ]
+          },
+          {
+            "title": "Forgotten password",
+            "features": [
+              "Password reset via the \"forgotten password\" link."
+            ]
+          }
         ]
       }
     ]
