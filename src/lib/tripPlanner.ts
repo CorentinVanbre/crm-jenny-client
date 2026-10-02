@@ -120,55 +120,77 @@ const STATIONS: Record<string, Hub[]> = {
   ],
 };
 
-// Aéroports internationaux stratégiques par pays (fallback : hub le plus proche des sites)
-const COUNTRY_AIRPORT_HUBS: Record<string, Hub> = {
-  Espagne: { name: 'Aéroport de Madrid-Barajas', kind: 'airport', lat: 40.4720, lng: -3.5610 },
-  Italie: { name: 'Aéroport de Milan-Malpensa', kind: 'airport', lat: 45.6306, lng: 8.7281 },
-  Allemagne: { name: 'Aéroport de Francfort', kind: 'airport', lat: 50.0420, lng: 8.5640 },
-  Pologne: { name: 'Aéroport de Varsovie-Chopin', kind: 'airport', lat: 52.1657, lng: 20.9670 },
-  'République tchèque': { name: 'Aéroport de Prague', kind: 'airport', lat: 50.1008, lng: 14.2600 },
-  Turquie: { name: 'Aéroport d’Istanbul', kind: 'airport', lat: 41.2753, lng: 28.7519 },
-  Égypte: { name: 'Aéroport du Caire', kind: 'airport', lat: 30.1115, lng: 31.4130 },
-  Maroc: { name: 'Aéroport de Casablanca-Mohammed V', kind: 'airport', lat: 33.3675, lng: -7.5900 },
-  Algérie: { name: 'Aéroport d’Alger', kind: 'airport', lat: 36.6910, lng: 3.2154 },
-  Tunisie: { name: 'Aéroport de Tunis-Carthage', kind: 'airport', lat: 36.8510, lng: 10.2272 },
-  'États-Unis': { name: 'Aéroport de New York-JFK', kind: 'airport', lat: 40.6413, lng: -73.7781 },
-  Canada: { name: 'Aéroport de Toronto-Pearson', kind: 'airport', lat: 43.6777, lng: -79.6248 },
-  Brésil: { name: 'Aéroport de São Paulo-Guarulhos', kind: 'airport', lat: -23.4356, lng: -46.4731 },
-  Mexique: { name: 'Aéroport de Mexico', kind: 'airport', lat: 19.4361, lng: -99.0719 },
-  Argentine: { name: 'Aéroport de Buenos Aires-Ezeiza', kind: 'airport', lat: -34.8222, lng: -58.5358 },
-  Chili: { name: 'Aéroport de Santiago', kind: 'airport', lat: -33.3930, lng: -70.7858 },
-  Colombie: { name: 'Aéroport de Bogotá-El Dorado', kind: 'airport', lat: 4.7016, lng: -74.1469 },
-  Pérou: { name: 'Aéroport de Lima-Jorge Chávez', kind: 'airport', lat: -12.0219, lng: -77.1143 },
-  'Afrique du Sud': { name: 'Aéroport de Johannesburg-OR Tambo', kind: 'airport', lat: -26.1392, lng: 28.2460 },
-  Nigeria: { name: 'Aéroport de Lagos-Murtala Muhammed', kind: 'airport', lat: 6.5774, lng: 3.3212 },
-  Kenya: { name: 'Aéroport de Nairobi-Jomo Kenyatta', kind: 'airport', lat: -1.3193, lng: 36.9278 },
-  'Arabie saoudite': { name: 'Aéroport de Djeddah', kind: 'airport', lat: 21.6796, lng: 39.1565 },
-  'Émirats arabes unis': { name: 'Aéroport de Dubaï', kind: 'airport', lat: 25.2532, lng: 55.3657 },
-  Inde: { name: 'Aéroport de Delhi-Indira Gandhi', kind: 'airport', lat: 28.5562, lng: 77.1000 },
-  Chine: { name: 'Aéroport de Pékin-Capitale', kind: 'airport', lat: 40.0799, lng: 116.6031 },
-  Japon: { name: 'Aéroport de Tokyo-Haneda', kind: 'airport', lat: 35.5494, lng: 139.7798 },
-  Corée_du_Sud: { name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 },
-  'Corée du Sud': { name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 },
-  Australie: { name: 'Aéroport de Sydney', kind: 'airport', lat: -33.9399, lng: 151.1753 },
-  Indonésie: { name: 'Aéroport de Jakarta-Soekarno-Hatta', kind: 'airport', lat: -6.1256, lng: 106.6558 },
-  Vietnam: { name: 'Aéroport de Hanoi-Noi Bai', kind: 'airport', lat: 21.2212, lng: 105.8072 },
-  Thaïlande: { name: 'Aéroport de Bangkok-Suvarnabhumi', kind: 'airport', lat: 13.6900, lng: 100.7501 },
-  Russie: { name: 'Aéroport de Moscou-Cheremetievo', kind: 'airport', lat: 55.9726, lng: 37.4146 },
-  Suisse: { name: 'Aéroport de Zurich', kind: 'airport', lat: 47.4582, lng: 8.5555 },
-  Autriche: { name: 'Aéroport de Vienne', kind: 'airport', lat: 48.1103, lng: 16.5696 },
-  Suède: { name: 'Aéroport de Stockholm-Arlanda', kind: 'airport', lat: 59.6519, lng: 17.9186 },
-  Norvege: { name: 'Aéroport d’Oslo', kind: 'airport', lat: 60.1939, lng: 11.1024 },
-  Danemark: { name: 'Aéroport de Copenhague', kind: 'airport', lat: 55.6180, lng: 12.6560 },
-  Portugal: { name: 'Aéroport de Lisbonne', kind: 'airport', lat: 38.7742, lng: -9.1342 },
-  Roumanie: { name: 'Aéroport de Bucarest-Henri Coandă', kind: 'airport', lat: 44.5711, lng: 26.0850 },
-  Hongrie: { name: 'Aéroport de Budapest-Ferenc Liszt', kind: 'airport', lat: 47.4369, lng: 19.2556 },
-  Grèce: { name: 'Aéroport d’Athènes', kind: 'airport', lat: 37.9364, lng: 23.9445 },
-  'Royaume-Uni': { name: 'Aéroport de Londres-Heathrow', kind: 'airport', lat: 51.4700, lng: -0.4543 },
+// Aéroports internationaux stratégiques par pays : plusieurs candidats par pays,
+// le plus proche des sites est choisi. (fallback : hub le plus proche des sites)
+const COUNTRY_AIRPORT_HUBS: Record<string, Hub[]> = {
+  France: [
+    { name: 'Aéroport de Paris-CDG', kind: 'airport', lat: 49.0097, lng: 2.5479 },
+    { name: 'Aéroport de Paris-Orly', kind: 'airport', lat: 48.7233, lng: 2.3794 },
+    { name: 'Aéroport de Lyon-Saint-Exupéry', kind: 'airport', lat: 45.7256, lng: 5.0811 },
+    { name: 'Aéroport de Marseille-Provence', kind: 'airport', lat: 43.4392, lng: 5.2214 },
+    { name: 'Aéroport de Bordeaux-Mérignac', kind: 'airport', lat: 44.8283, lng: -0.7156 },
+    { name: 'Aéroport de Toulouse-Blagnac', kind: 'airport', lat: 43.6293, lng: 1.3638 },
+    { name: 'Aéroport de Nice-Côte d’Azur', kind: 'airport', lat: 43.6584, lng: 7.2159 },
+    { name: 'Aéroport de Nantes-Atlantique', kind: 'airport', lat: 47.1530, lng: -1.6115 },
+    { name: 'Aéroport de Strasbourg-Entzheim', kind: 'airport', lat: 48.5383, lng: 7.6283 },
+    { name: 'Aéroport de Lille-Lesquin', kind: 'airport', lat: 50.5640, lng: 3.0230 },
+  ],
+  'Nouvelle-Calédonie': [
+    { name: 'Aéroport de Nouméa-Magenta', kind: 'airport', lat: -22.2464, lng: 166.4736 },
+    { name: 'Aéroport de Nouméa-La Tontouta', kind: 'airport', lat: -22.0140, lng: 166.2130 },
+  ],
+  Espagne: [
+    { name: 'Aéroport de Madrid-Barajas', kind: 'airport', lat: 40.4720, lng: -3.5610 },
+    { name: 'Aéroport de Séville', kind: 'airport', lat: 37.4180, lng: -5.8930 },
+    { name: 'Aéroport de Barcelone-El Prat', kind: 'airport', lat: 41.2971, lng: 2.0785 },
+    { name: 'Aéroport de Valence', kind: 'airport', lat: 39.4893, lng: -0.4816 },
+    { name: 'Aéroport de Bilbao', kind: 'airport', lat: 43.3011, lng: -2.9106 },
+    { name: 'Aéroport de Malaga', kind: 'airport', lat: 36.6750, lng: -4.4990 },
+  ],
+  Italie: [{ name: 'Aéroport de Milan-Malpensa', kind: 'airport', lat: 45.6306, lng: 8.7281 }],
+  Allemagne: [{ name: 'Aéroport de Francfort', kind: 'airport', lat: 50.0420, lng: 8.5640 }],
+  Pologne: [{ name: 'Aéroport de Varsovie-Chopin', kind: 'airport', lat: 52.1657, lng: 20.9670 }],
+  'République tchèque': [{ name: 'Aéroport de Prague', kind: 'airport', lat: 50.1008, lng: 14.2600 }],
+  Turquie: [{ name: 'Aéroport d’Istanbul', kind: 'airport', lat: 41.2753, lng: 28.7519 }],
+  Égypte: [{ name: 'Aéroport du Caire', kind: 'airport', lat: 30.1115, lng: 31.4130 }],
+  Maroc: [{ name: 'Aéroport de Casablanca-Mohammed V', kind: 'airport', lat: 33.3675, lng: -7.5900 }],
+  Algérie: [{ name: 'Aéroport d’Alger', kind: 'airport', lat: 36.6910, lng: 3.2154 }],
+  Tunisie: [{ name: 'Aéroport de Tunis-Carthage', kind: 'airport', lat: 36.8510, lng: 10.2272 }],
+  'États-Unis': [{ name: 'Aéroport de New York-JFK', kind: 'airport', lat: 40.6413, lng: -73.7781 }],
+  Canada: [{ name: 'Aéroport de Toronto-Pearson', kind: 'airport', lat: 43.6777, lng: -79.6248 }],
+  Brésil: [{ name: 'Aéroport de São Paulo-Guarulhos', kind: 'airport', lat: -23.4356, lng: -46.4731 }],
+  Mexique: [{ name: 'Aéroport de Mexico', kind: 'airport', lat: 19.4361, lng: -99.0719 }],
+  Argentine: [{ name: 'Aéroport de Buenos Aires-Ezeiza', kind: 'airport', lat: -34.8222, lng: -58.5358 }],
+  Chili: [{ name: 'Aéroport de Santiago', kind: 'airport', lat: -33.3930, lng: -70.7858 }],
+  Colombie: [{ name: 'Aéroport de Bogotá-El Dorado', kind: 'airport', lat: 4.7016, lng: -74.1469 }],
+  Pérou: [{ name: 'Aéroport de Lima-Jorge Chávez', kind: 'airport', lat: -12.0219, lng: -77.1143 }],
+  'Afrique du Sud': [{ name: 'Aéroport de Johannesburg-OR Tambo', kind: 'airport', lat: -26.1392, lng: 28.2460 }],
+  Nigeria: [{ name: 'Aéroport de Lagos-Murtala Muhammed', kind: 'airport', lat: 6.5774, lng: 3.3212 }],
+  Kenya: [{ name: 'Aéroport de Nairobi-Jomo Kenyatta', kind: 'airport', lat: -1.3193, lng: 36.9278 }],
+  'Arabie saoudite': [{ name: 'Aéroport de Djeddah', kind: 'airport', lat: 21.6796, lng: 39.1565 }],
+  'Émirats arabes unis': [{ name: 'Aéroport de Dubaï', kind: 'airport', lat: 25.2532, lng: 55.3657 }],
+  Inde: [{ name: 'Aéroport de Delhi-Indira Gandhi', kind: 'airport', lat: 28.5562, lng: 77.1000 }],
+  Chine: [{ name: 'Aéroport de Pékin-Capitale', kind: 'airport', lat: 40.0799, lng: 116.6031 }],
+  Japon: [{ name: 'Aéroport de Tokyo-Haneda', kind: 'airport', lat: 35.5494, lng: 139.7798 }],
+  Corée_du_Sud: [{ name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 }],
+  'Corée du Sud': [{ name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 }],
+  Australie: [{ name: 'Aéroport de Sydney', kind: 'airport', lat: -33.9399, lng: 151.1753 }],
+  Indonésie: [{ name: 'Aéroport de Jakarta-Soekarno-Hatta', kind: 'airport', lat: -6.1256, lng: 106.6558 }],
+  Vietnam: [{ name: 'Aéroport de Hanoi-Noi Bai', kind: 'airport', lat: 21.2212, lng: 105.8072 }],
+  Thaïlande: [{ name: 'Aéroport de Bangkok-Suvarnabhumi', kind: 'airport', lat: 13.6900, lng: 100.7501 }],
+  Russie: [{ name: 'Aéroport de Moscou-Cheremetievo', kind: 'airport', lat: 55.9726, lng: 37.4146 }],
+  Suisse: [{ name: 'Aéroport de Zurich', kind: 'airport', lat: 47.4582, lng: 8.5555 }],
+  Autriche: [{ name: 'Aéroport de Vienne', kind: 'airport', lat: 48.1103, lng: 16.5696 }],
+  Suède: [{ name: 'Aéroport de Stockholm-Arlanda', kind: 'airport', lat: 59.6519, lng: 17.9186 }],
+  Norvege: [{ name: 'Aéroport d’Oslo', kind: 'airport', lat: 60.1939, lng: 11.1024 }],
+  Danemark: [{ name: 'Aéroport de Copenhague', kind: 'airport', lat: 55.6180, lng: 12.6560 }],
+  Portugal: [{ name: 'Aéroport de Lisbonne', kind: 'airport', lat: 38.7742, lng: -9.1342 }],
+  Roumanie: [{ name: 'Aéroport de Bucarest-Henri Coandă', kind: 'airport', lat: 44.5711, lng: 26.0850 }],
+  Hongrie: [{ name: 'Aéroport de Budapest-Ferenc Liszt', kind: 'airport', lat: 47.4369, lng: 19.2556 }],
+  Grèce: [{ name: 'Aéroport d’Athènes', kind: 'airport', lat: 37.9364, lng: 23.9445 }],
+  'Royaume-Uni': [{ name: 'Aéroport de Londres-Heathrow', kind: 'airport', lat: 51.4700, lng: -0.4543 }],
 };
 
-// Pays priorititairement accessibles en train direct/quasi-direct depuis Lille
-const TRAIN_PRIORITY_COUNTRIES = new Set(['France', 'Belgique', 'Pays-Bas', 'Luxembourg', 'Royaume-Uni', 'Allemagne']);
 
 const DEFAULT_MEETING_MIN = 120;
 const EARLIEST_MIN = 8 * 60 + 30;
@@ -206,16 +228,44 @@ const centroid = (pts: { lat: number; lng: number }[]) => ({
   lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
 });
 
+const normalizeCountry = (country: string) =>
+  country.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+
+const lookupCountry = <T>(table: Record<string, T>, country: string): T | undefined => {
+  const key = Object.keys(table).find(k => normalizeCountry(k) === normalizeCountry(country));
+  return key != null ? table[key] : undefined;
+};
+
 const pickHub = (country: string, sites: TripSite[]): { hub: Hub; trainPreferred: boolean } => {
   const c = centroid(sites);
-  if (TRAIN_PRIORITY_COUNTRIES.has(country) && STATIONS[country]) {
-    const best = STATIONS[country].reduce((acc, s) =>
+  const stations = lookupCountry(STATIONS, country);
+  const trainCountry = Object.keys(STATIONS).find(k => normalizeCountry(k) === normalizeCountry(country));
+  const airports = lookupCountry(COUNTRY_AIRPORT_HUBS, country);
+  // Train uniquement si les sites sont réellement proches du réseau ferroviaire
+  // européen (garde-fou : sites ultra-périphériques / outre-mer enregistrés sous
+  // le pays d'origine, ex. Nouvelle-Calédonie sous "France").
+  const nearestStationKm = stations
+    ? Math.min(...stations.map(st => haversineKm({ lat: st.lat, lng: st.lng }, c)))
+    : Infinity;
+  if (trainCountry && nearestStationKm <= 600) {
+    const best = stations!.reduce((acc, s) =>
       haversineKm({ lat: s.lat, lng: s.lng }, c) < haversineKm({ lat: acc.lat, lng: acc.lng }, c) ? s : acc
     );
     return { hub: best, trainPreferred: true };
   }
-  const airport = COUNTRY_AIRPORT_HUBS[country];
-  if (airport) return { hub: airport, trainPreferred: false };
+  // Aéroports candidats du pays : on choisit le plus proche des sites.
+  // Garde-fou : si même l'aéroport national est à plus de 3000 km des sites
+  // (outre-mer / territoire ultra-périphérique enregistré sous le pays,
+  // ex. Nouvelle-Calédonie sous "France"), on retombe sur un hub local au
+  // plus près des sites.
+  if (airports?.length) {
+    const best = airports.reduce((acc, a) =>
+      haversineKm({ lat: a.lat, lng: a.lng }, c) < haversineKm({ lat: acc.lat, lng: acc.lng }, c) ? a : acc
+    );
+    const bestKm = haversineKm({ lat: best.lat, lng: best.lng }, c);
+    if (bestKm <= 3000) return { hub: best, trainPreferred: false };
+    return { hub: { name: `Hub principal (${country})`, kind: 'airport' as const, lat: c.lat, lng: c.lng }, trainPreferred: false };
+  }
   return { hub: { name: `Hub principal (${country})`, kind: 'airport', lat: c.lat, lng: c.lng }, trainPreferred: false };
 };
 
