@@ -117,11 +117,41 @@ const STATIONS: Record<string, Hub[]> = {
   ],
   'Royaume-Uni': [
     { name: 'London St Pancras', kind: 'station', lat: 51.5320, lng: -0.1265 },
+    { name: 'Manchester Piccadilly', kind: 'station', lat: 53.4773, lng: -2.2309 },
+    { name: 'Birmingham New Street', kind: 'station', lat: 52.4782, lng: -1.8995 },
+    { name: 'Leeds', kind: 'station', lat: 53.7947, lng: -1.5491 },
+    { name: 'Sheffield', kind: 'station', lat: 53.3830, lng: -1.4659 },
+    { name: 'Derby', kind: 'station', lat: 52.9154, lng: -1.4847 },
+    { name: 'Nottingham', kind: 'station', lat: 52.9530, lng: -1.1495 },
+    { name: 'York', kind: 'station', lat: 53.9580, lng: -1.0950 },
+    { name: 'Newcastle', kind: 'station', lat: 54.9687, lng: -1.6184 },
+    { name: 'Bristol Temple Meads', kind: 'station', lat: 51.4549, lng: -2.5812 },
+    { name: 'Edinburgh Waverley', kind: 'station', lat: 55.9526, lng: -3.1899 },
+    { name: 'Glasgow Central', kind: 'station', lat: 55.8590, lng: -4.2580 },
+    { name: 'Peterborough', kind: 'station', lat: 52.5730, lng: -0.2430 },
+    { name: 'Ely', kind: 'station', lat: 52.3980, lng: 0.2650 },
+    { name: 'Doncaster', kind: 'station', lat: 53.5220, lng: -1.1050 },
+    { name: 'Preston', kind: 'station', lat: 53.7590, lng: -2.7050 },
+    { name: 'Chester', kind: 'station', lat: 53.1910, lng: -2.8910 },
+    { name: 'Cardiff Central', kind: 'station', lat: 51.4750, lng: -3.1820 },
   ],
 };
 
 // Aéroports internationaux stratégiques par pays : plusieurs candidats par pays,
 // le plus proche des sites est choisi. (fallback : hub le plus proche des sites)
+// Gares d'entrée internationale : première gare du pays atteinte depuis Lille
+// en train international (Eurostar/Thalys/ICE). Sert de point d'arrivée du
+// tronçon international ; une correspondance nationale peut ensuite rapprocher
+// les sites avant la prise en charge de la voiture.
+const ENTRY_STATIONS: Record<string, Hub> = {
+  France: { name: 'Gare de Lille-Europe', kind: 'station', lat: 50.6124, lng: 3.0733 },
+  Belgique: { name: 'Gare de Bruxelles-Midi', kind: 'station', lat: 50.8355, lng: 4.3365 },
+  'Pays-Bas': { name: 'Amsterdam-Centraal', kind: 'station', lat: 52.3775, lng: 4.9010 },
+  Luxembourg: { name: 'Gare de Luxembourg', kind: 'station', lat: 49.6000, lng: 6.1330 },
+  Allemagne: { name: 'Bahnhof Köln', kind: 'station', lat: 50.7333, lng: 6.9597 },
+  'Royaume-Uni': { name: 'London St Pancras', kind: 'station', lat: 51.5320, lng: -0.1265 },
+};
+
 const COUNTRY_AIRPORT_HUBS: Record<string, Hub[]> = {
   France: [
     { name: 'Aéroport de Paris-CDG', kind: 'airport', lat: 49.0097, lng: 2.5479 },
@@ -216,13 +246,11 @@ const fmtDurationHM = (minutes: number) => {
 };
 const trainMin = (km: number) => Math.round((km / 130) * 60 + 20);
 const flightMin = (km: number) => Math.round(Math.max(km / 750, 1) * 60 + 30);
-
 const fmtHHMM = (m: number) => {
   const q = Math.round(m / 15) * 15;
   const mm = ((q % 1440) + 1440) % 1440;
   return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
 };
-
 const centroid = (pts: { lat: number; lng: number }[]) => ({
   lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
   lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
@@ -294,7 +322,7 @@ const pickOutboundFlight = (hub: Hub, origin: { city: string; lat: number; lng: 
 };
 
 // Ordre de visite optimisé : plus proche voisin depuis le hub
-const orderSites = (hub: Hub, sites: TripSite[]): TripSite[] => {
+const orderSites = (hub: { lat: number; lng: number }, sites: TripSite[]): TripSite[] => {
   const remaining = [...sites];
   const ordered: TripSite[] = [];
   let current = { lat: hub.lat, lng: hub.lng };
@@ -327,7 +355,6 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
   const plans: TripPlan[] = [];
   for (const [country, group] of byCountry) {
     const { hub, trainPreferred } = pickHub(country, group);
-    const kmLilleHub = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: hub.lat, lng: hub.lng });
     const steps: TripStep[] = [];
     let totalKm = 0;
     let t = 6 * 60;
@@ -340,11 +367,23 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
 
     if (trainPreferred) {
       outboundMode = 'train';
+      // Tronçon international : Lille -> gare d'entrée du pays (ex. St Pancras)
+      const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
+      const kmLilleEntry = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: entry.lat, lng: entry.lng });
+      const durEntry = trainMin(kmLilleEntry);
       originLabel = 'Lille (gare)';
-      originDetail = 'Train direct/quasi-direct depuis Lille';
-      const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: `Train ${origin.city} → ${hub.name}`, detail: `~${Math.round(kmLilleHub)} km, ~${Math.round(dur / 60)}h`, from: origin.city, to: hub.name, day, time: fmtHHMM(t) });
-      hubArrival = t + dur;
+      originDetail = `Train international depuis ${origin.city} (${entry.name})`;
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(kmLilleEntry)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
+      hubArrival = t + durEntry;
+
+      // Correspondance nationale si la gare d'entrée est éloignée des sites :
+      // train domestique vers la gare la plus proche des sites (ex. St Pancras -> Derby)
+      if (hub.name !== entry.name) {
+        const kmEntryHub = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng });
+        const durNat = trainMin(kmEntryHub);
+        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(kmEntryHub)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
+        hubArrival = hubArrival + 20 + durNat;
+      }
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       outboundMode = 'plane';
@@ -366,7 +405,7 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
     steps.push({ type: 'car', label: 'Voiture de location — prise en charge', detail: `Location au départ de ${hub.name}`, to: hub.name, day, time: fmtHHMM(hubArrival) });
     let clock = hubArrival + 45;
 
-    const ordered = orderSites(hub, group);
+    const ordered = orderSites({ lat: hub.lat, lng: hub.lng }, group);
     let currentPos = { lat: hub.lat, lng: hub.lng };
     ordered.forEach((site, i) => {
       const km = haversineKm(currentPos, { lat: site.lat, lng: site.lng });
@@ -399,8 +438,17 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
     steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack) });
 
     if (outboundMode === 'train') {
-      const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: `Train ${hub.name} → ${origin.city} (retour)`, detail: `Retour par le même hub, ~${Math.round(dur / 60)}h`, from: hub.name, to: origin.city, day, time: fmtHHMM(backArrive) });
+      const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
+      let returnClock = backArrive;
+      if (hub.name !== entry.name) {
+        const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
+        const durNatBack = trainMin(kmNatBack);
+        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(kmNatBack)} km, ~${fmtDurationHM(durNatBack)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+        returnClock = returnClock + 15 + durNatBack;
+      }
+      const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
+      const durBack = trainMin(kmEntryLille);
+      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(kmEntryLille)} km, ~${fmtDurationHM(durBack)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
