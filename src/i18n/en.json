@@ -103,7 +103,8 @@
     "tripLocalCar": "{{km}} km of local driving",
     "tripName": "Trip name",
     "tripSave": "Save trip",
-    "tripSaved": "Trip saved! Find it in the Visit page."
+    "tripSaved": "Trip saved! Find it in the Visit page.",
+    "aiVisitGenerating": "Generating trip…"
   },
   "siteDetail": {
     "loading": "Loading...",
@@ -621,6 +622,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Real durations and routes via the Google Directions API for trip generation (driving and transit), with automatic fallback to estimates",
       "Fixed car travel duration display in the visit program",
       "Smarter trip suggestions: international train to the country entry station (e.g. St Pancras), then a domestic train connection to the station nearest the sites before picking up the car",
       "Smart travel hub selection: airport nearest to the sites (e.g. Seville), safeguard for remote/overseas destinations",

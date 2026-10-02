@@ -6,7 +6,7 @@ import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 import { isCountryAllowed } from '../lib/countryMatch';
-import { planTrip, TripSite, TripPlan, tripPlanTitle, TripPreferences } from '../lib/tripPlanner';
+import { planTripAsync, TripSite, TripPlan, tripPlanTitle, TripPreferences } from '../lib/tripPlanner';
 
 // Types
 interface Address {
@@ -137,6 +137,7 @@ export default function Sites() {
   const [aiVisitMode, setAiVisitMode] = useState(false);
   const [visitSites, setVisitSites] = useState<Site[]>([]);
   const [visitPlans, setVisitPlans] = useState<TripPlan[]>([]);
+  const [generatingTrip, setGeneratingTrip] = useState(false);
   const [showTripModal, setShowTripModal] = useState(false);
   const [tripName, setTripName] = useState('');
   const [isSavingTrip, setIsSavingTrip] = useState(false);
@@ -667,7 +668,7 @@ export default function Sites() {
     setVisitSites(prev => prev.some(s => s.id === site.id) ? prev.filter(s => s.id !== site.id) : [...prev, site]);
   };
 
-  const generateVisitPlans = () => {
+  const generateVisitPlans = async () => {
     const tripSites: TripSite[] = visitSites.map(s => ({
       id: s.id,
       noms: s.noms,
@@ -676,8 +677,14 @@ export default function Sites() {
       lat: parseFloat(s.latitude),
       lng: parseFloat(s.longitude),
     }));
-    setVisitPlans(planTrip(tripSites, tripPrefs || undefined));
-    setShowTripModal(true);
+    setGeneratingTrip(true);
+    try {
+      const plans = await planTripAsync(tripSites, tripPrefs || undefined);
+      setVisitPlans(plans);
+      setShowTripModal(true);
+    } finally {
+      setGeneratingTrip(false);
+    }
   };
 
   const handleSaveTrip = async () => {
@@ -1066,8 +1073,8 @@ export default function Sites() {
             </div>
           )}
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button style={buttonStyle} onClick={generateVisitPlans} disabled={visitSites.length < 1}>
-              {t('sites.aiVisitGenerate')}
+            <button style={buttonStyle} onClick={generateVisitPlans} disabled={visitSites.length < 1 || generatingTrip}>
+              {generatingTrip ? t('sites.aiVisitGenerating') : t('sites.aiVisitGenerate')}
             </button>
             <button style={buttonStyle} onClick={() => { setVisitSites([]); setVisitPlans([]); }}>{t('sites.aiVisitReset')}</button>
           </div>
