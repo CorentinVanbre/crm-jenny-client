@@ -115,6 +115,12 @@ const STATIONS: Record<string, Hub[]> = {
   Luxembourg: [
     { name: 'Gare de Luxembourg', kind: 'station', lat: 49.5995, lng: 6.1335 },
   ],
+  Suisse: [
+    { name: 'Genève-Cornavin', kind: 'station', lat: 46.2420, lng: 6.1490 },
+    { name: 'Lausanne', kind: 'station', lat: 46.5170, lng: 6.6290 },
+    { name: 'Zurich HB', kind: 'station', lat: 47.3770, lng: 8.5400 },
+    { name: 'Bâle CFF', kind: 'station', lat: 47.5480, lng: 7.5890 },
+  ],
   Allemagne: [
     { name: 'Bahnhof Köln (Cologne)', kind: 'station', lat: 50.3715, lng: 6.9580 },
     { name: 'Bahnhof Düsseldorf', kind: 'station', lat: 51.2195, lng: 6.7940 },
@@ -269,11 +275,22 @@ const lookupCountry = <T>(table: Record<string, T>, country: string): T | undefi
   return key != null ? table[key] : undefined;
 };
 
-const pickHub = (country: string, sites: TripSite[], origin: { lat: number; lng: number }): { hub: Hub; trainPreferred: boolean } => {
+const pickHub = (country: string, sites: TripSite[], origin: { city?: string; lat: number; lng: number }): { hub: Hub; trainPreferred: boolean; driveDirect?: boolean } => {
   const c = centroid(sites);
-  const stations = lookupCountry(STATIONS, country);
-  const trainCountry = Object.keys(STATIONS).find(k => normalizeCountry(k) === normalizeCountry(country));
-  const airports = lookupCountry(COUNTRY_AIRPORT_HUBS, country);
+  // Sites proches de l'origine et directement accessibles en voiture (ex.
+  // Tournai depuis Lille, ~35 km) : pas de train/avion, voiture personnelle
+  // depuis l'origine, hub = origine.
+  const originToSitesKm0 = haversineKm(origin, c);
+  const allCarReachable = sites.every(s => CAR_ACCESSIBLE.has(s.pays)) && sites.every(s => haversineKm(origin, { lat: s.lat, lng: s.lng }) <= 150);
+  if (allCarReachable && originToSitesKm0 <= 150) {
+    return { hub: { name: origin.city || 'Origine', kind: 'station', lat: origin.lat, lng: origin.lng }, trainPreferred: false, driveDirect: true };
+  }
+  // Un cluster peut mélanger plusieurs pays frontaliers (ex. France + Suisse) :
+  // on considère les gares ET les aéroports de tous les pays du cluster.
+  const clusterCountries = Array.from(new Set(sites.map(s => s.pays)));
+  const stations = clusterCountries.flatMap(co => lookupCountry(STATIONS, co) || []);
+  const trainCountry = clusterCountries.find(co => Object.keys(STATIONS).some(k => normalizeCountry(k) === normalizeCountry(co)));
+  const airports = clusterCountries.flatMap(co => lookupCountry(COUNTRY_AIRPORT_HUBS, co) || []);
   // Train uniquement si les sites sont réellement proches du réseau ferroviaire
   // européen (garde-fou : sites ultra-périphériques / outre-mer enregistrés sous
   // le pays d'origine, ex. Nouvelle-Calédonie sous "France").
@@ -407,21 +424,51 @@ const realLeg = async (
   return leg ?? { km: estKm, minutes: estMin, source: 'estimate' as const };
 };
 
+// Pays frontaliers directement accessibles en voiture depuis le nord de la
+// France (pas de tronçon train/avion nécessaire même si la frontière est
+// passée : ex. Tournai depuis Lille).
+const CAR_ACCESSIBLE = new Set(['France', 'Belgique', 'Luxembourg', 'Pays-Bas', 'Allemagne', 'Suisse', 'Royaume-Uni']);
+
+// Regroupe les sites en voyages cohérents : au lieu d'un voyage strict par
+// pays, on fusionne les groupes dont les sites sont géographiquement proches
+// (ex. France/Suisse frontaliers -> un seul voyage voiture+train) et on
+// regroupe les pays accessibles en voiture. Des sites très éloignés (ex.
+// Nouvelle-Calédonie + Espagne) restent des voyages séparés.
+const clusterSites = (sites: TripSite[]): TripSite[][] => {
+  const groups: { sites: TripSite[]; centroid: { lat: number; lng: number } }[] = [];
+  sites.forEach(site => {
+    const c = { lat: site.lat, lng: site.lng };
+    let matched = -1;
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const sameCarArea = g.sites.some(x => CAR_ACCESSIBLE.has(x.pays)) && CAR_ACCESSIBLE.has(site.pays)
+        && g.sites.some(x => haversineKm({ lat: x.lat, lng: x.lng }, c) <= 600);
+      const near = haversineKm(g.centroid, c) <= 400;
+      if (sameCarArea && near) { matched = i; break; }
+    }
+    if (matched >= 0) {
+      groups[matched].sites.push(site);
+      groups[matched].centroid = centroid(groups[matched].sites);
+    } else {
+      groups.push({ sites: [site], centroid: c });
+    }
+  });
+  return groups.map(g => g.sites);
+};
+
 export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences): Promise<TripPlan[]> => {
   const origin = prefs?.originCity && prefs.originLat && prefs.originLng
     ? { city: prefs.originCity, lat: prefs.originLat, lng: prefs.originLng }
     : { city: DEFAULT_ORIGIN.city, lat: DEFAULT_ORIGIN.lat, lng: DEFAULT_ORIGIN.lng };
   const meetingMin = prefs?.meetingMinutes && prefs.meetingMinutes > 0 ? prefs.meetingMinutes : DEFAULT_MEETING_MIN;
-  const byCountry = new Map<string, TripSite[]>();
-  sites.forEach((s) => {
-    const list = byCountry.get(s.pays) || [];
-    list.push(s);
-    byCountry.set(s.pays, list);
-  });
+  const groups = clusterSites(sites);
 
   const plans: TripPlan[] = [];
-  for (const [country, group] of byCountry) {
-    const { hub, trainPreferred } = pickHub(country, group, origin);
+  for (const group of groups) {
+    const country = group[0].pays;
+    const pick = pickHub(country, group, origin);
+    const { hub, trainPreferred } = pick;
+    const driveDirect = !!pick.driveDirect;
     const steps: TripStep[] = [];
     let totalKm = 0;
     let t = 6 * 60;
@@ -432,7 +479,12 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
     let originDetail: string;
     let hubArrival: number;
 
-    if (trainPreferred) {
+    if (driveDirect) {
+      outboundMode = 'car';
+      originLabel = origin.city;
+      originDetail = `Voiture depuis ${origin.city}`;
+      hubArrival = t;
+    } else if (trainPreferred) {
       outboundMode = 'train';
       // Tronçon international : Lille -> gare d'entrée du pays (ex. St Pancras)
       const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
@@ -472,10 +524,18 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       hubArrival = t + 90 + dur;
     }
 
-    steps.push({ type: 'car', label: 'Voiture de location — prise en charge', detail: `Location au départ de ${hub.name}`, to: hub.name, day, time: fmtHHMM(hubArrival) });
-    let clock = hubArrival + 45;
-
     const ordered = orderSites({ lat: hub.lat, lng: hub.lng }, group);
+    if (!driveDirect) {
+      steps.push({ type: 'car', label: 'Voiture de location — prise en charge', detail: `Location au départ de ${hub.name}`, to: hub.name, day, time: fmtHHMM(hubArrival) });
+    }
+    let clock = driveDirect ? hubArrival : hubArrival + 45;
+    if (driveDirect) {
+      const firstKm = haversineKm(origin, { lat: hub.lat, lng: hub.lng });
+      const legFirst = await realLeg('driving', origin, { lat: hub.lat, lng: hub.lng }, driveMin(firstKm), firstKm);
+      steps.push({ type: 'car', label: `Voiture ${origin.city} → ${ordered.length ? ordered[0].noms : hub.name}`, detail: `~${Math.round(legFirst.km)} km, ~${fmtDurationHM(legFirst.minutes)}`, from: origin.city, to: ordered.length ? ordered[0].noms : hub.name, day, time: fmtHHMM(t), legKm: legFirst.km, legMinutes: legFirst.minutes });
+      clock = t + legFirst.minutes;
+    }
+
     let currentPos = { lat: hub.lat, lng: hub.lng };
     for (let i = 0; i < ordered.length; i++) {
       const site = ordered[i];
@@ -494,7 +554,9 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         day += 1;
         start = DEFAULT_DAY_START + drive;
       }
-      steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive), legKm: km, legMinutes: drive });
+      if (!(driveDirect && i === 0)) {
+        steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive), legKm: km, legMinutes: drive });
+      }
       steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${fmtDurationHM(meetingMin)}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
       currentPos = { lat: site.lat, lng: site.lng };
       clock = start + meetingMin;
@@ -503,6 +565,26 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
     // Hub de retour : par défaut identique à l'aller. Si l'utilisateur l'autorise
     // et que les sites sont éloignés du hub d'aller, on choisit le hub le plus
     // proche du DERNIER site visité (gare ou aéroport du même pays).
+    if (driveDirect) {
+      const kmBackDirect = haversineKm(currentPos, { lat: origin.lat, lng: origin.lng });
+      const legBackDirect = await realLeg('driving', currentPos, { lat: origin.lat, lng: origin.lng }, driveMin(kmBackDirect), kmBackDirect);
+      const backArriveDirect = clock + legBackDirect.minutes > 21 * 60 ? (day += 1, DEFAULT_DAY_START + legBackDirect.minutes) : clock + legBackDirect.minutes;
+      steps.push({ type: 'car', label: `Voiture → ${origin.city} (retour)`, detail: `~${Math.round(legBackDirect.km)} km, ~${fmtDurationHM(legBackDirect.minutes)}`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: origin.city, day, time: fmtHHMM(backArriveDirect - legBackDirect.minutes), legKm: legBackDirect.km, legMinutes: legBackDirect.minutes });
+      plans.push({
+        country,
+        outboundMode: 'car',
+        originLabel,
+        originDetail,
+        hubName: hub.name,
+        hubKind: hub.kind,
+        hubLat: hub.lat,
+        hubLng: hub.lng,
+        steps,
+        totalKm,
+        siteCount: group.length,
+      });
+      continue;
+    }
     const returnHub = pickReturnHub(hub, country, currentPos, prefs);
     const kmBackEst = haversineKm(currentPos, { lat: returnHub.lat, lng: returnHub.lng });
     const legBack = await realLeg('driving', currentPos, { lat: returnHub.lat, lng: returnHub.lng }, driveMin(kmBackEst), kmBackEst);
@@ -516,7 +598,11 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
     }
     steps.push({ type: 'car', label: `Voiture → ${returnHub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: returnHub.name, day, time: fmtHHMM(backArrive - driveBack), legKm: kmBack, legMinutes: driveBack });
 
-    if (outboundMode === 'train') {
+    if (driveDirect) {
+      const kmBackDirect = haversineKm(currentPos, { lat: origin.lat, lng: origin.lng });
+      const legBackDirect = await realLeg('driving', currentPos, { lat: origin.lat, lng: origin.lng }, driveMin(kmBackDirect), kmBackDirect);
+      steps.push({ type: 'car', label: `Voiture → ${origin.city} (retour)`, detail: `~${Math.round(legBackDirect.km)} km, ~${fmtDurationHM(legBackDirect.minutes)}`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: origin.city, day, time: fmtHHMM(backArrive), legKm: legBackDirect.km, legMinutes: legBackDirect.minutes });
+    } else if (outboundMode === 'train') {
       const entry = pickReturnEntry(returnHub, country, origin);
       let returnClock = backArrive;
       if (returnHub.name !== entry.name) {
@@ -743,24 +829,25 @@ export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep
   let day = edited.day ?? 1;
   let clock = timeToMin(anchor);
   if (edited.type === 'meeting') clock += edited.meetingMinutes ?? DEFAULT_MEETING_MIN;
+  let pendingLeg = 0;
   for (let i = editIndex + 1; i < out.length; i++) {
     const st = out[i];
-    if (st.scheduledTime) { clock = timeToMin(st.scheduledTime); day = st.day ?? day; if (st.type === 'meeting') clock += st.meetingMinutes ?? DEFAULT_MEETING_MIN; continue; }
-    const legMin = st.legMinutes ?? (st.type === 'car' ? driveMin(haversineKm({ lat: st.lat ?? 0, lng: st.lng ?? 0 }, { lat: st.lat ?? 0, lng: st.lng ?? 0 })) : 0);
-    if (st.type === 'meeting') {
+    if (st.scheduledTime) { clock = timeToMin(st.scheduledTime); day = st.day ?? day; if (st.type === 'meeting') clock += st.meetingMinutes ?? DEFAULT_MEETING_MIN; pendingLeg = 0; continue; }
+    if (st.type === 'car') {
+      // Durée du trajet à venir : reportée sur la réunion suivante.
+      pendingLeg = st.legMinutes ?? 0;
+      let depart = clock;
+      if (depart % 1440 > 23 * 60) { day += 1; depart = DEFAULT_DAY_START; }
+      out[i] = { ...st, day, time: fmtHHMM(depart) };
+    } else if (st.type === 'meeting') {
       const meetingMin = st.meetingMinutes ?? DEFAULT_MEETING_MIN;
-      let arrive = clock + legMin;
-      if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) { day += 1; arrive = DEFAULT_DAY_START; }
+      let arrive = clock + pendingLeg;
+      if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) { day += 1; arrive = DEFAULT_DAY_START + pendingLeg; }
       let start = Math.max(arrive, EARLIEST_MIN);
-      if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
+      if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START + pendingLeg; }
       out[i] = { ...st, day, time: fmtHHMM(start) };
       clock = start + meetingMin;
-    } else {
-      if (legMin > 0) {
-        let depart = clock;
-        if (depart % 1440 > 23 * 60) { day += 1; depart = DEFAULT_DAY_START - legMin < 0 ? DEFAULT_DAY_START : depart; }
-        out[i] = { ...st, day, time: fmtHHMM(depart) };
-      }
+      pendingLeg = 0;
     }
   }
   return out;
