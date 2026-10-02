@@ -283,7 +283,6 @@ export default function Visite() {
       </tr>`;
     }).join('');
 
-    const orderHtml = meetings.map((m, i) => `<div style="padding:3px 0;">${i + 1}. ${esc(m.siteName || m.label)}</div>`).join('');
     const center = mapCenterFor(pts);
     const mapInit = JSON.stringify({ pts: pts.map(p => ({ lat: p.lat, lng: p.lng, label: esc(p.label), kind: p.kind, num: numbers[p.label] || 0 })), center });
 
@@ -300,6 +299,7 @@ export default function Visite() {
             .page { max-width: 860px; margin: 0 auto; padding: 28px 32px; background: #E5E5E4; }
             .banner { background: #A6A6A6; border: 1px solid #000; border-radius: 8px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
             .logo { font-size: 28px; font-weight: bold; font-style: italic; }
+            .credit { font-size: 10px; font-weight: 200; margin-top: 2px; }
             .trip-title { text-align: right; }
             .trip-title h1 { font-size: 20px; font-weight: bold; margin: 0; }
             .trip-title .meta { font-size: 12px; color: #222; }
@@ -315,14 +315,15 @@ export default function Visite() {
         <body>
           <div class="page">
             <div class="banner">
-              <div class="logo">JENNY</div>
+              <div>
+                <div class="logo">JENNY</div>
+                <div class="credit">Développé par Corentin VANBREMEERSCH - 2026</div>
+              </div>
               <div class="trip-title">
                 <h1>${esc(trip.name)}</h1>
                 <div class="meta">${esc(trip.countries)} · ${formatDate(trip.created_date)}${trip.start_date ? ` · Départ : ${trip.start_date.split('-').reverse().join('/')}` : ''}</div>
               </div>
             </div>
-            <h2>${t('visite.visitOrder')}</h2>
-            <div class="order-box">${orderHtml}</div>
             <h2>${t('visite.roadbook')}</h2>
             <div class="card"><div id="map"></div></div>
             <h2>${t('visite.stepsTitle')}</h2>
