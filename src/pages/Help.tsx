@@ -44,6 +44,10 @@ export default function Help() {
   const [query, setQuery] = useState('');
   const [openPages, setOpenPages] = useState<Set<number>>(new Set());
   const [openThemes, setOpenThemes] = useState<Set<string>>(new Set());
+  const [isRecentOpen, setIsRecentOpen] = useState(false);
+  const recentItems = t('help.recentItems', { returnObjects: true }) as string[];
+
+  const toggleRecent = () => setIsRecentOpen((prev) => !prev);
 
   const togglePage = (index: number) => {
     setOpenPages((prev) => {
@@ -215,6 +219,23 @@ export default function Help() {
             })}
           </>
         )}
+
+        <section style={sectionStyle}>
+          <button onClick={() => toggleRecent()} style={pageButtonStyle}>
+            <span style={{ ...pageTitleStyle, fontSize: isMobile ? '18px' : '22px' }}>
+              {isRecentOpen ? '▾' : '▸'} {t('help.recentTitle')}
+            </span>
+          </button>
+          {isRecentOpen && (
+            <ul style={{ ...listStyle, fontSize: isMobile ? '14px' : '16px' }}>
+              {recentItems.map((item) => (
+                <li key={item} style={listItemStyle}>
+                  ✅ {item}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );
