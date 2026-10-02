@@ -4,6 +4,7 @@ import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
 import RequireAuth from './components/RequireAuth';
 import Home from './pages/Home';
+import Help from './pages/Help';
 import Sites from './pages/Sites';
 import SiteDetail from './pages/SiteDetail';
 import Contacts from './pages/Contacts';
@@ -32,6 +33,7 @@ export default function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/" element={<Home />} />
+                  <Route path="/help" element={<Help />} />
                   <Route path="/login" element={<Login />} />
                   <Route
                     path="/sites"

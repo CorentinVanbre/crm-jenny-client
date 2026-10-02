@@ -112,6 +112,12 @@ export default function Header() {
           {t('header.login')}
         </Link>
       )}
+      <Link to="/help" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/help') } : { ...linkStyle, fontWeight: activeFontWeight('/help') }}
+        onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
+        onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
+        onClick={closeMobileMenu}>
+        {t('header.help')}
+      </Link>
     </>
   );
 
