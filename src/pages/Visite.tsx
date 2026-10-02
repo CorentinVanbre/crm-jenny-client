@@ -237,7 +237,7 @@ export default function Visite() {
     const hub = trip.plans?.[0] && trip.plans[0].hubLat != null && trip.plans[0].hubLng != null
       ? { lat: trip.plans[0].hubLat, lng: trip.plans[0].hubLng }
       : undefined;
-    const steps = rebuildTripSteps(trip.steps, reordered, hub);
+    const steps = await rebuildTripSteps(trip.steps, reordered, hub);
     await persistSteps(trip, steps);
   };
 
