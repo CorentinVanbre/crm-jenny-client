@@ -106,7 +106,8 @@
     "tripSaved": "Trip saved! Find it in the Visit page.",
     "aiVisitGenerating": "Generating trip…",
     "tripDirectionsOk": "Real routes and durations (Google Directions)",
-    "tripDirectionsFallback": "Local estimates: Google Directions unavailable (API key or quota)"
+    "tripDirectionsFallback": "Local estimates: Google Directions unavailable (API key or quota)",
+    "tripDirectionsDiag": "Google: {ok} OK / {failed} failed · last status: {error}"
   },
   "siteDetail": {
     "loading": "Loading...",
@@ -624,6 +625,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Detailed Google Directions diagnostic in the trip proposal (exact status, OK/failed calls)",
       "Real routes and schedules via Google Directions (visible diagnostic in the trip proposal)",
       "Real durations and routes via the Google Directions API for trip generation (driving and transit), with automatic fallback to estimates",
       "Fixed car travel duration display in the visit program",

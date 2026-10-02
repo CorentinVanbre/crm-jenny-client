@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 import { isCountryAllowed } from '../lib/countryMatch';
 import { planTripAsync, TripSite, TripPlan, tripPlanTitle, TripPreferences } from '../lib/tripPlanner';
-import { directionsStatus } from '../lib/googleDirections';
+import { directionsStatus, directionsDiag } from '../lib/googleDirections';
 
 // Types
 interface Address {
@@ -1605,7 +1605,9 @@ export default function Sites() {
               {t('sites.tripAssumptions')}
             </p>
             <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', textAlign: 'center', marginBottom: '15px', color: '#555' }}>
-              {directionsStatus() === 'ok' ? '✅ ' + t('sites.tripDirectionsOk') : '⚠️ ' + t('sites.tripDirectionsFallback')}
+              {directionsStatus() === 'ok'
+                ? `✅ ${t('sites.tripDirectionsOk')} (${directionsDiag().ok})`
+                : `⚠️ ${t('sites.tripDirectionsFallback')} · ${t('sites.tripDirectionsDiag', { ok: directionsDiag().ok, failed: directionsDiag().failed, error: directionsDiag().lastError || '-' })}`}
             </p>
 
             {visitPlans.map((plan, pi) => (
