@@ -186,6 +186,12 @@ const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: num
 };
 
 const driveMin = (km: number) => Math.round((km / 70) * 60 + 15);
+
+const fmtDurationHM = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h${m ? String(m).padStart(2, '0') : ''}`;
+};
 const trainMin = (km: number) => Math.round((km / 130) * 60 + 20);
 const flightMin = (km: number) => Math.round(Math.max(km / 750, 1) * 60 + 30);
 
@@ -327,7 +333,7 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
         start = DEFAULT_DAY_START + drive;
       }
       steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${Math.round(drive / 60)}h${Math.round(drive % 60)}min`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive) });
-      steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${Math.floor(meetingMin / 60)}h${meetingMin % 60 ? String(meetingMin % 60) : ''}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
+      steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${fmtDurationHM(meetingMin)}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
       currentPos = { lat: site.lat, lng: site.lng };
       clock = start + meetingMin;
     });
@@ -397,7 +403,7 @@ interface RebuildPoint {
   name: string;
 }
 
-export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[]): TripStep[] => {
+export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[], hub?: { lat: number; lng: number }): TripStep[] => {
   if (!orderedMeetings.length) return steps;
 
   // Tout ce qui précède la première réunion (train/avion aller + location) est conservé tel quel
@@ -413,8 +419,13 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[])
   // recalculés ci-dessous selon le nouvel ordre des visites clients.
   const hubName = outbound.length ? (outbound[outbound.length - 1].to || 'Hub') : 'Hub';
 
+  // Le trajet "car" aller (hub -> 1er site) fait partie du bloc à recalculer :
+  // on le retire d'outbound, il sera régénéré selon le nouvel ordre.
+  const lastCarIdx = outbound.map(st => st.type).lastIndexOf('car');
+  if (lastCarIdx >= 0) outbound.splice(lastCarIdx, 1);
+
   const rebuilt: TripStep[] = [...outbound];
-  let current: RebuildPoint = { lat: 0, lng: 0, name: hubName };
+  let current: RebuildPoint = { lat: hub?.lat ?? 0, lng: hub?.lng ?? 0, name: hubName };
   let prevName = hubName;
 
   orderedMeetings.forEach((m) => {

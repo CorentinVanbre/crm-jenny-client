@@ -37,7 +37,12 @@ const TIME_OPTIONS = (() => {
   return out;
 })();
 
-const MEETING_DURATION_OPTIONS = [60, 90, 120, 150, 180, 240, 300];
+const MEETING_DURATION_OPTIONS = [60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480];
+const fmtDurationHM = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h${m ? String(m).padStart(2, '0') : ''}`;
+};
 
 const formatDate = (dateString: string): string => {
   try {
@@ -204,7 +209,10 @@ export default function Visite() {
     const reordered = [...meetings];
     const [moved] = reordered.splice(meetingPosInMeetings, 1);
     reordered.splice(targetPos, 0, moved);
-    const steps = rebuildTripSteps(trip.steps, reordered);
+    const hub = trip.plans?.[0] && trip.plans[0].hubLat != null && trip.plans[0].hubLng != null
+      ? { lat: trip.plans[0].hubLat, lng: trip.plans[0].hubLng }
+      : undefined;
+    const steps = rebuildTripSteps(trip.steps, reordered, hub);
     await persistSteps(trip, steps);
   };
 
@@ -514,7 +522,7 @@ export default function Visite() {
                   style={{ ...inputStyle, width: 'auto' }}
                 >
                   {MEETING_DURATION_OPTIONS.map(min => (
-                    <option key={min} value={min}>{min} min</option>
+                    <option key={min} value={min}>{fmtDurationHM(min)}</option>
                   ))}
                 </select>
               </div>
@@ -702,7 +710,7 @@ export default function Visite() {
                               style={{ ...inputStyle, width: 'auto' }}
                               title={t('visite.meetingMinutes')}
                             >
-                              {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{min} min</option>)}
+                              {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{fmtDurationHM(min)}</option>)}
                             </select>
                           )}
                           {step.siteId && (
