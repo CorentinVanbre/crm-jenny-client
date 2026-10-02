@@ -29,7 +29,7 @@ interface DirectionsLeg {
   distance?: { value: number };
 }
 interface DirectionsResult {
-  legs?: DirectionsLeg[];
+  routes?: { legs?: DirectionsLeg[] }[];
 }
 interface DistanceMatrixElement {
   status?: string;
@@ -155,7 +155,7 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
               service.route(
                 { origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, travelMode },
                 (dres: DirectionsResult | null, dstatus: string) => {
-                  const dleg = dstatus === 'OK' ? dres?.legs?.[0] : undefined;
+                  const dleg = dstatus === 'OK' ? dres?.routes?.[0]?.legs?.[0] : undefined;
                   if (dstatus === 'OK' && dleg?.duration?.value && dleg?.distance?.value) {
                     done(mkLeg(dleg.distance.value, dleg.duration.value), '');
                   } else {
@@ -180,7 +180,7 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
       service.route(
         { origin: { lat: from.lat, lng: from.lng }, destination: { lat: to.lat, lng: to.lng }, travelMode },
         (res: DirectionsResult | null, status: string) => {
-          const leg = status === 'OK' ? res?.legs?.[0] : undefined;
+          const leg = status === 'OK' ? res?.routes?.[0]?.legs?.[0] : undefined;
           if (status === 'OK' && leg?.duration?.value && leg?.distance?.value) {
             done(mkLeg(leg.distance.value, leg.duration.value), '');
           } else {
