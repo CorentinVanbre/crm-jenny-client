@@ -193,6 +193,31 @@ export default function Visite() {
     const steps = trip.steps.filter((_, i) => i !== index);
     await persistSteps(trip, steps);
   };
+  // Renommage d'une étape à tout moment
+  const [renameStepDraft, setRenameStepDraft] = useState<{ tripId: string; index: number; label: string; detail: string } | null>(null);
+  const openRenameStep = (trip: VisitTrip, index: number) => {
+    const st = trip.steps[index];
+    setRenameStepDraft({ tripId: trip.id, index, label: st.label, detail: st.detail || '' });
+  };
+  const confirmRenameStep = async () => {
+    if (!renameStepDraft) return;
+    const trip = trips.find(tr => tr.id === renameStepDraft.tripId);
+    if (!trip) { setRenameStepDraft(null); return; }
+    const patch: Partial<TripStep> = { label: renameStepDraft.label.trim() || trip.steps[renameStepDraft.index].label };
+    if (renameStepDraft.detail.trim() || trip.steps[renameStepDraft.index].detail) patch.detail = renameStepDraft.detail.trim();
+    const steps = trip.steps.map((s, i) => i === renameStepDraft.index ? { ...s, ...patch } : s);
+    await persistSteps(trip, steps);
+    setRenameStepDraft(null);
+  };
+  // Déplacement libre des étapes manuelles dans le planning
+  const moveManualStep = async (trip: VisitTrip, index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= trip.steps.length) return;
+    const steps = [...trip.steps];
+    const [moved] = steps.splice(index, 1);
+    steps.splice(target, 0, moved);
+    await persistSteps(trip, steps);
+  };
 
   const updateStep = async (trip: VisitTrip, index: number, patch: Partial<TripStep>) => {
     const steps = trip.steps.map((s, i) => i === index ? { ...s, ...patch } : s);
@@ -667,6 +692,11 @@ export default function Visite() {
                             <button style={{ ...buttonStyle, height: '22px', padding: '0 6px', fontSize: '12px' }} onClick={() => moveMeeting(trip, index, -1)}>↑</button>
                             <button style={{ ...buttonStyle, height: '22px', padding: '0 6px', fontSize: '12px' }} onClick={() => moveMeeting(trip, index, 1)}>↓</button>
                           </>
+                        ) : step.manual ? (
+                          <>
+                            <button style={{ ...buttonStyle, height: '22px', padding: '0 6px', fontSize: '12px' }} onClick={() => moveManualStep(trip, index, -1)}>↑</button>
+                            <button style={{ ...buttonStyle, height: '22px', padding: '0 6px', fontSize: '12px' }} onClick={() => moveManualStep(trip, index, 1)}>↓</button>
+                          </>
                         ) : (
                           <div style={{ width: '22px', textAlign: 'center', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px' }}>·</div>
                         )}
@@ -707,6 +737,7 @@ export default function Visite() {
                           {step.siteId && (
                             <Link to={`/sites/${step.siteId}`} target="_blank" style={{ fontSize: '12px' }}>{t('sites.seeMore')}</Link>
                           )}
+                          <button style={{ ...buttonStyle, height: '22px', padding: '0 8px', fontSize: '12px' }} onClick={() => openRenameStep(trip, index)} title={t('visite.renameStep')}>{t('visite.renameStepShort')}</button>
                           <button style={{ ...buttonStyle, height: '22px', padding: '0 8px', fontSize: '12px' }} onClick={() => removeStep(trip, index)}>✕</button>
                         </div>
                       </div>
@@ -767,6 +798,58 @@ export default function Visite() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button type="button" onClick={() => setNewStepDraft(null)} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
                 <button type="button" onClick={confirmAddManualStep} style={buttonStyle}>{t('common.save')}</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Modale : renommage d'une étape */}
+        {renameStepDraft && (
+          <>
+            <div
+              style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(5px)', zIndex: 999,
+              }}
+              onClick={() => setRenameStepDraft(null)}
+            />
+            <div
+              style={{
+                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                backgroundColor: '#A6A6A6', borderRadius: '8px', padding: '20px', zIndex: 1000,
+                width: '420px', maxWidth: '90%', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '15px', textAlign: 'center' }}>
+                {t('visite.renameStepTitle')}
+              </h2>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
+                  {t('visite.stepName')}
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={renameStepDraft.label}
+                  onChange={(e) => setRenameStepDraft(prev => prev ? { ...prev, label: e.target.value } : prev)}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
+                  {t('visite.stepDetail')}
+                </label>
+                <input
+                  type="text"
+                  value={renameStepDraft.detail}
+                  onChange={(e) => setRenameStepDraft(prev => prev ? { ...prev, detail: e.target.value } : prev)}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <button style={buttonStyle} onClick={() => setRenameStepDraft(null)}>{t('common.cancel')}</button>
+                <button style={{ ...buttonStyle, fontWeight: 'bold' }} onClick={confirmRenameStep}>{t('common.confirm')}</button>
               </div>
             </div>
           </>

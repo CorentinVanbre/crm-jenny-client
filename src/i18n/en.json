@@ -378,7 +378,10 @@
     "visitOrder": "Visit order",
     "meetingMinutes": "Meeting duration (min)",
     "roadbook": "Roadbook",
-    "timeQuarterlyHint": "Times in 15-minute steps."
+    "timeQuarterlyHint": "Times in 15-minute steps.",
+    "renameStep": "Rename this step",
+    "renameStepShort": "✎",
+    "renameStepTitle": "Edit step"
   },
   "help": {
     "title": "Help — Feature guide",
@@ -625,6 +628,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visite page: move arrows for manual steps (anywhere in the plan) and rename any step at any time",
       "Automatic fallback to Google driving route when no transit itinerary is found (international legs)",
       "Fixed Google Directions diagnostic display (i18n interpolation)",
       "Detailed Google Directions diagnostic in the trip proposal (exact status, OK/failed calls)",

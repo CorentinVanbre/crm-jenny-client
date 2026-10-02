@@ -378,7 +378,10 @@
     "visitOrder": "Ordre de visite",
     "meetingMinutes": "Durée réunion (min)",
     "roadbook": "Roadbook",
-    "timeQuarterlyHint": "Heures par pas de 15 minutes."
+    "timeQuarterlyHint": "Heures par pas de 15 minutes.",
+    "renameStep": "Renommer cette étape",
+    "renameStepShort": "✎",
+    "renameStepTitle": "Modifier l’étape"
   },
   "help": {
     "title": "Aide — Guide des fonctionnalités",
@@ -625,6 +628,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page Visite : flèches de déplacement pour les étapes manuelles (n’importe où dans le planning) et renommage de n’importe quelle étape à tout moment",
       "Repli automatique sur l’itinéraire routier Google quand les transports en commun sont introuvables (liaisons internationales)",
       "Correction de l’affichage du diagnostic Google Directions (interpolations i18n)",
       "Diagnostic détaillé Google Directions dans la proposition de trajet (statut exact, appels OK/échecs)",
