@@ -23,15 +23,6 @@ export default function Home() {
             <span style={jennyStyle}>JENNY</span> {t('home.organizeText2')}
           </p>
         </section>
-
-        <section style={featuresStyle}>
-          <h2 style={{ ...sectionTitleStyle, fontSize: isMobile ? '22px' : '28px' }}>{t('home.recentTitle')}</h2>
-          <ul style={{ ...listStyle, fontSize: isMobile ? '15px' : '18px' }}>
-            {(t('home.recentItems', { returnObjects: true }) as string[]).map((item) => (
-              <li key={item}>✅ {item}</li>
-            ))}
-          </ul>
-        </section>
       </div>
     </div>
   );
@@ -95,12 +86,4 @@ const textStyle = {
   color: '#000',
   marginBottom: '15px',
   lineHeight: '1.6',
-};
-
-const listStyle = {
-  listStyle: 'none',
-  padding: '0',
-  fontSize: '18px',
-  fontWeight: '200',
-  color: '#000',
 };
