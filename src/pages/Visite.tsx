@@ -334,57 +334,54 @@ export default function Visite() {
           </div>
           <script>
             window.__tripData = ${mapInit};
+            window.__tripPrinted = false;
+            window.__tripPrint = function () {
+              if (window.__tripPrinted) return;
+              window.__tripPrinted = true;
+              setTimeout(function () { window.focus(); window.print(); }, 200);
+            };
+            window.__initTripMap = function () {
+              try {
+                var g = window.google && window.google.maps;
+                if (!g || !window.__tripData) { window.__tripPrint(); return; }
+                var data = window.__tripData;
+                var mapEl = document.getElementById('map');
+                if (!mapEl) { window.__tripPrint(); return; }
+                var map = new g.Map(mapEl, {
+                  zoom: 5,
+                  center: data.center,
+                  disableDefaultUI: true,
+                  zoomControl: true,
+                  gestureHandling: 'none'
+                });
+                var path = data.pts.map(function (p) { return { lat: p.lat, lng: p.lng }; });
+                if (path.length > 1) {
+                  var pl = new g.Polyline({ path: path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
+                  pl.setMap(map);
+                }
+                data.pts.forEach(function (p) {
+                  var mk = new g.Marker({
+                    position: { lat: p.lat, lng: p.lng },
+                    title: p.label,
+                    label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined
+                  });
+                  mk.setMap(map);
+                });
+                setTimeout(window.__tripPrint, 1200);
+              } catch (e) {
+                window.__tripPrint();
+              }
+            };
           </script>
+          ${import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? `<script src="https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&amp;callback=__initTripMap" onerror="setTimeout(__tripPrint, 100)"></script>` : ''}
         </body>
       </html>`);
     win.document.close();
 
-    interface TripPointData { lat: number; lng: number; label: string; kind: string; num: number }
-    interface TripWin extends Window { __tripData?: { pts: TripPointData[]; center: { lat: number; lng: number } } }
-    const loadMap = () => {
-      const w = win as unknown as TripWin;
-      type GoogleMapsNS = {
-        Map: new (el: Element, opts: Record<string, unknown>) => unknown;
-        Polyline: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
-        Marker: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
-      };
-      const g = (w as unknown as { google?: { maps: GoogleMapsNS } }).google?.maps;
-      if (!g) { setTimeout(loadMap, 300); return; }
-      const data = w.__tripData;
-      if (!data) { setTimeout(() => { win.focus(); win.print(); }, 200); return; }
-      const mapEl = w.document.getElementById('map');
-      if (!mapEl) return;
-      const map = new g.Map(mapEl, {
-        zoom: 5,
-        center: data.center,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: 'none',
-      });
-      const path = data.pts.map((p) => ({ lat: p.lat, lng: p.lng }));
-      if (path.length > 1) {
-        const pl = new g.Polyline({ path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
-        pl.setMap(map);
-      }
-      data.pts.forEach((p) => {
-        const mk = new g.Marker({
-          position: { lat: p.lat, lng: p.lng },
-          title: p.label,
-          label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined,
-        });
-        mk.setMap(map);
-      });
-      setTimeout(() => { w.focus(); w.print(); }, 900);
-    };
-
-    if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-      const script = win.document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&loading=async`;
-      script.onload = loadMap;
-      script.onerror = () => setTimeout(() => { win.focus(); win.print(); }, 200);
-      win.document.head.appendChild(script);
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+      setTimeout(() => { if (win.document) { win.focus(); win.print(); } }, 400);
     } else {
-      setTimeout(() => { win.focus(); win.print(); }, 200);
+      setTimeout(() => { win.focus(); win.print(); }, 8000);
     }
   };
 
