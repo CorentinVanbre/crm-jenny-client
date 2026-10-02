@@ -6,6 +6,7 @@ import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 import { isCountryAllowed } from '../lib/countryMatch';
+import { planTrip, TripSite, TripPlan, tripPlanTitle } from '../lib/tripPlanner';
 
 // Types
 interface Address {
@@ -118,6 +119,15 @@ export default function Sites() {
   const [showSiteGroupDropdown, setShowSiteGroupDropdown] = useState(false);
   const [filteredSiteGroupes, setFilteredSiteGroupes] = useState<Groupe[]>([]);
   const [addressAutocomplete, setAddressAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
+  // Mode visite IA
+  const [aiVisitMode, setAiVisitMode] = useState(false);
+  const [visitSites, setVisitSites] = useState<Site[]>([]);
+  const [visitPlans, setVisitPlans] = useState<TripPlan[]>([]);
+  const [showTripModal, setShowTripModal] = useState(false);
+  const [tripName, setTripName] = useState('');
+  const [isSavingTrip, setIsSavingTrip] = useState(false);
+  const [tripSaveMessage, setTripSaveMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
   // Initialiser l'Autocomplete pour l'adresse
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
@@ -598,8 +608,80 @@ export default function Sites() {
     };
   };
 
+  const visitSelectedIcon = () => ({
+    url: 'https://ptmkcivmgnfczijlxtaf.supabase.co/storage/v1/object/public/markers/rouge.png',
+    scaledSize: new google.maps.Size(35, 48),
+    origin: new google.maps.Point(0, 0),
+    anchor: new google.maps.Point(17.5, 48),
+  });
+
+  const hubIcon = () => ({
+    url: 'https://ptmkcivmgnfczijlxtaf.supabase.co/storage/v1/object/public/markers/jaune.png',
+    scaledSize: new google.maps.Size(35, 48),
+    origin: new google.maps.Point(0, 0),
+    anchor: new google.maps.Point(17.5, 48),
+  });
+
   const handleMarkerClick = (site: Site) => {
+    if (aiVisitMode) {
+      setVisitSites(prev => prev.some(s => s.id === site.id) ? prev.filter(s => s.id !== site.id) : [...prev, site]);
+      return;
+    }
     setSelectedSites(prev => prev.some(s => s.id === site.id) ? prev.filter(s => s.id !== site.id) : [...prev, site]);
+  };
+
+  const toggleVisitSite = (site: Site) => {
+    setVisitSites(prev => prev.some(s => s.id === site.id) ? prev.filter(s => s.id !== site.id) : [...prev, site]);
+  };
+
+  const generateVisitPlans = () => {
+    const tripSites: TripSite[] = visitSites.map(s => ({
+      id: s.id,
+      noms: s.noms,
+      groupe: s.groupe,
+      pays: s.pays,
+      lat: parseFloat(s.latitude),
+      lng: parseFloat(s.longitude),
+    }));
+    setVisitPlans(planTrip(tripSites));
+    setShowTripModal(true);
+  };
+
+  const handleSaveTrip = async () => {
+    setIsSavingTrip(true);
+    setTripSaveMessage(null);
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const now = new Date().toISOString();
+      const countries = [...new Set(visitSites.map(s => s.pays))].join(', ');
+      const steps = visitPlans.flatMap(p => p.steps);
+      const { error } = await supabase.from('visit_trips').insert([{
+        id: crypto.randomUUID(),
+        owner: user?.id || null,
+        name: tripName.trim() || tripPlanTitle(visitPlans),
+        countries,
+        sites: visitSites.map(s => ({ id: s.id, noms: s.noms, groupe: s.groupe, pays: s.pays })),
+        plans: visitPlans,
+        steps,
+        status: 'draft',
+        created_date: now,
+        updated_date: now,
+      }]);
+      if (error) throw error;
+      setTripSaveMessage({ text: t('sites.tripSaved'), isSuccess: true });
+      setTimeout(() => {
+        setShowTripModal(false);
+        setVisitSites([]);
+        setVisitPlans([]);
+        setTripName('');
+        setAiVisitMode(false);
+        setTripSaveMessage(null);
+      }, 1200);
+    } catch (error: any) {
+      setTripSaveMessage({ text: `Erreur: ${error.message}`, isSuccess: false });
+    } finally {
+      setIsSavingTrip(false);
+    }
   };
 
   // InfoWindow
@@ -723,8 +805,16 @@ export default function Sites() {
             <Marker
               key={site.id}
               position={{ lat: parseFloat(site.latitude), lng: parseFloat(site.longitude) }}
-              icon={getMarkerIcon(site.couleur)}
+              icon={aiVisitMode && visitSites.some(v => v.id === site.id) ? visitSelectedIcon() : getMarkerIcon(site.couleur)}
               onClick={() => handleMarkerClick(site)}
+            />
+          ))}
+
+          {aiVisitMode && visitPlans.map((plan, pi) => (
+            <Marker
+              key={'hub-' + pi}
+              position={{ lat: plan.hubLat, lng: plan.hubLng }}
+              icon={hubIcon()}
             />
           ))}
 
@@ -754,9 +844,33 @@ export default function Sites() {
         {isMobile ? (
           <>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
-              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
-              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
+              <label style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                fontFamily: 'Barlow, sans-serif',
+                fontWeight: aiVisitMode ? 'bold' : 200,
+                fontSize: '14px',
+                cursor: 'pointer',
+                justifyContent: 'center',
+                marginBottom: '10px',
+                userSelect: 'none',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={aiVisitMode}
+                  onChange={(e) => {
+                    setAiVisitMode(e.target.checked);
+                    if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
+                  }}
+                  style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                {t('sites.aiVisitMode')}
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
+                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
@@ -816,7 +930,28 @@ export default function Sites() {
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontFamily: 'Barlow, sans-serif',
+                  fontWeight: aiVisitMode ? 'bold' : 200,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  marginRight: '12px',
+                  userSelect: 'none',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={aiVisitMode}
+                    onChange={(e) => {
+                      setAiVisitMode(e.target.checked);
+                      if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
+                    }}
+                    style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  {t('sites.aiVisitMode')}
+                </label>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
@@ -874,6 +1009,47 @@ export default function Sites() {
           </>
         )}
       </div>
+
+      {/* Mode visite IA */}
+      {aiVisitMode && (
+        <div style={{
+          width: 'calc(100% - 20px)',
+          maxWidth: '980px',
+          margin: '0 auto 20px',
+          backgroundColor: '#E5E5E4',
+          border: '2px solid #000',
+          borderRadius: '8px',
+          padding: '15px',
+          boxSizing: 'border-box',
+          fontFamily: 'Barlow, sans-serif',
+        }}>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>🤖 {t('sites.aiVisitTitle')}</div>
+          <div style={{ fontWeight: 200, fontSize: '14px', marginBottom: '10px' }}>{t('sites.aiVisitHelp')}</div>
+          <div style={{ fontWeight: 200, fontSize: '14px', marginBottom: '10px' }}>
+            {t('sites.aiVisitSelected', { count: visitSites.length })}
+          </div>
+          {visitSites.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+              {visitSites.map(s => (
+                <span key={s.id} style={{
+                  ...tagBaseStyle,
+                  backgroundColor: '#fff',
+                  border: '1px solid #000',
+                  fontWeight: 'bold',
+                }} onClick={() => toggleVisitSite(s)}>
+                  {s.groupe ? s.groupe + ' - ' : ''}{s.noms} ✕
+                </span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button style={buttonStyle} onClick={generateVisitPlans} disabled={visitSites.length < 1}>
+              {t('sites.aiVisitGenerate')}
+            </button>
+            <button style={buttonStyle} onClick={() => { setVisitSites([]); setVisitPlans([]); }}>{t('sites.aiVisitReset')}</button>
+          </div>
+        </div>
+      )}
 
       {/* Fiches de sites */}
       <div style={{ width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
@@ -1351,6 +1527,127 @@ export default function Sites() {
                 }}
               >
                 {isSiteSubmitting ? t('sites.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modale Mode visite IA — projet de voyage */}
+      {showTripModal && (
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(5px)',
+              zIndex: 999,
+            }}
+            onClick={() => setShowTripModal(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: '#A6A6A6',
+              borderRadius: '8px',
+              padding: '20px',
+              zIndex: 1000,
+              width: '640px',
+              maxWidth: '92%',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '10px', textAlign: 'center' }}>
+              {t('sites.tripTitle')}
+            </h2>
+            <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', textAlign: 'center', marginBottom: '15px' }}>
+              {t('sites.tripAssumptions')}
+            </p>
+
+            {visitPlans.map((plan, pi) => (
+              <div key={pi} style={{ backgroundColor: '#E5E5E4', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>
+                  {plan.outboundMode === 'train' ? '🚆' : '✈️'} {plan.country} — {plan.hubName}
+                </div>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', marginBottom: '8px' }}>
+                  {plan.originDetail} · {plan.hubKind === 'station' ? t('sites.tripHubStation') : t('sites.tripHubAirport')}
+                </div>
+                {plan.steps.map((step, si) => (
+                  <div key={si} style={{
+                    fontFamily: 'Barlow, sans-serif',
+                    fontWeight: step.type === 'meeting' ? 'bold' : 200,
+                    fontSize: '13px',
+                    padding: '3px 0',
+                    borderBottom: '1px dashed #bbb',
+                  }}>
+                    <span style={{ marginRight: '6px' }}>
+                      {step.type === 'train' ? '🚆' : step.type === 'plane' ? '✈️' : step.type === 'car' ? '🚗' : '🤝'}
+                    </span>
+                    {step.day ? <strong>{t('sites.tripDay', { day: step.day })} </strong> : ''}
+                    {step.time ? `${step.time} — ` : ''}{step.label}
+                    {step.detail ? <span style={{ color: '#444' }}> ({step.detail})</span> : null}
+                  </div>
+                ))}
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', marginTop: '8px' }}>
+                  {t('sites.tripLocalCar', { km: Math.round(plan.totalKm) })}
+                </div>
+              </div>
+            ))}
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
+                {t('sites.tripName')}
+              </label>
+              <input
+                type="text"
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                style={inputStyle}
+                placeholder={tripPlanTitle(visitPlans)}
+              />
+            </div>
+
+            {tripSaveMessage && (
+              <div style={{
+                padding: '10px',
+                marginBottom: '15px',
+                borderRadius: '4px',
+                fontFamily: 'Barlow, sans-serif',
+                fontWeight: 200,
+                fontSize: '14px',
+                backgroundColor: tripSaveMessage.isSuccess ? '#d4edda' : '#f8d7da',
+                color: tripSaveMessage.isSuccess ? '#155724' : '#721c24',
+                border: `1px solid ${tripSaveMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                textAlign: 'center'
+              }}>
+                {tripSaveMessage.text}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <button type="button" onClick={() => setShowTripModal(false)} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+              <button
+                type="button"
+                onClick={handleSaveTrip}
+                disabled={isSavingTrip}
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: '#E5E5E4',
+                  opacity: isSavingTrip ? 0.5 : 1,
+                  cursor: isSavingTrip ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSavingTrip ? t('sites.saving') : t('sites.tripSave')}
               </button>
             </div>
           </div>

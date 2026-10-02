@@ -78,6 +78,12 @@ export default function Header() {
             onClick={closeMobileMenu}>
             {t('header.sites')}
           </Link>
+          <Link to="/visite" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/visite') } : { ...linkStyle, fontWeight: activeFontWeight('/visite') }}
+            onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
+            onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
+            onClick={closeMobileMenu}>
+            {t('header.visite')}
+          </Link>
           <Link to="/contacts" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/contacts') } : { ...linkStyle, fontWeight: activeFontWeight('/contacts') }}
             onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
             onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
