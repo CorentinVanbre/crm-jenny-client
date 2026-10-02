@@ -117,58 +117,110 @@ const STATIONS: Record<string, Hub[]> = {
   ],
   'Royaume-Uni': [
     { name: 'London St Pancras', kind: 'station', lat: 51.5320, lng: -0.1265 },
+    { name: 'Manchester Piccadilly', kind: 'station', lat: 53.4773, lng: -2.2309 },
+    { name: 'Birmingham New Street', kind: 'station', lat: 52.4782, lng: -1.8995 },
+    { name: 'Leeds', kind: 'station', lat: 53.7947, lng: -1.5491 },
+    { name: 'Sheffield', kind: 'station', lat: 53.3830, lng: -1.4659 },
+    { name: 'Derby', kind: 'station', lat: 52.9154, lng: -1.4847 },
+    { name: 'Nottingham', kind: 'station', lat: 52.9530, lng: -1.1495 },
+    { name: 'York', kind: 'station', lat: 53.9580, lng: -1.0950 },
+    { name: 'Newcastle', kind: 'station', lat: 54.9687, lng: -1.6184 },
+    { name: 'Bristol Temple Meads', kind: 'station', lat: 51.4549, lng: -2.5812 },
+    { name: 'Edinburgh Waverley', kind: 'station', lat: 55.9526, lng: -3.1899 },
+    { name: 'Glasgow Central', kind: 'station', lat: 55.8590, lng: -4.2580 },
+    { name: 'Peterborough', kind: 'station', lat: 52.5730, lng: -0.2430 },
+    { name: 'Ely', kind: 'station', lat: 52.3980, lng: 0.2650 },
+    { name: 'Doncaster', kind: 'station', lat: 53.5220, lng: -1.1050 },
+    { name: 'Preston', kind: 'station', lat: 53.7590, lng: -2.7050 },
+    { name: 'Chester', kind: 'station', lat: 53.1910, lng: -2.8910 },
+    { name: 'Cardiff Central', kind: 'station', lat: 51.4750, lng: -3.1820 },
   ],
 };
 
-// Aéroports internationaux stratégiques par pays (fallback : hub le plus proche des sites)
-const COUNTRY_AIRPORT_HUBS: Record<string, Hub> = {
-  Espagne: { name: 'Aéroport de Madrid-Barajas', kind: 'airport', lat: 40.4720, lng: -3.5610 },
-  Italie: { name: 'Aéroport de Milan-Malpensa', kind: 'airport', lat: 45.6306, lng: 8.7281 },
-  Allemagne: { name: 'Aéroport de Francfort', kind: 'airport', lat: 50.0420, lng: 8.5640 },
-  Pologne: { name: 'Aéroport de Varsovie-Chopin', kind: 'airport', lat: 52.1657, lng: 20.9670 },
-  'République tchèque': { name: 'Aéroport de Prague', kind: 'airport', lat: 50.1008, lng: 14.2600 },
-  Turquie: { name: 'Aéroport d’Istanbul', kind: 'airport', lat: 41.2753, lng: 28.7519 },
-  Égypte: { name: 'Aéroport du Caire', kind: 'airport', lat: 30.1115, lng: 31.4130 },
-  Maroc: { name: 'Aéroport de Casablanca-Mohammed V', kind: 'airport', lat: 33.3675, lng: -7.5900 },
-  Algérie: { name: 'Aéroport d’Alger', kind: 'airport', lat: 36.6910, lng: 3.2154 },
-  Tunisie: { name: 'Aéroport de Tunis-Carthage', kind: 'airport', lat: 36.8510, lng: 10.2272 },
-  'États-Unis': { name: 'Aéroport de New York-JFK', kind: 'airport', lat: 40.6413, lng: -73.7781 },
-  Canada: { name: 'Aéroport de Toronto-Pearson', kind: 'airport', lat: 43.6777, lng: -79.6248 },
-  Brésil: { name: 'Aéroport de São Paulo-Guarulhos', kind: 'airport', lat: -23.4356, lng: -46.4731 },
-  Mexique: { name: 'Aéroport de Mexico', kind: 'airport', lat: 19.4361, lng: -99.0719 },
-  Argentine: { name: 'Aéroport de Buenos Aires-Ezeiza', kind: 'airport', lat: -34.8222, lng: -58.5358 },
-  Chili: { name: 'Aéroport de Santiago', kind: 'airport', lat: -33.3930, lng: -70.7858 },
-  Colombie: { name: 'Aéroport de Bogotá-El Dorado', kind: 'airport', lat: 4.7016, lng: -74.1469 },
-  Pérou: { name: 'Aéroport de Lima-Jorge Chávez', kind: 'airport', lat: -12.0219, lng: -77.1143 },
-  'Afrique du Sud': { name: 'Aéroport de Johannesburg-OR Tambo', kind: 'airport', lat: -26.1392, lng: 28.2460 },
-  Nigeria: { name: 'Aéroport de Lagos-Murtala Muhammed', kind: 'airport', lat: 6.5774, lng: 3.3212 },
-  Kenya: { name: 'Aéroport de Nairobi-Jomo Kenyatta', kind: 'airport', lat: -1.3193, lng: 36.9278 },
-  'Arabie saoudite': { name: 'Aéroport de Djeddah', kind: 'airport', lat: 21.6796, lng: 39.1565 },
-  'Émirats arabes unis': { name: 'Aéroport de Dubaï', kind: 'airport', lat: 25.2532, lng: 55.3657 },
-  Inde: { name: 'Aéroport de Delhi-Indira Gandhi', kind: 'airport', lat: 28.5562, lng: 77.1000 },
-  Chine: { name: 'Aéroport de Pékin-Capitale', kind: 'airport', lat: 40.0799, lng: 116.6031 },
-  Japon: { name: 'Aéroport de Tokyo-Haneda', kind: 'airport', lat: 35.5494, lng: 139.7798 },
-  Corée_du_Sud: { name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 },
-  'Corée du Sud': { name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 },
-  Australie: { name: 'Aéroport de Sydney', kind: 'airport', lat: -33.9399, lng: 151.1753 },
-  Indonésie: { name: 'Aéroport de Jakarta-Soekarno-Hatta', kind: 'airport', lat: -6.1256, lng: 106.6558 },
-  Vietnam: { name: 'Aéroport de Hanoi-Noi Bai', kind: 'airport', lat: 21.2212, lng: 105.8072 },
-  Thaïlande: { name: 'Aéroport de Bangkok-Suvarnabhumi', kind: 'airport', lat: 13.6900, lng: 100.7501 },
-  Russie: { name: 'Aéroport de Moscou-Cheremetievo', kind: 'airport', lat: 55.9726, lng: 37.4146 },
-  Suisse: { name: 'Aéroport de Zurich', kind: 'airport', lat: 47.4582, lng: 8.5555 },
-  Autriche: { name: 'Aéroport de Vienne', kind: 'airport', lat: 48.1103, lng: 16.5696 },
-  Suède: { name: 'Aéroport de Stockholm-Arlanda', kind: 'airport', lat: 59.6519, lng: 17.9186 },
-  Norvege: { name: 'Aéroport d’Oslo', kind: 'airport', lat: 60.1939, lng: 11.1024 },
-  Danemark: { name: 'Aéroport de Copenhague', kind: 'airport', lat: 55.6180, lng: 12.6560 },
-  Portugal: { name: 'Aéroport de Lisbonne', kind: 'airport', lat: 38.7742, lng: -9.1342 },
-  Roumanie: { name: 'Aéroport de Bucarest-Henri Coandă', kind: 'airport', lat: 44.5711, lng: 26.0850 },
-  Hongrie: { name: 'Aéroport de Budapest-Ferenc Liszt', kind: 'airport', lat: 47.4369, lng: 19.2556 },
-  Grèce: { name: 'Aéroport d’Athènes', kind: 'airport', lat: 37.9364, lng: 23.9445 },
-  'Royaume-Uni': { name: 'Aéroport de Londres-Heathrow', kind: 'airport', lat: 51.4700, lng: -0.4543 },
+// Aéroports internationaux stratégiques par pays : plusieurs candidats par pays,
+// le plus proche des sites est choisi. (fallback : hub le plus proche des sites)
+// Gares d'entrée internationale : première gare du pays atteinte depuis Lille
+// en train international (Eurostar/Thalys/ICE). Sert de point d'arrivée du
+// tronçon international ; une correspondance nationale peut ensuite rapprocher
+// les sites avant la prise en charge de la voiture.
+const ENTRY_STATIONS: Record<string, Hub> = {
+  France: { name: 'Gare de Lille-Europe', kind: 'station', lat: 50.6124, lng: 3.0733 },
+  Belgique: { name: 'Gare de Bruxelles-Midi', kind: 'station', lat: 50.8355, lng: 4.3365 },
+  'Pays-Bas': { name: 'Amsterdam-Centraal', kind: 'station', lat: 52.3775, lng: 4.9010 },
+  Luxembourg: { name: 'Gare de Luxembourg', kind: 'station', lat: 49.6000, lng: 6.1330 },
+  Allemagne: { name: 'Bahnhof Köln', kind: 'station', lat: 50.7333, lng: 6.9597 },
+  'Royaume-Uni': { name: 'London St Pancras', kind: 'station', lat: 51.5320, lng: -0.1265 },
 };
 
-// Pays priorititairement accessibles en train direct/quasi-direct depuis Lille
-const TRAIN_PRIORITY_COUNTRIES = new Set(['France', 'Belgique', 'Pays-Bas', 'Luxembourg', 'Royaume-Uni', 'Allemagne']);
+const COUNTRY_AIRPORT_HUBS: Record<string, Hub[]> = {
+  France: [
+    { name: 'Aéroport de Paris-CDG', kind: 'airport', lat: 49.0097, lng: 2.5479 },
+    { name: 'Aéroport de Paris-Orly', kind: 'airport', lat: 48.7233, lng: 2.3794 },
+    { name: 'Aéroport de Lyon-Saint-Exupéry', kind: 'airport', lat: 45.7256, lng: 5.0811 },
+    { name: 'Aéroport de Marseille-Provence', kind: 'airport', lat: 43.4392, lng: 5.2214 },
+    { name: 'Aéroport de Bordeaux-Mérignac', kind: 'airport', lat: 44.8283, lng: -0.7156 },
+    { name: 'Aéroport de Toulouse-Blagnac', kind: 'airport', lat: 43.6293, lng: 1.3638 },
+    { name: 'Aéroport de Nice-Côte d’Azur', kind: 'airport', lat: 43.6584, lng: 7.2159 },
+    { name: 'Aéroport de Nantes-Atlantique', kind: 'airport', lat: 47.1530, lng: -1.6115 },
+    { name: 'Aéroport de Strasbourg-Entzheim', kind: 'airport', lat: 48.5383, lng: 7.6283 },
+    { name: 'Aéroport de Lille-Lesquin', kind: 'airport', lat: 50.5640, lng: 3.0230 },
+  ],
+  'Nouvelle-Calédonie': [
+    { name: 'Aéroport de Nouméa-Magenta', kind: 'airport', lat: -22.2464, lng: 166.4736 },
+    { name: 'Aéroport de Nouméa-La Tontouta', kind: 'airport', lat: -22.0140, lng: 166.2130 },
+  ],
+  Espagne: [
+    { name: 'Aéroport de Madrid-Barajas', kind: 'airport', lat: 40.4720, lng: -3.5610 },
+    { name: 'Aéroport de Séville', kind: 'airport', lat: 37.4180, lng: -5.8930 },
+    { name: 'Aéroport de Barcelone-El Prat', kind: 'airport', lat: 41.2971, lng: 2.0785 },
+    { name: 'Aéroport de Valence', kind: 'airport', lat: 39.4893, lng: -0.4816 },
+    { name: 'Aéroport de Bilbao', kind: 'airport', lat: 43.3011, lng: -2.9106 },
+    { name: 'Aéroport de Malaga', kind: 'airport', lat: 36.6750, lng: -4.4990 },
+  ],
+  Italie: [{ name: 'Aéroport de Milan-Malpensa', kind: 'airport', lat: 45.6306, lng: 8.7281 }],
+  Allemagne: [{ name: 'Aéroport de Francfort', kind: 'airport', lat: 50.0420, lng: 8.5640 }],
+  Pologne: [{ name: 'Aéroport de Varsovie-Chopin', kind: 'airport', lat: 52.1657, lng: 20.9670 }],
+  'République tchèque': [{ name: 'Aéroport de Prague', kind: 'airport', lat: 50.1008, lng: 14.2600 }],
+  Turquie: [{ name: 'Aéroport d’Istanbul', kind: 'airport', lat: 41.2753, lng: 28.7519 }],
+  Égypte: [{ name: 'Aéroport du Caire', kind: 'airport', lat: 30.1115, lng: 31.4130 }],
+  Maroc: [{ name: 'Aéroport de Casablanca-Mohammed V', kind: 'airport', lat: 33.3675, lng: -7.5900 }],
+  Algérie: [{ name: 'Aéroport d’Alger', kind: 'airport', lat: 36.6910, lng: 3.2154 }],
+  Tunisie: [{ name: 'Aéroport de Tunis-Carthage', kind: 'airport', lat: 36.8510, lng: 10.2272 }],
+  'États-Unis': [{ name: 'Aéroport de New York-JFK', kind: 'airport', lat: 40.6413, lng: -73.7781 }],
+  Canada: [{ name: 'Aéroport de Toronto-Pearson', kind: 'airport', lat: 43.6777, lng: -79.6248 }],
+  Brésil: [{ name: 'Aéroport de São Paulo-Guarulhos', kind: 'airport', lat: -23.4356, lng: -46.4731 }],
+  Mexique: [{ name: 'Aéroport de Mexico', kind: 'airport', lat: 19.4361, lng: -99.0719 }],
+  Argentine: [{ name: 'Aéroport de Buenos Aires-Ezeiza', kind: 'airport', lat: -34.8222, lng: -58.5358 }],
+  Chili: [{ name: 'Aéroport de Santiago', kind: 'airport', lat: -33.3930, lng: -70.7858 }],
+  Colombie: [{ name: 'Aéroport de Bogotá-El Dorado', kind: 'airport', lat: 4.7016, lng: -74.1469 }],
+  Pérou: [{ name: 'Aéroport de Lima-Jorge Chávez', kind: 'airport', lat: -12.0219, lng: -77.1143 }],
+  'Afrique du Sud': [{ name: 'Aéroport de Johannesburg-OR Tambo', kind: 'airport', lat: -26.1392, lng: 28.2460 }],
+  Nigeria: [{ name: 'Aéroport de Lagos-Murtala Muhammed', kind: 'airport', lat: 6.5774, lng: 3.3212 }],
+  Kenya: [{ name: 'Aéroport de Nairobi-Jomo Kenyatta', kind: 'airport', lat: -1.3193, lng: 36.9278 }],
+  'Arabie saoudite': [{ name: 'Aéroport de Djeddah', kind: 'airport', lat: 21.6796, lng: 39.1565 }],
+  'Émirats arabes unis': [{ name: 'Aéroport de Dubaï', kind: 'airport', lat: 25.2532, lng: 55.3657 }],
+  Inde: [{ name: 'Aéroport de Delhi-Indira Gandhi', kind: 'airport', lat: 28.5562, lng: 77.1000 }],
+  Chine: [{ name: 'Aéroport de Pékin-Capitale', kind: 'airport', lat: 40.0799, lng: 116.6031 }],
+  Japon: [{ name: 'Aéroport de Tokyo-Haneda', kind: 'airport', lat: 35.5494, lng: 139.7798 }],
+  Corée_du_Sud: [{ name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 }],
+  'Corée du Sud': [{ name: 'Aéroport de Séoul-Incheon', kind: 'airport', lat: 37.4602, lng: 126.4407 }],
+  Australie: [{ name: 'Aéroport de Sydney', kind: 'airport', lat: -33.9399, lng: 151.1753 }],
+  Indonésie: [{ name: 'Aéroport de Jakarta-Soekarno-Hatta', kind: 'airport', lat: -6.1256, lng: 106.6558 }],
+  Vietnam: [{ name: 'Aéroport de Hanoi-Noi Bai', kind: 'airport', lat: 21.2212, lng: 105.8072 }],
+  Thaïlande: [{ name: 'Aéroport de Bangkok-Suvarnabhumi', kind: 'airport', lat: 13.6900, lng: 100.7501 }],
+  Russie: [{ name: 'Aéroport de Moscou-Cheremetievo', kind: 'airport', lat: 55.9726, lng: 37.4146 }],
+  Suisse: [{ name: 'Aéroport de Zurich', kind: 'airport', lat: 47.4582, lng: 8.5555 }],
+  Autriche: [{ name: 'Aéroport de Vienne', kind: 'airport', lat: 48.1103, lng: 16.5696 }],
+  Suède: [{ name: 'Aéroport de Stockholm-Arlanda', kind: 'airport', lat: 59.6519, lng: 17.9186 }],
+  Norvege: [{ name: 'Aéroport d’Oslo', kind: 'airport', lat: 60.1939, lng: 11.1024 }],
+  Danemark: [{ name: 'Aéroport de Copenhague', kind: 'airport', lat: 55.6180, lng: 12.6560 }],
+  Portugal: [{ name: 'Aéroport de Lisbonne', kind: 'airport', lat: 38.7742, lng: -9.1342 }],
+  Roumanie: [{ name: 'Aéroport de Bucarest-Henri Coandă', kind: 'airport', lat: 44.5711, lng: 26.0850 }],
+  Hongrie: [{ name: 'Aéroport de Budapest-Ferenc Liszt', kind: 'airport', lat: 47.4369, lng: 19.2556 }],
+  Grèce: [{ name: 'Aéroport d’Athènes', kind: 'airport', lat: 37.9364, lng: 23.9445 }],
+  'Royaume-Uni': [{ name: 'Aéroport de Londres-Heathrow', kind: 'airport', lat: 51.4700, lng: -0.4543 }],
+};
+
 
 const DEFAULT_MEETING_MIN = 120;
 const EARLIEST_MIN = 8 * 60 + 30;
@@ -194,28 +246,54 @@ const fmtDurationHM = (minutes: number) => {
 };
 const trainMin = (km: number) => Math.round((km / 130) * 60 + 20);
 const flightMin = (km: number) => Math.round(Math.max(km / 750, 1) * 60 + 30);
-
 const fmtHHMM = (m: number) => {
   const q = Math.round(m / 15) * 15;
   const mm = ((q % 1440) + 1440) % 1440;
   return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
 };
-
 const centroid = (pts: { lat: number; lng: number }[]) => ({
   lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
   lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
 });
 
+const normalizeCountry = (country: string) =>
+  country.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+
+const lookupCountry = <T>(table: Record<string, T>, country: string): T | undefined => {
+  const key = Object.keys(table).find(k => normalizeCountry(k) === normalizeCountry(country));
+  return key != null ? table[key] : undefined;
+};
+
 const pickHub = (country: string, sites: TripSite[]): { hub: Hub; trainPreferred: boolean } => {
   const c = centroid(sites);
-  if (TRAIN_PRIORITY_COUNTRIES.has(country) && STATIONS[country]) {
-    const best = STATIONS[country].reduce((acc, s) =>
+  const stations = lookupCountry(STATIONS, country);
+  const trainCountry = Object.keys(STATIONS).find(k => normalizeCountry(k) === normalizeCountry(country));
+  const airports = lookupCountry(COUNTRY_AIRPORT_HUBS, country);
+  // Train uniquement si les sites sont réellement proches du réseau ferroviaire
+  // européen (garde-fou : sites ultra-périphériques / outre-mer enregistrés sous
+  // le pays d'origine, ex. Nouvelle-Calédonie sous "France").
+  const nearestStationKm = stations
+    ? Math.min(...stations.map(st => haversineKm({ lat: st.lat, lng: st.lng }, c)))
+    : Infinity;
+  if (trainCountry && nearestStationKm <= 600) {
+    const best = stations!.reduce((acc, s) =>
       haversineKm({ lat: s.lat, lng: s.lng }, c) < haversineKm({ lat: acc.lat, lng: acc.lng }, c) ? s : acc
     );
     return { hub: best, trainPreferred: true };
   }
-  const airport = COUNTRY_AIRPORT_HUBS[country];
-  if (airport) return { hub: airport, trainPreferred: false };
+  // Aéroports candidats du pays : on choisit le plus proche des sites.
+  // Garde-fou : si même l'aéroport national est à plus de 3000 km des sites
+  // (outre-mer / territoire ultra-périphérique enregistré sous le pays,
+  // ex. Nouvelle-Calédonie sous "France"), on retombe sur un hub local au
+  // plus près des sites.
+  if (airports?.length) {
+    const best = airports.reduce((acc, a) =>
+      haversineKm({ lat: a.lat, lng: a.lng }, c) < haversineKm({ lat: acc.lat, lng: acc.lng }, c) ? a : acc
+    );
+    const bestKm = haversineKm({ lat: best.lat, lng: best.lng }, c);
+    if (bestKm <= 3000) return { hub: best, trainPreferred: false };
+    return { hub: { name: `Hub principal (${country})`, kind: 'airport' as const, lat: c.lat, lng: c.lng }, trainPreferred: false };
+  }
   return { hub: { name: `Hub principal (${country})`, kind: 'airport', lat: c.lat, lng: c.lng }, trainPreferred: false };
 };
 
@@ -244,7 +322,7 @@ const pickOutboundFlight = (hub: Hub, origin: { city: string; lat: number; lng: 
 };
 
 // Ordre de visite optimisé : plus proche voisin depuis le hub
-const orderSites = (hub: Hub, sites: TripSite[]): TripSite[] => {
+const orderSites = (hub: { lat: number; lng: number }, sites: TripSite[]): TripSite[] => {
   const remaining = [...sites];
   const ordered: TripSite[] = [];
   let current = { lat: hub.lat, lng: hub.lng };
@@ -277,7 +355,6 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
   const plans: TripPlan[] = [];
   for (const [country, group] of byCountry) {
     const { hub, trainPreferred } = pickHub(country, group);
-    const kmLilleHub = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: hub.lat, lng: hub.lng });
     const steps: TripStep[] = [];
     let totalKm = 0;
     let t = 6 * 60;
@@ -290,11 +367,23 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
 
     if (trainPreferred) {
       outboundMode = 'train';
+      // Tronçon international : Lille -> gare d'entrée du pays (ex. St Pancras)
+      const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
+      const kmLilleEntry = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: entry.lat, lng: entry.lng });
+      const durEntry = trainMin(kmLilleEntry);
       originLabel = 'Lille (gare)';
-      originDetail = 'Train direct/quasi-direct depuis Lille';
-      const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: `Train ${origin.city} → ${hub.name}`, detail: `~${Math.round(kmLilleHub)} km, ~${Math.round(dur / 60)}h`, from: origin.city, to: hub.name, day, time: fmtHHMM(t) });
-      hubArrival = t + dur;
+      originDetail = `Train international depuis ${origin.city} (${entry.name})`;
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(kmLilleEntry)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
+      hubArrival = t + durEntry;
+
+      // Correspondance nationale si la gare d'entrée est éloignée des sites :
+      // train domestique vers la gare la plus proche des sites (ex. St Pancras -> Derby)
+      if (hub.name !== entry.name) {
+        const kmEntryHub = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng });
+        const durNat = trainMin(kmEntryHub);
+        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(kmEntryHub)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
+        hubArrival = hubArrival + 20 + durNat;
+      }
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       outboundMode = 'plane';
@@ -316,7 +405,7 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
     steps.push({ type: 'car', label: 'Voiture de location — prise en charge', detail: `Location au départ de ${hub.name}`, to: hub.name, day, time: fmtHHMM(hubArrival) });
     let clock = hubArrival + 45;
 
-    const ordered = orderSites(hub, group);
+    const ordered = orderSites({ lat: hub.lat, lng: hub.lng }, group);
     let currentPos = { lat: hub.lat, lng: hub.lng };
     ordered.forEach((site, i) => {
       const km = haversineKm(currentPos, { lat: site.lat, lng: site.lng });
@@ -349,8 +438,17 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
     steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack) });
 
     if (outboundMode === 'train') {
-      const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: `Train ${hub.name} → ${origin.city} (retour)`, detail: `Retour par le même hub, ~${Math.round(dur / 60)}h`, from: hub.name, to: origin.city, day, time: fmtHHMM(backArrive) });
+      const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
+      let returnClock = backArrive;
+      if (hub.name !== entry.name) {
+        const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
+        const durNatBack = trainMin(kmNatBack);
+        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(kmNatBack)} km, ~${fmtDurationHM(durNatBack)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+        returnClock = returnClock + 15 + durNatBack;
+      }
+      const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
+      const durBack = trainMin(kmEntryLille);
+      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(kmEntryLille)} km, ~${fmtDurationHM(durBack)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });

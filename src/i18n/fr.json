@@ -621,6 +621,8 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Suggestions de trajet plus intelligentes : train international jusqu’à la gare d’entrée du pays (ex. St Pancras), puis correspondance en train national vers la gare la plus proche des sites avant la voiture",
+      "Sélection du hub de voyage intelligente : aéroport le plus proche des sites (ex. Séville), garde-fou pour les destinations lointaines (outre-mer)",
       "Page « Aide » : fenêtres dépliables par page et par thème, avec barre de recherche par mots clés",
       "Réordonnancement des visites : horaires et numéros de jour recalculés ; PDF sans fenêtre « ordre de visite », mention du développeur dans l’entête",
       "Export PDF du roadbook avec carte dynamique et charte graphique Jenny (couleurs, logo)",
