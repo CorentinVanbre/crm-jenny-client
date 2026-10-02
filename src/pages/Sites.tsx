@@ -566,7 +566,7 @@ export default function Sites() {
         if (session?.user) {
           const { data: prefs } = await supabase
             .from('visit_preferences')
-            .select('origin_city, preferred_stations, preferred_airports, meeting_minutes')
+            .select('origin_city, preferred_stations, preferred_airports, selected_stations, selected_airports, meeting_minutes, allow_different_return_hub')
             .eq('user_id', session.user.id)
             .maybeSingle();
           if (prefs) {
@@ -575,9 +575,10 @@ export default function Sites() {
               originCity: prefs.origin_city,
               originLat: geo?.lat ?? 50.6292,
               originLng: geo?.lng ?? 2.7575,
-              preferredStations: prefs.preferred_stations || [],
-              preferredAirports: prefs.preferred_airports || [],
+              preferredStations: prefs.selected_stations || prefs.preferred_stations || [],
+              preferredAirports: prefs.selected_airports || prefs.preferred_airports || [],
               meetingMinutes: prefs.meeting_minutes || undefined,
+              allowDifferentReturnHub: !!prefs.allow_different_return_hub,
             });
           }
         }

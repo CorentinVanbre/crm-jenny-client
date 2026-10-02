@@ -26,7 +26,10 @@ interface VisitPrefs {
   origin_city: string;
   preferred_stations: string[];
   preferred_airports: string[];
+  selected_stations: string[];
+  selected_airports: string[];
   meeting_minutes: number;
+  allow_different_return_hub: boolean;
 }
 
 const TIME_OPTIONS = (() => {
@@ -74,7 +77,7 @@ export default function Visite() {
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
   // Préférences de voyage (haut de page)
-  const [prefs, setPrefs] = useState<VisitPrefs>({ origin_city: 'Lille', preferred_stations: [], preferred_airports: [], meeting_minutes: 120 });
+  const [prefs, setPrefs] = useState<VisitPrefs>({ origin_city: 'Lille', preferred_stations: [], preferred_airports: [], selected_stations: [], selected_airports: [], meeting_minutes: 120, allow_different_return_hub: false });
   const [prefsMessage, setPrefsMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [showPrefsPanel, setShowPrefsPanel] = useState(false);
@@ -101,7 +104,7 @@ export default function Visite() {
       if (!user) return;
       const { data } = await supabase
         .from('visit_preferences')
-        .select('origin_city, preferred_stations, preferred_airports, meeting_minutes')
+        .select('origin_city, preferred_stations, preferred_airports, selected_stations, selected_airports, meeting_minutes, allow_different_return_hub')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -110,6 +113,9 @@ export default function Visite() {
           preferred_stations: data.preferred_stations || [],
           preferred_airports: data.preferred_airports || [],
           meeting_minutes: data.meeting_minutes || 120,
+          allow_different_return_hub: !!data.allow_different_return_hub,
+          selected_stations: data.selected_stations || data.preferred_stations || [],
+          selected_airports: data.selected_airports || data.preferred_airports || [],
         });
       }
     };
@@ -129,6 +135,9 @@ export default function Visite() {
         preferred_stations: prefs.preferred_stations,
         preferred_airports: prefs.preferred_airports,
         meeting_minutes: prefs.meeting_minutes,
+        allow_different_return_hub: prefs.allow_different_return_hub,
+        selected_stations: prefs.selected_stations,
+        selected_airports: prefs.selected_airports,
         updated_date: new Date().toISOString(),
       }, { onConflict: 'user_id' });
       if (error) throw error;
@@ -143,14 +152,19 @@ export default function Visite() {
   const [newStation, setNewStation] = useState('');
   const [newAirport, setNewAirport] = useState('');
 
+  // Créer un choix : il entre dans le pool ET est sélectionné d'office.
+  // Le pool est conservé ; l'utilisateur peut ensuite (dé)sélectionner sans supprimer.
   const addPrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
     const v = value.trim();
     if (!v) return;
-    setPrefs(prev => prev[kind].includes(v) ? prev : { ...prev, [kind]: [...prev[kind], v] });
+    const selKind = kind === 'preferred_stations' ? 'selected_stations' : 'selected_airports';
+    setPrefs(prev => prev[kind].includes(v) ? prev : { ...prev, [kind]: [...prev[kind], v], [selKind]: [...prev[selKind], v] });
   };
 
-  const removePrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
-    setPrefs(prev => ({ ...prev, [kind]: prev[kind].filter(v => v !== value) }));
+  // Sélection / désélection d'un choix existant (aucune suppression : les choix
+  // créés restent disponibles, seuls les sélectionnés sont utilisés).
+  const togglePrefItem = (kind: 'selected_stations' | 'selected_airports', value: string) => {
+    setPrefs(prev => ({ ...prev, [kind]: prev[kind].includes(value) ? prev[kind].filter(v => v !== value) : [...prev[kind], value] }));
   };
 
   const persistTrip = async (trip: VisitTrip, patch: Partial<VisitTrip>) => {
@@ -511,7 +525,7 @@ export default function Visite() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                   {prefs.preferred_stations.map(st => (
-                    <button key={st} style={prefTagStyle(true)} onClick={() => removePrefItem('preferred_stations', st)}>
+                    <button key={st} style={prefTagStyle(true)} onClick={() => togglePrefItem('preferred_stations', st)}>
                       {st} ✕
                     </button>
                   ))}
@@ -533,11 +547,14 @@ export default function Visite() {
                   <button style={buttonStyle} onClick={() => { addPrefItem('preferred_airports', newAirport); setNewAirport(''); }}>{t('visite.addAirport')}</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {prefs.preferred_airports.map(ap => (
-                    <button key={ap} style={prefTagStyle(true)} onClick={() => removePrefItem('preferred_airports', ap)}>
-                      {ap} ✕
-                    </button>
-                  ))}
+                  {prefs.preferred_airports.map(ap => {
+                    const on = prefs.selected_airports.includes(ap);
+                    return (
+                      <button key={ap} style={prefTagStyle(on)} onClick={() => togglePrefItem('selected_airports', ap)} title={t('visite.prefToggleHint')}>
+                        {on ? '✓ ' : ''}{ap}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', marginTop: '4px' }}>
                   {t('visite.prefsAddHint')}
@@ -557,7 +574,21 @@ export default function Visite() {
                     <option key={min} value={min}>{fmtDurationHM(min)}</option>
                   ))}
                 </select>
+              
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={prefs.allow_different_return_hub}
+                    onChange={(e) => setPrefs(prev => ({ ...prev, allow_different_return_hub: e.target.checked }))}
+                  />
+                  {t('visite.allowDifferentReturnHub')}
+                </label>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', marginTop: '4px' }}>
+                  {t('visite.allowDifferentReturnHubHint')}
+                </div>
               </div>
+</div>
 
               {prefsMessage && (
                 <div style={{

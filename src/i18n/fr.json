@@ -382,7 +382,10 @@
     "timeQuarterlyHint": "Heures par pas de 15 minutes.",
     "renameStep": "Renommer cette étape",
     "renameStepShort": "✎",
-    "renameStepTitle": "Modifier l’étape"
+    "renameStepTitle": "Modifier l’étape",
+    "prefToggleHint": "Cliquer pour sélectionner / désélectionner (le choix reste disponible)",
+    "allowDifferentReturnHub": "Autoriser un retour par une autre gare / un autre aéroport",
+    "allowDifferentReturnHubHint": "Si les sites sont éloignés du hub d'aller, le retour utilisera la gare ou l'aéroport (et l'agence de retour de location) le plus proche du dernier site visité."
   },
   "help": {
     "title": "Aide — Guide des fonctionnalités",
@@ -629,6 +632,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Voyages : retour possible via une autre gare/aéroport (préférence), rapprochement train si route > 5h, gares/aéroports en sélection/désélection (pool conservé)",
       "Page Visite : horaires pré-remplis depuis le trajet calculé, et ajustement automatique des étapes suivantes lors d'un changement d'horaire ou de durée de réunion",
       "PDF : carte zoomée automatiquement sur le trajet complet ; bouton « Confirmer » corrigé",
       "Réordonnancement des visites : durées et distances réelles conservées, seuls les trajets modifiés sont recalculés",

@@ -44,6 +44,7 @@ export interface TripPreferences {
   preferredStations: string[];
   preferredAirports: string[];
   meetingMinutes?: number;
+  allowDifferentReturnHub?: boolean;
 }
 
 export interface TripPlan {
@@ -268,7 +269,7 @@ const lookupCountry = <T>(table: Record<string, T>, country: string): T | undefi
   return key != null ? table[key] : undefined;
 };
 
-const pickHub = (country: string, sites: TripSite[]): { hub: Hub; trainPreferred: boolean } => {
+const pickHub = (country: string, sites: TripSite[], origin: { lat: number; lng: number }): { hub: Hub; trainPreferred: boolean } => {
   const c = centroid(sites);
   const stations = lookupCountry(STATIONS, country);
   const trainCountry = Object.keys(STATIONS).find(k => normalizeCountry(k) === normalizeCountry(country));
@@ -279,6 +280,22 @@ const pickHub = (country: string, sites: TripSite[]): { hub: Hub; trainPreferred
   const nearestStationKm = stations
     ? Math.min(...stations.map(st => haversineKm({ lat: st.lat, lng: st.lng }, c)))
     : Infinity;
+  // Trajet en voiture depuis l'origine supérieur à 5h : privilégier un
+  // rapprochement en train (gare du pays la plus proche de l'origine ET des
+  // sites), puis voiture de location — plutôt que 5h+ de route directe.
+  const originToSitesKm = haversineKm(origin, c);
+  const carTooLong = originToSitesKm / 70 > 5;
+  if (trainCountry && carTooLong && nearestStationKm <= 600) {
+    const best = stations!.reduce((acc, st) => {
+      const sd = haversineKm({ lat: st.lat, lng: st.lng }, c) + 0.35 * haversineKm(origin, { lat: st.lat, lng: st.lng });
+      const ad = haversineKm({ lat: acc.lat, lng: acc.lng }, c) + 0.35 * haversineKm(origin, { lat: acc.lat, lng: acc.lng });
+      return sd < ad ? st : acc;
+    });
+    if (haversineKm(origin, { lat: best.lat, lng: best.lng }) < originToSitesKm) {
+      return { hub: best, trainPreferred: true };
+    }
+  }
+
   if (trainCountry && nearestStationKm <= 600) {
     const best = stations!.reduce((acc, s) =>
       haversineKm({ lat: s.lat, lng: s.lng }, c) < haversineKm({ lat: acc.lat, lng: acc.lng }, c) ? s : acc
@@ -305,6 +322,38 @@ const findPreferredAirport = (prefs: TripPreferences | undefined, names: string[
   if (!prefs?.preferredAirports?.length) return null;
   const wanted = prefs.preferredAirports.map(a => a.toLowerCase().trim());
   return names.find(n => wanted.includes(n.toLowerCase().trim())) || null;
+};
+
+// Hub de retour : par défaut le hub d'aller. Si l'utilisateur autorise un
+// retour différent (allowDifferentReturnHub) et qu'un autre hub (gare ou
+// aéroport du même pays) est au moins 40 % plus proche du dernier site, on le
+// choisit — le retour est alors raccourci (voiture + train/avion).
+const pickReturnHub = (hub: Hub, country: string, lastSite: { lat: number; lng: number }, prefs?: TripPreferences): Hub => {
+  if (!prefs?.allowDifferentReturnHub) return hub;
+  const cands: Hub[] = [
+    ...(lookupCountry(STATIONS, country) || []),
+    ...(lookupCountry(COUNTRY_AIRPORT_HUBS, country) || []),
+  ];
+  const kmCurrent = haversineKm(lastSite, { lat: hub.lat, lng: hub.lng });
+  let best = hub;
+  let bestKm = kmCurrent;
+  cands.forEach(c => {
+    const km = haversineKm(lastSite, { lat: c.lat, lng: c.lng });
+    if (km < bestKm * 0.6) { best = c; bestKm = km; }
+  });
+  return best;
+};
+
+// Gare d'entrée internationale pour le retour : la plus proche du hub de
+// retour parmi les gares d'entrée du pays (le hub de retour peut différer).
+const pickReturnEntry = (returnHub: Hub, country: string, origin: { lat: number; lng: number }): Hub => {
+  const entry = lookupCountry(ENTRY_STATIONS, country);
+  if (!entry) return returnHub;
+  // Si le hub de retour est plus proche de l'origine que la gare d'entrée
+  // (ex. hub à Lille-Europe), on repart directement du hub de retour.
+  const kmHub = haversineKm({ lat: returnHub.lat, lng: returnHub.lng }, origin);
+  const kmEntry = haversineKm({ lat: entry.lat, lng: entry.lng }, origin);
+  return kmHub < kmEntry ? returnHub : entry;
 };
 
 // Choix de l'aéroport de départ depuis l'origine selon la destination et les préférences
@@ -372,7 +421,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
 
   const plans: TripPlan[] = [];
   for (const [country, group] of byCountry) {
-    const { hub, trainPreferred } = pickHub(country, group);
+    const { hub, trainPreferred } = pickHub(country, group, origin);
     const steps: TripStep[] = [];
     let totalKm = 0;
     let t = 6 * 60;
@@ -451,8 +500,12 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       clock = start + meetingMin;
     }
 
-    const kmBackEst = haversineKm(currentPos, { lat: hub.lat, lng: hub.lng });
-    const legBack = await realLeg('driving', currentPos, { lat: hub.lat, lng: hub.lng }, driveMin(kmBackEst), kmBackEst);
+    // Hub de retour : par défaut identique à l'aller. Si l'utilisateur l'autorise
+    // et que les sites sont éloignés du hub d'aller, on choisit le hub le plus
+    // proche du DERNIER site visité (gare ou aéroport du même pays).
+    const returnHub = pickReturnHub(hub, country, currentPos, prefs);
+    const kmBackEst = haversineKm(currentPos, { lat: returnHub.lat, lng: returnHub.lng });
+    const legBack = await realLeg('driving', currentPos, { lat: returnHub.lat, lng: returnHub.lng }, driveMin(kmBackEst), kmBackEst);
     const kmBack = legBack.km;
     const driveBack = legBack.minutes;
     totalKm += kmBack;
@@ -461,25 +514,25 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       day += 1;
       backArrive = DEFAULT_DAY_START + driveBack;
     }
-    steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack), legKm: kmBack, legMinutes: driveBack });
+    steps.push({ type: 'car', label: `Voiture → ${returnHub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: returnHub.name, day, time: fmtHHMM(backArrive - driveBack), legKm: kmBack, legMinutes: driveBack });
 
     if (outboundMode === 'train') {
-      const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
+      const entry = pickReturnEntry(returnHub, country, origin);
       let returnClock = backArrive;
-      if (hub.name !== entry.name) {
-        const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
-        const legNatBack = await realLeg('transit', { lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng }, trainMin(kmNatBack), kmNatBack);
-        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+      if (returnHub.name !== entry.name) {
+        const kmNatBack = haversineKm({ lat: returnHub.lat, lng: returnHub.lng }, { lat: entry.lat, lng: entry.lng });
+        const legNatBack = await realLeg('transit', { lat: returnHub.lat, lng: returnHub.lng }, { lat: entry.lat, lng: entry.lng }, trainMin(kmNatBack), kmNatBack);
+        steps.push({ type: 'train', label: `Train ${returnHub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: returnHub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
         returnClock = returnClock + 15 + legNatBack.minutes;
       }
       const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
       const legBackIntl = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng }, trainMin(kmEntryLille), kmEntryLille);
       steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
     } else {
-      const flight = pickOutboundFlight(hub, origin, prefs);
-      const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
+      const flight = pickOutboundFlight(returnHub, origin, prefs);
+      const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: returnHub.lat, lng: returnHub.lng });
       const dur = flightMin(kmOrigin);
-      steps.push({ type: 'plane', label: `Avion ${hub.name} → ${flight.origin.name} (retour)`, detail: 'Retour par le même aéroport', from: hub.name, to: flight.origin.name, day, time: fmtHHMM(backArrive) });
+      steps.push({ type: 'plane', label: `Avion ${returnHub.name} → ${flight.origin.name} (retour)`, detail: returnHub.name === hub.name ? 'Retour par le même aéroport' : 'Retour par un autre aéroport', from: returnHub.name, to: flight.origin.name, day, time: fmtHHMM(backArrive) });
       steps.push({
         type: flight.origin.kind === 'car' ? 'car' : 'train',
         label: flight.origin.kind === 'car' ? `Voiture ${flight.origin.name} → ${origin.city} (retour)` : `Train ${flight.origin.name} → ${origin.city} (retour)`,

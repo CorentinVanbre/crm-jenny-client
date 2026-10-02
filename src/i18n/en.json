@@ -382,7 +382,10 @@
     "timeQuarterlyHint": "Times in 15-minute steps.",
     "renameStep": "Rename this step",
     "renameStepShort": "✎",
-    "renameStepTitle": "Edit step"
+    "renameStepTitle": "Edit step",
+    "prefToggleHint": "Click to select / deselect (the choice stays available)",
+    "allowDifferentReturnHub": "Allow returning via a different station / airport",
+    "allowDifferentReturnHubHint": "If sites are far from the outbound hub, the return will use the station or airport (and rental car return agency) closest to the last visited site."
   },
   "help": {
     "title": "Help — Feature guide",
@@ -629,6 +632,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Trips: return via a different station/airport (preference), train approach if drive > 5h, station/airport selection with persistent pool",
       "Visite page: times pre-filled from computed trip, following steps auto-adjusted when a time or meeting duration changes",
       "PDF: map auto-zoomed to fit the whole trip; fixed Confirm button label",
       "Visit reordering: real durations and distances kept, only modified legs are recalculated",
