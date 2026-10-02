@@ -105,9 +105,9 @@
     "tripSave": "Enregistrer le voyage",
     "tripSaved": "Voyage enregistré ! Retrouvez-le dans la page Visite.",
     "aiVisitGenerating": "Génération du trajet…",
-    "tripDirectionsOk": "Itinéraires et durées réels (Google Directions)",
-    "tripDirectionsFallback": "Estimations locales : Google Directions indisponible (clé API ou quota)",
-    "tripDirectionsDiag": "Google : {{ok}} OK / {{failed}} échecs (voiture {{driving}}, transports {{transit}}) · statut : {{error}} · dernier appel : {{call}}"
+    "tripDirectionsOk": "Itinéraires et durées réels",
+    "tripDirectionsFallback": "Estimations locales (itinéraires réels indisponibles)",
+    "tripDirectionsDiag": "{{ok}} OK / {{failed}} échecs (voiture {{driving}}, transports {{transit}}) · statut : {{error}} · dernier appel : {{call}}"
   },
   "siteDetail": {
     "loading": "Chargement...",

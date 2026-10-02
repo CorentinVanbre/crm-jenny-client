@@ -390,7 +390,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       const durEntry = legEntry.minutes;
       originLabel = 'Lille (gare)';
       originDetail = `Train international depuis ${origin.city} (${entry.name})`;
-      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}${legEntry.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
       hubArrival = t + durEntry;
 
       // Correspondance nationale si la gare d'entrée est éloignée des sites :
@@ -399,7 +399,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         const kmEntryHub = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng });
         const legNat = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng }, trainMin(kmEntryHub), kmEntryHub);
         const durNat = legNat.minutes;
-        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}${legNat.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
+        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
         hubArrival = hubArrival + 20 + durNat;
       }
     } else {
@@ -408,9 +408,9 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       const toOrigin = flight.origin.toOriginMin;
       const legToAirport = await realLeg(flight.origin.kind === 'car' ? 'driving' : 'transit', { lat: origin.lat, lng: origin.lng }, { lat: flight.origin.lat, lng: flight.origin.lng }, toOrigin, haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: flight.origin.lat, lng: flight.origin.lng }));
       if (flight.origin.kind === 'car') {
-        steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: `~${Math.round(legToAirport.km)} km, ~${fmtDurationHM(legToAirport.minutes)}${legToAirport.source === 'directions' ? ' (itinéraire réel Google)' : ''}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: `~${Math.round(legToAirport.km)} km, ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       } else {
-        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}${legToAirport.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       }
       t += legToAirport.minutes;
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
@@ -443,7 +443,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         day += 1;
         start = DEFAULT_DAY_START + drive;
       }
-      steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}${leg.source === 'directions' ? ' (itinéraire réel Google)' : ''}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive) });
+      steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${fmtDurationHM(drive)}`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive) });
       steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${fmtDurationHM(meetingMin)}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
       currentPos = { lat: site.lat, lng: site.lng };
       clock = start + meetingMin;
@@ -459,7 +459,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       day += 1;
       backArrive = DEFAULT_DAY_START + driveBack;
     }
-    steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}${legBack.source === 'directions' ? ' (itinéraire réel Google)' : ''}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack) });
+    steps.push({ type: 'car', label: `Voiture → ${hub.name} (retour)`, detail: `~${Math.round(kmBack)} km, ~${fmtDurationHM(driveBack)}, retour location`, from: ordered.length ? ordered[ordered.length - 1].noms : hub.name, to: hub.name, day, time: fmtHHMM(backArrive - driveBack) });
 
     if (outboundMode === 'train') {
       const entry = lookupCountry(ENTRY_STATIONS, country) || hub;
@@ -467,12 +467,12 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       if (hub.name !== entry.name) {
         const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
         const legNatBack = await realLeg('transit', { lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng }, trainMin(kmNatBack), kmNatBack);
-        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}${legNatBack.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
         returnClock = returnClock + 15 + legNatBack.minutes;
       }
       const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
       const legBackIntl = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng }, trainMin(kmEntryLille), kmEntryLille);
-      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}${legBackIntl.source === 'directions' ? ' (horaires réels Google)' : ''}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
+      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });

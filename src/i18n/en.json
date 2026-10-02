@@ -105,9 +105,9 @@
     "tripSave": "Save trip",
     "tripSaved": "Trip saved! Find it in the Visit page.",
     "aiVisitGenerating": "Generating trip…",
-    "tripDirectionsOk": "Real routes and durations (Google Directions)",
-    "tripDirectionsFallback": "Local estimates: Google Directions unavailable (API key or quota)",
-    "tripDirectionsDiag": "Google: {{ok}} OK / {{failed}} failed (driving {{driving}}, transit {{transit}}) · status: {{error}} · last call: {{call}}"
+    "tripDirectionsOk": "Real routes and durations",
+    "tripDirectionsFallback": "Local estimates (real routes unavailable)",
+    "tripDirectionsDiag": "{{ok}} OK / {{failed}} failed (driving {{driving}}, transit {{transit}}) · status: {{error}} · last call: {{call}}"
   },
   "siteDetail": {
     "loading": "Loading...",
