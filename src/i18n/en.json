@@ -24,7 +24,8 @@
     "logout": "Log out",
     "menu": "☰ Menu",
     "zones": "Zone management",
-    "prospection": "Prospecting"
+    "prospection": "Prospecting",
+    "visite": "Visit"
   },
   "home": {
     "welcome": "Welcome to",
@@ -34,6 +35,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "New \"AI visit mode\": optimized trip suggestions from the sites map + \"Visit\" page to manage your travel projects",
       "Sorting of prospecting suggestions by clicking on column titles (ascending/descending)",
       "Creation date column for suggestions in the Prospecting page",
       "Fixed group input in the SiteDetail page (field displayed [object Object])",
@@ -111,7 +113,23 @@
       "Visités il y a +18mois": "Visited 18+ months ago",
       "A visiter": "To visit",
       "Fermés": "Closed"
-    }
+    },
+    "aiVisitMode": "AI visit mode",
+    "aiVisitTitle": "AI visit mode",
+    "aiVisitHelp": "Click the pins of the client sites to visit, then generate an optimized trip proposal (departure from Lille, train preferred, plane via CRL / Lille-Lesquin / CDG-ORY if needed, rental car on site).",
+    "aiVisitSelected_one": "{{count}} site selected",
+    "aiVisitSelected_other": "{{count}} sites selected",
+    "aiVisitGenerate": "Generate trip",
+    "aiVisitReset": "Reset",
+    "tripTitle": "Trip proposal",
+    "tripAssumptions": "Parameters: departure from Lille · train preferred · plane via CRL (car from Lille) or Lille-Lesquin / CDG-ORY (train from Lille) · 2h meeting per site (8:30 AM earliest, last meeting starting 3:00 PM at the latest) · return via the same hub.",
+    "tripHubStation": "arrival at station",
+    "tripHubAirport": "arrival at airport",
+    "tripDay": "Day {{day}}:",
+    "tripLocalCar": "{{km}} km of local driving",
+    "tripName": "Trip name",
+    "tripSave": "Save trip",
+    "tripSaved": "Trip saved! Find it in the Visit page."
   },
   "siteDetail": {
     "loading": "Loading...",
@@ -338,5 +356,27 @@
       "Incinération": "Incineration",
       "Autre": "Other"
     }
+  },
+  "visite": {
+    "title": "Client visits — travel projects",
+    "subtitle": "Your travel projects saved from the Sites page (AI visit mode).",
+    "goToSites": "Create a trip from the Sites page →",
+    "loading": "Loading...",
+    "noTrips": "No saved trip yet.",
+    "sites": "sites",
+    "countries": "Countries",
+    "localCar": "Rental car on site",
+    "totalKm": "≈ {{km}} km of local driving",
+    "statusDraft": "Draft",
+    "statusPlanned": "Planned",
+    "statusDone": "Completed",
+    "stepsTitle": "Trip steps",
+    "addStep": "Add a step",
+    "newStepLabel": "New step",
+    "day": "Day",
+    "scheduledDate": "Visit date",
+    "scheduledTime": "Visit time",
+    "confirmDelete": "Delete this travel project?",
+    "tripDeleted": "Trip deleted."
   }
 }

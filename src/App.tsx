@@ -9,6 +9,7 @@ import SiteDetail from './pages/SiteDetail';
 import Contacts from './pages/Contacts';
 import Emails from './pages/Emails';
 import Prospection from './pages/Prospection';
+import Visite from './pages/Visite';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -78,6 +79,16 @@ export default function App() {
                       <RequireAuth>
                         <PrivateRoute>
                           <Prospection />
+                        </PrivateRoute>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/visite"
+                    element={
+                      <RequireAuth>
+                        <PrivateRoute>
+                          <Visite />
                         </PrivateRoute>
                       </RequireAuth>
                     }

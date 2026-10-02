@@ -24,7 +24,8 @@
     "logout": "Se déconnecter",
     "menu": "☰ Menu",
     "zones": "Gestion des zones",
-    "prospection": "Prospection"
+    "prospection": "Prospection",
+    "visite": "Visite"
   },
   "home": {
     "welcome": "Bienvenue sur",
@@ -34,6 +35,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Nouveau « Mode visite IA » : suggestion de trajets optimisés depuis la carte des sites + page « Visite » pour gérer vos projets de voyages",
       "Tri des suggestions de prospection en cliquant sur le titre des colonnes (ascendant/descendant)",
       "Colonne date de création des suggestions dans la page Prospection",
       "Correction de la saisie du groupe dans la page SiteDetail (le champ affichait [object Object])",
@@ -111,7 +113,23 @@
       "Visités il y a +18mois": "Visités il y a +18mois",
       "A visiter": "A visiter",
       "Fermés": "Fermés"
-    }
+    },
+    "aiVisitMode": "Mode visite IA",
+    "aiVisitTitle": "Mode visite IA",
+    "aiVisitHelp": "Cliquez sur les pins des sites clients à visiter, puis générez un projet de trajet optimisé (départ de Lille, train privilégié, avion via CRL / Lille-Lesquin / CDG-ORY si nécessaire, voiture de location sur place).",
+    "aiVisitSelected_one": "{{count}} site sélectionné",
+    "aiVisitSelected_other": "{{count}} sites sélectionnés",
+    "aiVisitGenerate": "Générer le trajet",
+    "aiVisitReset": "Réinitialiser",
+    "tripTitle": "Proposition de trajet",
+    "tripAssumptions": "Paramètres : départ de Lille · train privilégié · avion via CRL (voiture depuis Lille) ou Lille-Lesquin / CDG-ORY (train depuis Lille) · réunion de 2h par site (8h30 au plus tôt, dernier RDV démarrant au plus tard à 15h) · retour par le même hub.",
+    "tripHubStation": "arrivée en gare",
+    "tripHubAirport": "arrivée en aéroport",
+    "tripDay": "Jour {{day}} :",
+    "tripLocalCar": "{{km}} km de route au total",
+    "tripName": "Nom du voyage",
+    "tripSave": "Enregistrer le voyage",
+    "tripSaved": "Voyage enregistré ! Retrouvez-le dans la page Visite."
   },
   "siteDetail": {
     "loading": "Chargement...",
@@ -338,5 +356,27 @@
       "Incinération": "Incinération",
       "Autre": "Autre"
     }
+  },
+  "visite": {
+    "title": "Visites clients — projets de voyages",
+    "subtitle": "Vos projets de voyages enregistrés depuis la page Sites (Mode visite IA).",
+    "goToSites": "Créer un voyage depuis la page Sites →",
+    "loading": "Chargement...",
+    "noTrips": "Aucun voyage enregistré pour le moment.",
+    "sites": "sites",
+    "countries": "Pays",
+    "localCar": "Voiture de location sur place",
+    "totalKm": "≈ {{km}} km de route au total",
+    "statusDraft": "Brouillon",
+    "statusPlanned": "Planifié",
+    "statusDone": "Réalisé",
+    "stepsTitle": "Étapes du voyage",
+    "addStep": "Ajouter une étape",
+    "newStepLabel": "Nouvelle étape",
+    "day": "Jour",
+    "scheduledDate": "Date de visite",
+    "scheduledTime": "Heure de visite",
+    "confirmDelete": "Supprimer ce projet de voyage ?",
+    "tripDeleted": "Voyage supprimé."
   }
 }
