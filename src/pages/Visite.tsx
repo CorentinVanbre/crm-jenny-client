@@ -373,6 +373,19 @@ export default function Visite() {
                 zoomControl: true,
                 gestureHandling: 'none'
               });
+              if (data.pts.length > 1) {
+                var bounds = new g.LatLngBounds();
+                data.pts.forEach(function (p) { bounds.extend({ lat: p.lat, lng: p.lng }); });
+                map.fitBounds(bounds);
+                var listener = g.event.addListenerOnce(map, 'bounds_changed', function () {
+                  var z = map.getZoom();
+                  if (z > 16) map.setZoom(16);
+                  if (z < 3) map.setZoom(3);
+                });
+              } else if (data.pts.length === 1) {
+                map.setCenter({ lat: data.pts[0].lat, lng: data.pts[0].lng });
+                map.setZoom(12);
+              }
               var path = data.pts.map(function (p) { return { lat: p.lat, lng: p.lng }; });
               if (path.length > 1) {
                 var pl = new g.Polyline({ path: path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });

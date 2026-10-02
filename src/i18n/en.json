@@ -12,7 +12,8 @@
     "open": "Open",
     "never": "Never",
     "error": "Error",
-    "notConnected": "Not connected"
+    "notConnected": "Not connected",
+    "confirm": "Confirm"
   },
   "header": {
     "sites": "Sites",
@@ -628,6 +629,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "PDF: map auto-zoomed to fit the whole trip; fixed Confirm button label",
       "Visit reordering: real durations and distances kept, only modified legs are recalculated",
       "Visit reordering: manual steps are now preserved",
       "Visite page: move arrows for manual steps (anywhere in the plan) and rename any step at any time",

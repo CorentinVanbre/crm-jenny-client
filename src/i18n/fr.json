@@ -12,7 +12,8 @@
     "open": "Ouvrir",
     "never": "Jamais",
     "error": "Erreur",
-    "notConnected": "Non connecté"
+    "notConnected": "Non connecté",
+    "confirm": "Confirmer"
   },
   "header": {
     "sites": "Sites",
@@ -628,6 +629,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "PDF : carte zoomée automatiquement sur le trajet complet ; bouton « Confirmer » corrigé",
       "Réordonnancement des visites : durées et distances réelles conservées, seuls les trajets modifiés sont recalculés",
       "Réordonnancement des visites : les étapes manuelles sont désormais conservées",
       "Page Visite : flèches de déplacement pour les étapes manuelles (n’importe où dans le planning) et renommage de n’importe quelle étape à tout moment",
