@@ -35,6 +35,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Correction de l’affichage de la carte dans l’export PDF des voyages",
       "Sélection du hub de voyage intelligente : aéroport le plus proche des sites (ex. Séville), garde-fou pour les destinations lointaines (outre-mer)",
       "Export PDF du roadbook avec carte dynamique et charte graphique Jenny (couleurs, logo)",
       "Page Visite : gares/aéroports en saisie libre, durée de réunion standard et par site, heures par pas de 15 min, correction de la date de départ, numérotation des visites, export PDF du roadbook avec carte",

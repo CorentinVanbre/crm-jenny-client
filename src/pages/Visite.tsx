@@ -294,6 +294,7 @@ export default function Visite() {
         <head>
           <meta charset="utf-8" />
           <title>${esc(trip.name)}</title>
+          <base target="_blank" />
           <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,200;0,400;0,700;1,700&display=swap" rel="stylesheet" />
           <style>
             body { font-family: 'Barlow', Arial, sans-serif; font-weight: 200; padding: 0; color: #000; background: #E5E5E4; }
@@ -333,53 +334,42 @@ export default function Visite() {
           </div>
           <script>
             window.__tripData = ${mapInit};
+            window.__initTripMap = function () {
+              var g = window.google && window.google.maps;
+              if (!g || !window.__tripData) { setTimeout(function () { window.print(); }, 200); return; }
+              var data = window.__tripData;
+              var mapEl = document.getElementById('map');
+              if (!mapEl) { setTimeout(function () { window.print(); }, 200); return; }
+              var map = new g.Map(mapEl, {
+                zoom: 5,
+                center: data.center,
+                disableDefaultUI: true,
+                zoomControl: true,
+                gestureHandling: 'none'
+              });
+              var path = data.pts.map(function (p) { return { lat: p.lat, lng: p.lng }; });
+              if (path.length > 1) {
+                var pl = new g.Polyline({ path: path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
+                pl.setMap(map);
+              }
+              data.pts.forEach(function (p) {
+                var mk = new g.Marker({
+                  position: { lat: p.lat, lng: p.lng },
+                  title: p.label,
+                  label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined
+                });
+                mk.setMap(map);
+              });
+              setTimeout(function () { window.focus(); window.print(); }, 1200);
+            };
           </script>
         </body>
       </html>`);
     win.document.close();
 
-    interface TripPointData { lat: number; lng: number; label: string; kind: string; num: number }
-    interface TripWin extends Window { __tripData?: { pts: TripPointData[]; center: { lat: number; lng: number } } }
-    const loadMap = () => {
-      const w = win as unknown as TripWin;
-      type GoogleMapsNS = {
-        Map: new (el: Element, opts: Record<string, unknown>) => unknown;
-        Polyline: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
-        Marker: new (opts: Record<string, unknown>) => { setMap: (m: unknown) => void };
-      };
-      const g = (w as unknown as { google?: { maps: GoogleMapsNS } }).google?.maps;
-      if (!g) { setTimeout(loadMap, 300); return; }
-      const data = w.__tripData;
-      if (!data) { setTimeout(() => { win.focus(); win.print(); }, 200); return; }
-      const mapEl = w.document.getElementById('map');
-      if (!mapEl) return;
-      const map = new g.Map(mapEl, {
-        zoom: 5,
-        center: data.center,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: 'none',
-      });
-      const path = data.pts.map((p) => ({ lat: p.lat, lng: p.lng }));
-      if (path.length > 1) {
-        const pl = new g.Polyline({ path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
-        pl.setMap(map);
-      }
-      data.pts.forEach((p) => {
-        const mk = new g.Marker({
-          position: { lat: p.lat, lng: p.lng },
-          title: p.label,
-          label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined,
-        });
-        mk.setMap(map);
-      });
-      setTimeout(() => { w.focus(); w.print(); }, 900);
-    };
-
     if (import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       const script = win.document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&loading=async`;
-      script.onload = loadMap;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&callback=__initTripMap`;
       script.onerror = () => setTimeout(() => { win.focus(); win.print(); }, 200);
       win.document.head.appendChild(script);
     } else {

@@ -35,6 +35,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Fixed map rendering in trip PDF export",
       "Smart travel hub selection: airport closest to the sites (e.g. Seville), safeguard for remote destinations (overseas)",
       "PDF export of the roadbook with dynamic map and Jenny branding (colors, logo)",
       "Visit page: free-text stations/airports, standard and per-site meeting duration, 15-minute time steps, departure date fix, visit numbering, PDF export of the roadbook with map",
