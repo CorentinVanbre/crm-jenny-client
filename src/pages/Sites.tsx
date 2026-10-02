@@ -794,7 +794,7 @@ export default function Sites() {
   return (
     <div style={{ padding: '10px', width: '100%', boxSizing: 'border-box' }}>
       {/* Carte Google Maps */}
-      <div ref={mapContainerRef} style={{ width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto 20px', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden' }}>
+      <div ref={mapContainerRef} style={{ position: 'relative', width: 'calc(100% - 20px)', maxWidth: '980px', margin: '0 auto 20px', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden' }}>
         <GoogleMap
           mapContainerStyle={{ width: `${mapDimensions.width}px`, height: `${mapDimensions.height}px` }}
           zoom={initialZoom}
@@ -829,6 +829,40 @@ export default function Sites() {
             </InfoWindow>
           ))}
         </GoogleMap>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '10px',
+            zIndex: 10,
+            backgroundColor: 'rgba(229, 229, 228, 0.92)',
+            border: '1px solid #000',
+            borderRadius: '4px',
+            padding: '5px 10px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+          }}
+        >
+          <label style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            fontFamily: 'Barlow, sans-serif',
+            fontWeight: aiVisitMode ? 'bold' : 200,
+            fontSize: '14px',
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}>
+            <input
+              type="checkbox"
+              checked={aiVisitMode}
+              onChange={(e) => {
+                setAiVisitMode(e.target.checked);
+                if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
+              }}
+              style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            {t('sites.aiVisitMode')}
+          </label>
+        </div>
       </div>
 
       {/* Zone de recherche */}
@@ -844,33 +878,9 @@ export default function Sites() {
         {isMobile ? (
           <>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-              <label style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                fontFamily: 'Barlow, sans-serif',
-                fontWeight: aiVisitMode ? 'bold' : 200,
-                fontSize: '14px',
-                cursor: 'pointer',
-                justifyContent: 'center',
-                marginBottom: '10px',
-                userSelect: 'none',
-              }}>
-                <input
-                  type="checkbox"
-                  checked={aiVisitMode}
-                  onChange={(e) => {
-                    setAiVisitMode(e.target.checked);
-                    if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
-                  }}
-                  style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                {t('sites.aiVisitMode')}
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px', justifyContent: 'center' }}>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
-                <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
-              </div>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
+              <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px', justifyContent: 'center' }}>
@@ -931,27 +941,6 @@ export default function Sites() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <label style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  fontFamily: 'Barlow, sans-serif',
-                  fontWeight: aiVisitMode ? 'bold' : 200,
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  marginRight: '12px',
-                  userSelect: 'none',
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={aiVisitMode}
-                    onChange={(e) => {
-                      setAiVisitMode(e.target.checked);
-                      if (!e.target.checked) { setVisitSites([]); setVisitPlans([]); }
-                    }}
-                    style={{ marginRight: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
-                  />
-                  {t('sites.aiVisitMode')}
-                </label>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={() => setShowAddGroupModal(true)}>{t('sites.addGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: '10px' }} onClick={handleOpenEditGroupModal}>{t('sites.editGroup')}</button>
                 <button style={{ ...buttonStyle, marginRight: 0 }} onClick={handleOpenAddSiteModal}>{t('sites.addSite')}</button>
