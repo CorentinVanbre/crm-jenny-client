@@ -6,7 +6,7 @@ import { useUserZones } from '../lib/userZones';
 import { Link } from 'react-router-dom';
 import { useIsMobile, MOBILE_BREAKPOINT } from '../lib/useIsMobile';
 import { isCountryAllowed } from '../lib/countryMatch';
-import { planTrip, TripSite, TripPlan, tripPlanTitle } from '../lib/tripPlanner';
+import { planTrip, TripSite, TripPlan, tripPlanTitle, TripPreferences } from '../lib/tripPlanner';
 
 // Types
 interface Address {
@@ -59,6 +59,19 @@ const formatDate = (dateString: string | undefined): string => {
 };
 
 const DEFAULT_MAP_CENTER = { lat: 46.8, lng: 1.5 };
+
+// Géocodage léger de la ville d'origine (fallback Lille si indisponible)
+const geocodeCity = async (city: string): Promise<{ lat: number; lng: number } | null> => {
+  if (!city) return null;
+  try {
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) return null;
+    const r = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city)}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`);
+    const j = await r.json();
+    const loc = j?.results?.[0]?.geometry?.location;
+    if (loc) return { lat: loc.lat, lng: loc.lng };
+  } catch { /* fallback */ }
+  return null;
+};
 
 export default function Sites() {
   // États principaux
@@ -128,6 +141,7 @@ export default function Sites() {
   const [tripName, setTripName] = useState('');
   const [isSavingTrip, setIsSavingTrip] = useState(false);
   const [tripSaveMessage, setTripSaveMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [tripPrefs, setTripPrefs] = useState<TripPreferences | null>(null);
 
   // Initialiser l'Autocomplete pour l'adresse
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
@@ -547,6 +561,24 @@ export default function Sites() {
           setAllSites(validSites);
         }
 
+        if (session?.user) {
+          const { data: prefs } = await supabase
+            .from('visit_preferences')
+            .select('origin_city, preferred_stations, preferred_airports')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          if (prefs) {
+            const geo = await geocodeCity(prefs.origin_city);
+            setTripPrefs({
+              originCity: prefs.origin_city,
+              originLat: geo?.lat ?? 50.6292,
+              originLng: geo?.lng ?? 2.7575,
+              preferredStations: prefs.preferred_stations || [],
+              preferredAirports: prefs.preferred_airports || [],
+            });
+          }
+        }
+
         const groupesData = await fetchGroupes();
         setGroupes(groupesData);
         setFilteredGroupes(groupesData);
@@ -643,7 +675,7 @@ export default function Sites() {
       lat: parseFloat(s.latitude),
       lng: parseFloat(s.longitude),
     }));
-    setVisitPlans(planTrip(tripSites));
+    setVisitPlans(planTrip(tripSites, tripPrefs || undefined));
     setShowTripModal(true);
   };
 
@@ -664,6 +696,7 @@ export default function Sites() {
         plans: visitPlans,
         steps,
         status: 'draft',
+        start_date: null,
         created_date: now,
         updated_date: now,
       }]);

@@ -29,6 +29,15 @@ export interface TripStep {
   scheduledDate?: string;
   scheduledTime?: string;
   manual?: boolean;
+  manualDate?: boolean;
+}
+
+export interface TripPreferences {
+  originCity: string;
+  originLat: number;
+  originLng: number;
+  preferredStations: string[];
+  preferredAirports: string[];
 }
 
 export interface TripPlan {
@@ -45,7 +54,7 @@ export interface TripPlan {
   siteCount: number;
 }
 
-const LILLE = { lat: 50.6292, lng: 2.7575 };
+const DEFAULT_ORIGIN = { city: 'Lille', lat: 50.6292, lng: 2.7575 };
 
 const AIRPORTS: Record<string, { name: string; lat: number; lng: number }> = {
   LIL: { name: 'Lille-Lesquin', lat: 50.5640, lng: 3.0230 },
@@ -198,13 +207,28 @@ const pickHub = (country: string, sites: TripSite[]): { hub: Hub; trainPreferred
   return { hub: { name: `Hub principal (${country})`, kind: 'airport', lat: c.lat, lng: c.lng }, trainPreferred: false };
 };
 
-// Choix de l'aéroport de départ depuis Lille selon la destination
-const pickOutboundFlight = (hub: Hub): { origin: { name: string; lat: number; lng: number; kind: 'car' | 'train'; toOriginMin: number } } => {
-  const km = haversineKm(LILLE, { lat: hub.lat, lng: hub.lng });
+const findPreferredAirport = (prefs: TripPreferences | undefined, names: string[]) => {
+  if (!prefs?.preferredAirports?.length) return null;
+  const wanted = prefs.preferredAirports.map(a => a.toLowerCase().trim());
+  return names.find(n => wanted.includes(n.toLowerCase().trim())) || null;
+};
+
+// Choix de l'aéroport de départ depuis l'origine selon la destination et les préférences
+const pickOutboundFlight = (hub: Hub, origin: { city: string; lat: number; lng: number }, prefs?: TripPreferences): { origin: { name: string; lat: number; lng: number; kind: 'car' | 'train'; toOriginMin: number } } => {
+  const km = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: hub.lat, lng: hub.lng });
   if (km < 1800) {
-    return { origin: { name: AIRPORTS.CRL.name, lat: AIRPORTS.CRL.lat, lng: AIRPORTS.CRL.lng, kind: 'car', toOriginMin: CRL_CAR_FROM_LILLE_MIN } };
+    const preferred = findPreferredAirport(prefs, ['CRL', 'LIL']);
+    const code = preferred === 'Lille-Lesquin' || preferred === 'LIL' || preferred === 'Lille-Lesquin (LIL)' ? 'LIL' : 'CRL';
+    const kind = code === 'LIL' ? 'train' : 'car';
+    const a = AIRPORTS[code];
+    const toOriginMin = code === 'LIL' ? 25 : CRL_CAR_FROM_LILLE_MIN;
+    return { origin: { name: a.name, lat: a.lat, lng: a.lng, kind, toOriginMin } };
   }
-  return { origin: { name: AIRPORTS.CDG.name, lat: AIRPORTS.CDG.lat, lng: AIRPORTS.CDG.lng, kind: 'train', toOriginMin: 60 } };
+  const preferred = findPreferredAirport(prefs, ['CDG', 'ORY']);
+  const code = preferred === 'Orly' || preferred === 'ORY' || preferred === 'Paris-Orly' ? 'ORY' : 'CDG';
+  const a = AIRPORTS[code];
+  const toOriginMin = code === 'ORY' ? 80 : 60;
+  return { origin: { name: a.name, lat: a.lat, lng: a.lng, kind: 'train', toOriginMin } };
 };
 
 // Ordre de visite optimisé : plus proche voisin depuis le hub
@@ -226,7 +250,10 @@ const orderSites = (hub: Hub, sites: TripSite[]): TripSite[] => {
   return ordered;
 };
 
-export const planTrip = (sites: TripSite[]): TripPlan[] => {
+export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[] => {
+  const origin = prefs?.originCity && prefs.originLat && prefs.originLng
+    ? { city: prefs.originCity, lat: prefs.originLat, lng: prefs.originLng }
+    : { city: DEFAULT_ORIGIN.city, lat: DEFAULT_ORIGIN.lat, lng: DEFAULT_ORIGIN.lng };
   const byCountry = new Map<string, TripSite[]>();
   sites.forEach((s) => {
     const list = byCountry.get(s.pays) || [];
@@ -237,7 +264,7 @@ export const planTrip = (sites: TripSite[]): TripPlan[] => {
   const plans: TripPlan[] = [];
   for (const [country, group] of byCountry) {
     const { hub, trainPreferred } = pickHub(country, group);
-    const kmLilleHub = haversineKm(LILLE, { lat: hub.lat, lng: hub.lng });
+    const kmLilleHub = haversineKm({ lat: origin.lat, lng: origin.lng }, { lat: hub.lat, lng: hub.lng });
     const steps: TripStep[] = [];
     let totalKm = 0;
     let t = 6 * 60;
@@ -253,23 +280,23 @@ export const planTrip = (sites: TripSite[]): TripPlan[] => {
       originLabel = 'Lille (gare)';
       originDetail = 'Train direct/quasi-direct depuis Lille';
       const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: 'Train Lille → ' + hub.name, detail: `~${Math.round(kmLilleHub)} km, ~${Math.round(dur / 60)}h`, from: 'Lille', to: hub.name, day, time: fmtHHMM(t) });
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${hub.name}`, detail: `~${Math.round(kmLilleHub)} km, ~${Math.round(dur / 60)}h`, from: origin.city, to: hub.name, day, time: fmtHHMM(t) });
       hubArrival = t + dur;
     } else {
-      const flight = pickOutboundFlight(hub);
+      const flight = pickOutboundFlight(hub, origin, prefs);
       outboundMode = 'plane';
       const toOrigin = flight.origin.toOriginMin;
       if (flight.origin.kind === 'car') {
-        steps.push({ type: 'car', label: `Voiture Lille → ${flight.origin.name}`, detail: 'Trajet routier ~1h45', from: 'Lille', to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: 'Trajet routier', from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       } else {
-        steps.push({ type: 'train', label: `Train Lille → ${flight.origin.name}`, detail: 'Trajet ferroviaire ~1h', from: 'Lille', to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: 'Trajet ferroviaire ~1h', from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       }
       t += toOrigin;
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
       const dur = flightMin(kmOrigin);
       steps.push({ type: 'plane', label: `Avion ${flight.origin.name} → ${hub.name}`, detail: `~${Math.round(kmOrigin)} km, vol ~${Math.round(dur / 60)}h + enregistrement 1h30`, from: flight.origin.name, to: hub.name, day, time: fmtHHMM(t + 90) });
-      originLabel = 'Lille → ' + flight.origin.name;
-      originDetail = flight.origin.kind === 'car' ? `Voiture depuis Lille (${flight.origin.name})` : `Train depuis Lille (${flight.origin.name})`;
+      originLabel = `${origin.city} → ${flight.origin.name}`;
+      originDetail = flight.origin.kind === 'car' ? `Voiture depuis ${origin.city} (${flight.origin.name})` : `Train depuis ${origin.city} (${flight.origin.name})`;
       hubArrival = t + 90 + dur;
     }
 
@@ -310,18 +337,18 @@ export const planTrip = (sites: TripSite[]): TripPlan[] => {
 
     if (outboundMode === 'train') {
       const dur = trainMin(kmLilleHub);
-      steps.push({ type: 'train', label: `Train ${hub.name} → Lille (retour)`, detail: `Retour par le même hub, ~${Math.round(dur / 60)}h`, from: hub.name, to: 'Lille', day, time: fmtHHMM(backArrive) });
+      steps.push({ type: 'train', label: `Train ${hub.name} → ${origin.city} (retour)`, detail: `Retour par le même hub, ~${Math.round(dur / 60)}h`, from: hub.name, to: origin.city, day, time: fmtHHMM(backArrive) });
     } else {
-      const flight = pickOutboundFlight(hub);
+      const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
       const dur = flightMin(kmOrigin);
       steps.push({ type: 'plane', label: `Avion ${hub.name} → ${flight.origin.name} (retour)`, detail: 'Retour par le même aéroport', from: hub.name, to: flight.origin.name, day, time: fmtHHMM(backArrive) });
       steps.push({
         type: flight.origin.kind === 'car' ? 'car' : 'train',
-        label: flight.origin.kind === 'car' ? `Voiture ${flight.origin.name} → Lille (retour)` : `Train ${flight.origin.name} → Lille (retour)`,
-        detail: 'Retour à Lille',
+        label: flight.origin.kind === 'car' ? `Voiture ${flight.origin.name} → ${origin.city} (retour)` : `Train ${flight.origin.name} → ${origin.city} (retour)`,
+        detail: `Retour à ${origin.city}`,
         from: flight.origin.name,
-        to: 'Lille',
+        to: origin.city,
         day,
         time: fmtHHMM(backArrive + dur + 90),
       });
@@ -349,4 +376,96 @@ export const tripPlanTitle = (plans: TripPlan[]): string => {
   if (!plans.length) return '';
   const countries = plans.map((p) => p.country).join(' + ');
   return `Voyage ${countries}`;
+};
+
+// ============================================================================
+// Réordonnancement d'un projet enregistré : l'utilisateur ne réordonne que
+// les visites clients (étapes de type "meeting") ; les étapes de déplacement
+// sont recalculées automatiquement pour s'adapter au nouvel ordre.
+// ============================================================================
+
+interface RebuildPoint {
+  lat: number;
+  lng: number;
+  name: string;
+}
+
+export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[]): TripStep[] => {
+  if (!orderedMeetings.length) return steps;
+
+  // Hub = destination de la 1ère étape "car" après l'arrivée (prise en charge location)
+  const hubStep = steps.find(st => st.type === 'car' && st.label.toLowerCase().includes('location')) || steps.find(st => st.type === 'car' || st.type === 'plane' || st.type === 'train');
+  const hubName = (hubStep?.to || steps[0]?.to || 'Hub') as string;
+
+  const outbound: TripStep[] = [];
+  let i = 0;
+  // Conserver tout ce qui précède la première réunion (train/plane aller + location)
+  while (i < steps.length && steps[i].type !== 'meeting') {
+    outbound.push(steps[i]);
+    i++;
+  }
+  // Retour : tout ce qui suit la dernière réunion d'origine, à partir de l'étape "car" de retour
+  const lastMeetingIdx = steps.map(st => st.type).lastIndexOf('meeting');
+  const returnSteps = steps.slice(lastMeetingIdx + 1);
+
+  const rebuilt: TripStep[] = [...outbound];
+  let current: RebuildPoint = { lat: 0, lng: 0, name: hubName };
+  // Position du hub : depuis le plan (lat/lng absentes des steps) - on garde le nom
+
+  let prevSiteName = hubName;
+  orderedMeetings.forEach((m) => {
+    if (m.lat == null || m.lng == null) {
+      rebuilt.push(m);
+      return;
+    }
+    const km = haversineKm(current, { lat: m.lat, lng: m.lng });
+    const drive = driveMin(km);
+    rebuilt.push({
+      type: 'car',
+      label: `Voiture → ${m.siteName || m.label}`,
+      detail: `~${Math.round(km)} km, ~${Math.floor(drive / 60)}h${drive % 60}min`,
+      from: prevSiteName,
+      to: m.siteName || m.label,
+      day: m.day,
+      time: fmtHHMM(meetingStartMin(m) - drive),
+    });
+    rebuilt.push({ ...m, from: prevSiteName });
+    prevSiteName = m.siteName || m.label;
+    current = { lat: m.lat, lng: m.lng, name: prevSiteName };
+  });
+
+  // Adapter l'étape "car" de retour : départ depuis le dernier site visité
+  const adaptedReturn = returnSteps.map(st => {
+    if (st.type === 'car' && st.label.toLowerCase().includes('retour')) {
+      return { ...st, from: prevSiteName, label: `Voiture → ${st.to || hubName} (retour)` };
+    }
+    return st;
+  });
+
+  return [...rebuilt, ...adaptedReturn];
+};
+
+const meetingStartMin = (m: TripStep): number => {
+  if (!m.time) return 8 * 60 + 30;
+  const [h, min] = m.time.split(':').map(Number);
+  return h * 60 + min;
+};
+
+// Addition de jours sur une date ISO (YYYY-MM-DD)
+export const addDaysISO = (isoDate: string, days: number): string => {
+  const d = new Date(isoDate + 'T00:00:00');
+  if (isNaN(d.getTime())) return isoDate;
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+// Propage la date de début de trajet sur les étapes : le "day" de chaque étape
+// décale la date de départ (jour 1 = date de début). Ne touche pas aux dates
+// saisies manuellement par l'utilisateur (manualDate).
+export const propagateDates = (steps: TripStep[], startDate: string | null): TripStep[] => {
+  if (!startDate) return steps;
+  return steps.map(st => {
+    if (st.manualDate || st.day == null) return st;
+    return { ...st, scheduledDate: addDaysISO(startDate, st.day - 1) };
+  });
 };

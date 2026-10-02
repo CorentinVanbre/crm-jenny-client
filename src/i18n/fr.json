@@ -35,6 +35,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page Visite : préférences de voyage (ville d’origine, gares/aéroports privilégiés), date de début déroulée sur les étapes, renommage des nouvelles étapes, carte du trajet dynamique et réordonnancement des visites clients avec adaptation des déplacements",
       "Nouveau « Mode visite IA » : suggestion de trajets optimisés depuis la carte des sites + page « Visite » pour gérer vos projets de voyages",
       "Tri des suggestions de prospection en cliquant sur le titre des colonnes (ascendant/descendant)",
       "Colonne date de création des suggestions dans la page Prospection",
@@ -377,6 +378,18 @@
     "scheduledDate": "Date de visite",
     "scheduledTime": "Heure de visite",
     "confirmDelete": "Supprimer ce projet de voyage ?",
-    "tripDeleted": "Voyage supprimé."
+    "tripDeleted": "Voyage supprimé.",
+    "prefsTitle": "Mes préférences de voyage",
+    "prefsSummary": "Ville d’origine : {{city}} · {{stations}} gare(s) · {{airports}} aéroport(s) privilégié(s)",
+    "originCity": "Ville d’origine",
+    "preferredStations": "Gares de départ à privilégier",
+    "preferredAirports": "Aéroports de départ à privilégier",
+    "prefsSaved": "Préférences enregistrées.",
+    "startDate": "Date de début du trajet",
+    "from": "à partir du",
+    "newStepTitle": "Nouvelle étape",
+    "stepName": "Nom de l’étape",
+    "stepDetail": "Détail (optionnel)",
+    "reorderHint": "Vous ne pouvez réordonner que les visites clients (🤝) : les déplacements s’adaptent automatiquement au nouvel ordre."
   }
 }

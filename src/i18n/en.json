@@ -35,6 +35,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visit page: travel preferences (origin city, preferred stations/airports), start date rolled out on steps, new step renaming, dynamic trip map and client-visit reordering with automatic transfer adaptation",
       "New \"AI visit mode\": optimized trip suggestions from the sites map + \"Visit\" page to manage your travel projects",
       "Sorting of prospecting suggestions by clicking on column titles (ascending/descending)",
       "Creation date column for suggestions in the Prospecting page",
@@ -377,6 +378,18 @@
     "scheduledDate": "Visit date",
     "scheduledTime": "Visit time",
     "confirmDelete": "Delete this travel project?",
-    "tripDeleted": "Trip deleted."
+    "tripDeleted": "Trip deleted.",
+    "prefsTitle": "My travel preferences",
+    "prefsSummary": "Origin city: {{city}} · {{stations}} station(s) · {{airports}} preferred airport(s)",
+    "originCity": "Origin city",
+    "preferredStations": "Preferred departure stations",
+    "preferredAirports": "Preferred departure airports",
+    "prefsSaved": "Preferences saved.",
+    "startDate": "Trip start date",
+    "from": "from",
+    "newStepTitle": "New step",
+    "stepName": "Step name",
+    "stepDetail": "Detail (optional)",
+    "reorderHint": "You can only reorder client visits (🤝): transfers adapt automatically to the new order."
   }
 }
