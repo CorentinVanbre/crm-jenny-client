@@ -25,7 +25,8 @@
     "menu": "☰ Menu",
     "zones": "Gestion des zones",
     "prospection": "Prospection",
-    "visite": "Visite"
+    "visite": "Visite",
+    "help": "Aide"
   },
   "home": {
     "welcome": "Bienvenue sur",
@@ -35,6 +36,7 @@
     "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page « Aide » : guide des fonctionnalités de toutes les pages du site",
       "Réordonnancement des visites : horaires et numéros de jour recalculés ; PDF sans fenêtre « ordre de visite », mention du développeur dans l’entête",
       "Export PDF du roadbook avec carte dynamique et charte graphique Jenny (couleurs, logo)",
       "Page Visite : gares/aéroports en saisie libre, durée de réunion standard et par site, heures par pas de 15 min, correction de la date de départ, numérotation des visites, export PDF du roadbook avec carte",
@@ -405,5 +407,114 @@
     "meetingMinutes": "Durée réunion (min)",
     "roadbook": "Roadbook",
     "timeQuarterlyHint": "Heures par pas de 15 minutes."
+  },
+  "help": {
+    "title": "Aide — Guide des fonctionnalités",
+    "subtitle": "Retrouvez ici l'explication de toutes les fonctionnalités de chaque page de JENNY.",
+    "pages": [
+      {
+        "title": "Accueil",
+        "description": "Présentation de JENNY et liste des fonctionnalités ajoutées récemment.",
+        "features": [
+          "Vue d'ensemble de l'outil et de sa mission : optimiser votre performance commerciale.",
+          "Section « Fonctionnalités ajoutées récemment » : suivez les dernières évolutions du site."
+        ]
+      },
+      {
+        "title": "Sites",
+        "description": "Gestion des sites industriels et de leurs groupes, avec carte interactive et planification de visites assistée par IA.",
+        "features": [
+          "Liste des sites avec recherche par nom, groupe ou pays et compteur de sites correspondants.",
+          "Création et modification de groupes ; le renommage d'un groupe est répercuté sur les sites et contacts associés.",
+          "Ajout de sites : nom, groupe, domaine, couleur de statut, adresse (recherche automatique), pays et observations.",
+          "Couleurs de statut : Non visités, Visités, Visités il y a +18 mois, A visiter, Fermés.",
+          "Compte des contacts par site et historique des dernières visites.",
+          "Le changement de nom d'un site est automatiquement répercuté sur ses contacts.",
+          "Mode visite IA : cliquez sur les pins des sites à visiter sur la carte, puis générez un trajet optimisé (train privilégié, avion si nécessaire, voiture de location sur place) et enregistrez-le comme projet de voyage."
+        ]
+      },
+      {
+        "title": "Détail d'un site",
+        "description": "Fiche complète d'un site : informations, historique des visites et contacts associés.",
+        "features": [
+          "Modification des informations du site (nom, groupe, domaine, couleur, pays, adresse, observations, date de dernière visite).",
+          "Historique des visites du site.",
+          "Liste des contacts du site avec fonction, emails, téléphones et statut actif/inactif.",
+          "Ajout d'un contact directement depuis la fiche du site.",
+          "Copie en un clic de tous les emails des contacts actifs du site."
+        ]
+      },
+      {
+        "title": "Contacts",
+        "description": "Gestion complète de votre répertoire de contacts.",
+        "features": [
+          "Liste des contacts avec recherche, filtre « Actifs uniquement » et compteur de contacts correspondants.",
+          "Ajout et modification de contacts : nom, prénom, fonction, genre, groupe, site, téléphones (fixe et mobile), langue, email et observations.",
+          "Mode IA : importez une photo de carte de visite pour pré-remplir automatiquement les champs (dont genre et langue).",
+          "Désactivation d'un contact (par exemple en cas de départ de l'entreprise) sans le supprimer."
+        ]
+      },
+      {
+        "title": "Emails",
+        "description": "Extraction rapide des emails de vos contacts selon vos zones.",
+        "features": [
+          "Récupération des emails filtrés par pays et par langue.",
+          "Filtre « Actifs uniquement » activé par défaut, sélection de pays/langues et tout sélectionner/désélectionner.",
+          "Copie des emails récupérés dans le presse-papiers, avec indication des doublons ignorés.",
+          "Chargement complet des contacts, même au-delà de 1000 lignes."
+        ]
+      },
+      {
+        "title": "Prospection",
+        "description": "Suggestions de prospection issues du scan IA hebdomadaire (broyeurs à boulets / fours rotatifs).",
+        "features": [
+          "Liste des suggestions de sites et groupes avec recherche et filtre « En attente uniquement ».",
+          "Affichage par paquets de 50 suggestions, chargement complet au-delà de 1000 lignes.",
+          "Tri des suggestions en cliquant sur le titre des colonnes (ascendant/descendant), dont le taux de pertinence et la date de création.",
+          "Pour chaque suggestion : ouverture de la source, suppression, ou analyse pour création du site (statuts Validé / Refusé / Déjà en base).",
+          "Section « Recherche d'information / veille commerciale » sur les sites existants (fonctionnalité IA à venir)."
+        ]
+      },
+      {
+        "title": "Visite",
+        "description": "Gestion de vos projets de voyages clients créés depuis le Mode visite IA de la page Sites.",
+        "features": [
+          "Liste de vos voyages avec statut (Brouillon, Planifié, Réalisé), pays visités et kilométrage total.",
+          "Préférences de voyage : ville d'origine, gares et aéroports de départ à privilégier (saisie libre dans le monde entier).",
+          "Étapes du voyage : ajout, renommage, date et heure de visite (par pas de 15 minutes), durée de réunion standard ou par site.",
+          "Réordonnancement des visites clients : les jours et horaires sont recalculés automatiquement, déplacements adaptés.",
+          "Carte dynamique du trajet et export PDF du roadbook (charte Jenny, carte incluse).",
+          "Suppression d'un projet de voyage."
+        ]
+      },
+      {
+        "title": "Mon profil",
+        "description": "Gestion de votre compte personnel.",
+        "features": [
+          "Changement d'email (avec confirmation par email) et de mot de passe.",
+          "Langue préférée (Français / English) appliquée à tout le site.",
+          "Informations personnelles et liste des pays qui vous sont attribués (zones)."
+        ]
+      },
+      {
+        "title": "Gestion des zones (admin)",
+        "description": "Page réservée aux administrateurs pour attribuer des pays aux utilisateurs.",
+        "features": [
+          "Sélection d'un utilisateur et attribution de ses pays (zones d'action).",
+          "Tout sélectionner / tout désélectionner, puis enregistrement.",
+          "Carte dynamique des zones attribuées.",
+          "Ces zones déterminent les contacts et emails visibles par chaque utilisateur dans les pages Emails et Contacts."
+        ]
+      },
+      {
+        "title": "Connexion / Réinitialisation",
+        "description": "Accès à votre compte JENNY.",
+        "features": [
+          "Connexion avec votre email et mot de passe.",
+          "Réinitialisation du mot de passe en cas d'oubli.",
+          "Déconnexion depuis le menu « Mon compte »."
+        ]
+      }
+    ]
   }
 }
