@@ -26,23 +26,18 @@ interface VisitPrefs {
   origin_city: string;
   preferred_stations: string[];
   preferred_airports: string[];
+  meeting_minutes: number;
 }
 
-const PREF_STATION_OPTIONS = [
-  'Gare de Lille-Europe',
-  'Gare de Lille-Flandres',
-  'Gare de Paris-Nord',
-  'Gare de Bruxelles-Midi',
-  'Gare de Londres St Pancras',
-  'Gare de Rotterdam-Centrale',
-];
-const PREF_AIRPORT_OPTIONS = [
-  'CRL (Charleroi)',
-  'LIL (Lille-Lesquin)',
-  'CDG (Paris-Charles-de-Gaulle)',
-  'ORY (Paris-Orly)',
-  'BRU (Bruxelles)',
-];
+const TIME_OPTIONS = (() => {
+  const out: string[] = [];
+  for (let m = 0; m < 24 * 60; m += 15) {
+    out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  }
+  return out;
+})();
+
+const MEETING_DURATION_OPTIONS = [60, 90, 120, 150, 180, 240, 300];
 
 const formatDate = (dateString: string): string => {
   try {
@@ -61,6 +56,20 @@ const STEP_ICONS: Record<string, string> = {
   note: '📝',
 };
 
+// Export PDF : ouvre un document imprimable (roadbook + carte statique de l'ordre
+// de visite) et déclenche l'impression / enregistrement en PDF par l'utilisateur.
+const staticMapUrl = (pts: { lat: number; lng: number; label: string; kind: string }[], numbers: Record<string, number>): string => {
+  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) return '';
+  const size = '640x400';
+  const markers = pts.map(p =>
+    p.kind === 'meeting' && numbers[p.label]
+      ? `markers=color:red%7Clabel:${numbers[p.label]}%7C${p.lat},${p.lng}`
+      : `markers=color:gray%7C${p.lat},${p.lng}`
+  ).join('&');
+  const path = pts.length > 1 ? `&path=color:0x000000ff%7Cweight:2%7C${pts.map(p => `${p.lat},${p.lng}`).join('%7C')}` : '';
+  return `https://maps.googleapis.com/maps/api/staticmap?size=${size}&${markers}${path}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`;
+};
+
 export default function Visite() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -70,7 +79,7 @@ export default function Visite() {
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
   // Préférences de voyage (haut de page)
-  const [prefs, setPrefs] = useState<VisitPrefs>({ origin_city: 'Lille', preferred_stations: [], preferred_airports: [] });
+  const [prefs, setPrefs] = useState<VisitPrefs>({ origin_city: 'Lille', preferred_stations: [], preferred_airports: [], meeting_minutes: 120 });
   const [prefsMessage, setPrefsMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
   const [showPrefsPanel, setShowPrefsPanel] = useState(false);
@@ -97,7 +106,7 @@ export default function Visite() {
       if (!user) return;
       const { data } = await supabase
         .from('visit_preferences')
-        .select('origin_city, preferred_stations, preferred_airports')
+        .select('origin_city, preferred_stations, preferred_airports, meeting_minutes')
         .eq('user_id', user.id)
         .maybeSingle();
       if (data) {
@@ -105,6 +114,7 @@ export default function Visite() {
           origin_city: data.origin_city || 'Lille',
           preferred_stations: data.preferred_stations || [],
           preferred_airports: data.preferred_airports || [],
+          meeting_minutes: data.meeting_minutes || 120,
         });
       }
     };
@@ -123,6 +133,7 @@ export default function Visite() {
         origin_city: prefs.origin_city.trim() || 'Lille',
         preferred_stations: prefs.preferred_stations,
         preferred_airports: prefs.preferred_airports,
+        meeting_minutes: prefs.meeting_minutes,
         updated_date: new Date().toISOString(),
       }, { onConflict: 'user_id' });
       if (error) throw error;
@@ -134,14 +145,17 @@ export default function Visite() {
     }
   };
 
-  const togglePref = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
-    setPrefs(prev => {
-      const list = prev[kind];
-      return {
-        ...prev,
-        [kind]: list.includes(value) ? list.filter(v => v !== value) : [...list, value],
-      };
-    });
+  const [newStation, setNewStation] = useState('');
+  const [newAirport, setNewAirport] = useState('');
+
+  const addPrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
+    const v = value.trim();
+    if (!v) return;
+    setPrefs(prev => prev[kind].includes(v) ? prev : { ...prev, [kind]: [...prev[kind], v] });
+  };
+
+  const removePrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
+    setPrefs(prev => ({ ...prev, [kind]: prev[kind].filter(v => v !== value) }));
   };
 
   const persistTrip = async (trip: VisitTrip, patch: Partial<VisitTrip>) => {
@@ -243,8 +257,68 @@ export default function Visite() {
     return pts;
   }, []);
 
+  const meetingsOf = useCallback((trip: VisitTrip) => trip.steps.filter(s => s.type === 'meeting'), []);
+
+  // Numéro de visite dans l'ordre du programme (1, 2, 3...) - identique à la carte
+  const visitNumber = (trip: VisitTrip, label: string): number => {
+    const meetings = meetingsOf(trip);
+    const idx = meetings.findIndex(m => (m.siteName || m.label) === label);
+    return idx >= 0 ? idx + 1 : 0;
+  };
+
   const mapCenterFor = (pts: { lat: number; lng: number }[]) =>
     pts.length ? { lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length, lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length } : { lat: 46.8, lng: 1.5 };
+
+  const exportTripPdf = (trip: VisitTrip) => {
+    const pts = tripPoints(trip);
+    const meetings = trip.steps.filter(st => st.type === 'meeting');
+    const numbers: Record<string, number> = {};
+    meetings.forEach((m, i) => { numbers[m.siteName || m.label] = i + 1; });
+    const mapUrl = staticMapUrl(pts, numbers);
+
+    const stepsHtml = trip.steps.map((st, i) => {
+      const num = st.type === 'meeting' && numbers[st.siteName || st.label] ? `${numbers[st.siteName || st.label]}. ` : '';
+      return `<tr>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${i + 1}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${STEP_ICONS[st.type] || ''} ${st.type === 'meeting' ? `<b>${num}${st.label}</b>` : st.label}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${st.day ? `Jour ${st.day}` : ''} ${st.scheduledDate ? `· ${st.scheduledDate.split('-').reverse().join('/')}` : ''} ${st.scheduledTime || st.time ? `· ${st.scheduledTime || st.time}` : ''}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;">${st.detail || ''}</td>
+      </tr>`;
+    }).join('');
+
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${trip.name}</title>
+          <style>
+            body { font-family: Barlow, Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { font-size: 22px; margin-bottom: 4px; }
+            h2 { font-size: 16px; margin-top: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            th { text-align: left; border-bottom: 2px solid #000; padding: 4px 8px; }
+            img.map { max-width: 100%; border: 1px solid #ccc; margin-top: 8px; }
+            .meta { color: #444; font-size: 13px; margin-bottom: 16px; }
+          </style>
+        </head>
+        <body>
+          <h1>${trip.name}</h1>
+          <div class="meta">${trip.countries} · ${formatDate(trip.created_date)}${trip.start_date ? ` · Départ : ${trip.start_date.split('-').reverse().join('/')}` : ''}</div>
+          <h2>${t('visite.visitOrder')}</h2>
+          ${meetings.map((m, i) => `<div>${i + 1}. ${m.siteName || m.label}</div>`).join('')}
+          ${mapUrl ? `<h2>${t('visite.roadbook')}</h2><img class="map" src="${mapUrl}" />` : ''}
+          <h2>${t('visite.stepsTitle')}</h2>
+          <table>
+            <thead><tr><th>#</th><th>Étape</th><th>Quand</th><th>Détail</th></tr></thead>
+            <tbody>${stepsHtml}</tbody>
+          </table>
+        </body>
+      </html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); }, mapUrl ? 800 : 100);
+  };
 
   const buttonStyle = {
     height: '30px',
@@ -326,10 +400,20 @@ export default function Visite() {
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
                   {t('visite.preferredStations')}
                 </label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <input
+                    type="text"
+                    value={newStation}
+                    onChange={(e) => setNewStation(e.target.value)}
+                    style={inputStyle}
+                    placeholder={t('visite.stationName')}
+                  />
+                  <button style={buttonStyle} onClick={() => { addPrefItem('preferred_stations', newStation); setNewStation(''); }}>{t('visite.addStation')}</button>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {PREF_STATION_OPTIONS.map(opt => (
-                    <button key={opt} style={prefTagStyle(prefs.preferred_stations.includes(opt))} onClick={() => togglePref('preferred_stations', opt)}>
-                      {opt}
+                  {prefs.preferred_stations.map(st => (
+                    <button key={st} style={prefTagStyle(true)} onClick={() => removePrefItem('preferred_stations', st)}>
+                      {st} ✕
                     </button>
                   ))}
                 </div>
@@ -339,13 +423,41 @@ export default function Visite() {
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
                   {t('visite.preferredAirports')}
                 </label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <input
+                    type="text"
+                    value={newAirport}
+                    onChange={(e) => setNewAirport(e.target.value)}
+                    style={inputStyle}
+                    placeholder={t('visite.airportName')}
+                  />
+                  <button style={buttonStyle} onClick={() => { addPrefItem('preferred_airports', newAirport); setNewAirport(''); }}>{t('visite.addAirport')}</button>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {PREF_AIRPORT_OPTIONS.map(opt => (
-                    <button key={opt} style={prefTagStyle(prefs.preferred_airports.includes(opt))} onClick={() => togglePref('preferred_airports', opt)}>
-                      {opt}
+                  {prefs.preferred_airports.map(ap => (
+                    <button key={ap} style={prefTagStyle(true)} onClick={() => removePrefItem('preferred_airports', ap)}>
+                      {ap} ✕
                     </button>
                   ))}
                 </div>
+                <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', marginTop: '4px' }}>
+                  {t('visite.prefsAddHint')}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
+                  {t('visite.meetingDuration')}
+                </label>
+                <select
+                  value={prefs.meeting_minutes}
+                  onChange={(e) => setPrefs(prev => ({ ...prev, meeting_minutes: Number(e.target.value) }))}
+                  style={{ ...inputStyle, width: 'auto' }}
+                >
+                  {MEETING_DURATION_OPTIONS.map(min => (
+                    <option key={min} value={min}>{min} min</option>
+                  ))}
+                </select>
               </div>
 
               {prefsMessage && (
@@ -414,6 +526,7 @@ export default function Visite() {
                     <option value="planned">{t('visite.statusPlanned')}</option>
                     <option value="done">{t('visite.statusDone')}</option>
                   </select>
+                  <button style={buttonStyle} onClick={() => exportTripPdf(trip)}>PDF</button>
                   <button style={buttonStyle} onClick={() => deleteTrip(trip)}>{t('common.delete')}</button>
                 </div>
               </div>
@@ -456,8 +569,8 @@ export default function Visite() {
                           <Marker
                             key={i}
                             position={{ lat: p.lat, lng: p.lng }}
-                            title={`${i + 1}. ${p.label}`}
-                            label={p.kind === 'meeting' ? { text: String(trip.steps.filter(s => s.type === 'meeting').findIndex(s => (s.siteName || s.label) === p.label) + 1), color: '#fff', fontWeight: 'bold' } : undefined}
+                            title={p.kind === 'meeting' ? `${visitNumber(trip, p.label)}. ${p.label}` : p.label}
+                            label={p.kind === 'meeting' ? { text: String(visitNumber(trip, p.label)), color: '#fff', fontWeight: 'bold' } : undefined}
                           />
                         ))}
                       </GoogleMap>
@@ -502,7 +615,7 @@ export default function Visite() {
                       </div>
                       <div style={{ flex: 1, minWidth: '220px' }}>
                         <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: step.type === 'meeting' ? 'bold' : 200, fontSize: '14px' }}>
-                          {STEP_ICONS[step.type] || '•'} {step.label}
+                          {STEP_ICONS[step.type] || '•'} {step.type === 'meeting' ? `${visitNumber(trip, step.siteName || step.label)}. ` : ''}{step.label}
                           {step.day ? ` · ${t('visite.day')} ${step.day}` : ''} {step.time ? `· ${step.time}` : ''}
                         </div>
                         {step.detail && <div style={{ fontSize: '12px', fontFamily: 'Barlow, sans-serif', fontWeight: 200 }}>{step.detail}</div>}
@@ -514,13 +627,25 @@ export default function Visite() {
                             style={{ ...inputStyle, width: 'auto' }}
                             title={t('visite.scheduledDate')}
                           />
-                          <input
-                            type="time"
+                          <select
                             value={step.scheduledTime || ''}
                             onChange={(e) => updateStep(trip, index, { scheduledTime: e.target.value })}
                             style={{ ...inputStyle, width: 'auto' }}
                             title={t('visite.scheduledTime')}
-                          />
+                          >
+                            <option value="">--:--</option>
+                            {TIME_OPTIONS.map(tm => <option key={tm} value={tm}>{tm}</option>)}
+                          </select>
+                          {step.type === 'meeting' && (
+                            <select
+                              value={step.meetingMinutes || 120}
+                              onChange={(e) => updateStep(trip, index, { meetingMinutes: Number(e.target.value) })}
+                              style={{ ...inputStyle, width: 'auto' }}
+                              title={t('visite.meetingMinutes')}
+                            >
+                              {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{min} min</option>)}
+                            </select>
+                          )}
                           {step.siteId && (
                             <Link to={`/sites/${step.siteId}`} target="_blank" style={{ fontSize: '12px' }}>{t('sites.seeMore')}</Link>
                           )}

@@ -564,7 +564,7 @@ export default function Sites() {
         if (session?.user) {
           const { data: prefs } = await supabase
             .from('visit_preferences')
-            .select('origin_city, preferred_stations, preferred_airports')
+            .select('origin_city, preferred_stations, preferred_airports, meeting_minutes')
             .eq('user_id', session.user.id)
             .maybeSingle();
           if (prefs) {
@@ -575,6 +575,7 @@ export default function Sites() {
               originLng: geo?.lng ?? 2.7575,
               preferredStations: prefs.preferred_stations || [],
               preferredAirports: prefs.preferred_airports || [],
+              meetingMinutes: prefs.meeting_minutes || undefined,
             });
           }
         }

@@ -30,6 +30,7 @@ export interface TripStep {
   scheduledTime?: string;
   manual?: boolean;
   manualDate?: boolean;
+  meetingMinutes?: number;
 }
 
 export interface TripPreferences {
@@ -38,6 +39,7 @@ export interface TripPreferences {
   originLng: number;
   preferredStations: string[];
   preferredAirports: string[];
+  meetingMinutes?: number;
 }
 
 export interface TripPlan {
@@ -168,7 +170,7 @@ const COUNTRY_AIRPORT_HUBS: Record<string, Hub> = {
 // Pays priorititairement accessibles en train direct/quasi-direct depuis Lille
 const TRAIN_PRIORITY_COUNTRIES = new Set(['France', 'Belgique', 'Pays-Bas', 'Luxembourg', 'Royaume-Uni', 'Allemagne']);
 
-const MEETING_MIN = 120;
+const DEFAULT_MEETING_MIN = 120;
 const EARLIEST_MIN = 8 * 60 + 30;
 const LATEST_START_MIN = 15 * 60;
 const DEFAULT_DAY_START = 8 * 60 + 30;
@@ -187,7 +189,11 @@ const driveMin = (km: number) => Math.round((km / 70) * 60 + 15);
 const trainMin = (km: number) => Math.round((km / 130) * 60 + 20);
 const flightMin = (km: number) => Math.round(Math.max(km / 750, 1) * 60 + 30);
 
-const fmtHHMM = (m: number) => `${String(Math.floor((m % 1440) / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const fmtHHMM = (m: number) => {
+  const q = Math.round(m / 15) * 15;
+  const mm = ((q % 1440) + 1440) % 1440;
+  return `${String(Math.floor(mm / 60)).padStart(2, '0')}:${String(mm % 60).padStart(2, '0')}`;
+};
 
 const centroid = (pts: { lat: number; lng: number }[]) => ({
   lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
@@ -254,6 +260,7 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
   const origin = prefs?.originCity && prefs.originLat && prefs.originLng
     ? { city: prefs.originCity, lat: prefs.originLat, lng: prefs.originLng }
     : { city: DEFAULT_ORIGIN.city, lat: DEFAULT_ORIGIN.lat, lng: DEFAULT_ORIGIN.lng };
+  const meetingMin = prefs?.meetingMinutes && prefs.meetingMinutes > 0 ? prefs.meetingMinutes : DEFAULT_MEETING_MIN;
   const byCountry = new Map<string, TripSite[]>();
   sites.forEach((s) => {
     const list = byCountry.get(s.pays) || [];
@@ -310,7 +317,7 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
       const drive = driveMin(km);
       totalKm += km;
       let arrive = clock + drive;
-      if (arrive > LATEST_START_MIN + MEETING_MIN || (i > 0 && arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) {
+      if (arrive > LATEST_START_MIN + meetingMin || (i > 0 && arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) {
         day += 1;
         arrive = DEFAULT_DAY_START + drive;
       }
@@ -320,9 +327,9 @@ export const planTrip = (sites: TripSite[], prefs?: TripPreferences): TripPlan[]
         start = DEFAULT_DAY_START + drive;
       }
       steps.push({ type: 'car', label: `Voiture → ${site.noms}`, detail: `~${Math.round(km)} km, ~${Math.round(drive / 60)}h${Math.round(drive % 60)}min`, from: i === 0 ? hub.name : ordered[i - 1].noms, to: site.noms, day, time: fmtHHMM(start - drive) });
-      steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: 'Réunion de 2h', to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng });
+      steps.push({ type: 'meeting', label: `Réunion — ${site.groupe ? site.groupe + ' - ' : ''}${site.noms}`, detail: `Réunion de ${Math.floor(meetingMin / 60)}h${meetingMin % 60 ? String(meetingMin % 60) : ''}`, to: site.noms, day, time: fmtHHMM(start), siteId: site.id, siteName: site.noms, lat: site.lat, lng: site.lng, meetingMinutes: meetingMin });
       currentPos = { lat: site.lat, lng: site.lng };
-      clock = start + MEETING_MIN;
+      clock = start + meetingMin;
     });
 
     const kmBack = haversineKm(currentPos, { lat: hub.lat, lng: hub.lng });
@@ -393,26 +400,23 @@ interface RebuildPoint {
 export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[]): TripStep[] => {
   if (!orderedMeetings.length) return steps;
 
-  // Hub = destination de la 1ère étape "car" après l'arrivée (prise en charge location)
-  const hubStep = steps.find(st => st.type === 'car' && st.label.toLowerCase().includes('location')) || steps.find(st => st.type === 'car' || st.type === 'plane' || st.type === 'train');
-  const hubName = (hubStep?.to || steps[0]?.to || 'Hub') as string;
+  // Tout ce qui précède la première réunion (train/avion aller + location) est conservé tel quel
+  const firstMeetingIdx = steps.findIndex(st => st.type === 'meeting');
+  const outbound = firstMeetingIdx >= 0 ? steps.slice(0, firstMeetingIdx) : [...steps];
 
-  const outbound: TripStep[] = [];
-  let i = 0;
-  // Conserver tout ce qui précède la première réunion (train/plane aller + location)
-  while (i < steps.length && steps[i].type !== 'meeting') {
-    outbound.push(steps[i]);
-    i++;
-  }
-  // Retour : tout ce qui suit la dernière réunion d'origine, à partir de l'étape "car" de retour
-  const lastMeetingIdx = steps.map(st => st.type).lastIndexOf('meeting');
-  const returnSteps = steps.slice(lastMeetingIdx + 1);
+  // Tout ce qui suit la dernière réunion (retour) est conservé, puis adapté
+  const types = steps.map(st => st.type);
+  const lastMeetingIdx = types.lastIndexOf('meeting');
+  const returnSteps = lastMeetingIdx >= 0 ? steps.slice(lastMeetingIdx + 1) : [];
+
+  // Les anciens trajets "car" ENTRE les réunions sont supprimés : ils seront
+  // recalculés ci-dessous selon le nouvel ordre des visites clients.
+  const hubName = outbound.length ? (outbound[outbound.length - 1].to || 'Hub') : 'Hub';
 
   const rebuilt: TripStep[] = [...outbound];
   let current: RebuildPoint = { lat: 0, lng: 0, name: hubName };
-  // Position du hub : depuis le plan (lat/lng absentes des steps) - on garde le nom
+  let prevName = hubName;
 
-  let prevSiteName = hubName;
   orderedMeetings.forEach((m) => {
     if (m.lat == null || m.lng == null) {
       rebuilt.push(m);
@@ -424,20 +428,20 @@ export const rebuildTripSteps = (steps: TripStep[], orderedMeetings: TripStep[])
       type: 'car',
       label: `Voiture → ${m.siteName || m.label}`,
       detail: `~${Math.round(km)} km, ~${Math.floor(drive / 60)}h${drive % 60}min`,
-      from: prevSiteName,
+      from: prevName,
       to: m.siteName || m.label,
       day: m.day,
       time: fmtHHMM(meetingStartMin(m) - drive),
     });
-    rebuilt.push({ ...m, from: prevSiteName });
-    prevSiteName = m.siteName || m.label;
-    current = { lat: m.lat, lng: m.lng, name: prevSiteName };
+    rebuilt.push({ ...m, from: prevName });
+    prevName = m.siteName || m.label;
+    current = { lat: m.lat, lng: m.lng, name: prevName };
   });
 
-  // Adapter l'étape "car" de retour : départ depuis le dernier site visité
+  // Adapter le départ du trajet retour : depuis le dernier site visité
   const adaptedReturn = returnSteps.map(st => {
     if (st.type === 'car' && st.label.toLowerCase().includes('retour')) {
-      return { ...st, from: prevSiteName, label: `Voiture → ${st.to || hubName} (retour)` };
+      return { ...st, from: prevName };
     }
     return st;
   });
@@ -453,10 +457,11 @@ const meetingStartMin = (m: TripStep): number => {
 
 // Addition de jours sur une date ISO (YYYY-MM-DD)
 export const addDaysISO = (isoDate: string, days: number): string => {
-  const d = new Date(isoDate + 'T00:00:00');
-  if (isNaN(d.getTime())) return isoDate;
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const [y, m, dd] = isoDate.split('-').map(Number);
+  if (!y || !m || !dd) return isoDate;
+  const d = new Date(y, m - 1, dd + days, 12, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 // Propage la date de début de trajet sur les étapes : le "day" de chaque étape

@@ -35,6 +35,7 @@
     "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visit page: free-text stations/airports, standard and per-site meeting duration, 15-minute time steps, departure date fix, visit numbering, PDF export of the roadbook with map",
       "Visit page: travel preferences (origin city, preferred stations/airports), start date rolled out on steps, new step renaming, dynamic trip map and client-visit reordering with automatic transfer adaptation",
       "New \"AI visit mode\": optimized trip suggestions from the sites map + \"Visit\" page to manage your travel projects",
       "Sorting of prospecting suggestions by clicking on column titles (ascending/descending)",
@@ -390,6 +391,17 @@
     "newStepTitle": "New step",
     "stepName": "Step name",
     "stepDetail": "Detail (optional)",
-    "reorderHint": "You can only reorder client visits (🤝): transfers adapt automatically to the new order."
+    "reorderHint": "You can only reorder client visits (🤝): transfers adapt automatically to the new order.",
+    "meetingDuration": "Standard meeting duration (minutes)",
+    "addStation": "Add a station",
+    "addAirport": "Add an airport",
+    "stationName": "Station name",
+    "airportName": "Airport name",
+    "prefsAddHint": "You can add any station or airport in the world.",
+    "exportPdf": "Export as PDF",
+    "visitOrder": "Visit order",
+    "meetingMinutes": "Meeting duration (min)",
+    "roadbook": "Roadbook",
+    "timeQuarterlyHint": "Times in 15-minute steps."
   }
 }
