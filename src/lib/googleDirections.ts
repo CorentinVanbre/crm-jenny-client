@@ -16,7 +16,10 @@ export interface DirectionsDiag {
   available: boolean;
   ok: number;
   failed: number;
+  drivingFailed: number;
+  transitFailed: number;
   lastError: string;
+  lastCall: string;
 }
 
 export type DirectionsStatus = 'ok' | 'no-maps' | 'error';
@@ -41,7 +44,10 @@ const cache = new Map<string, RouteLeg>();
 let lastStatus: DirectionsStatus = 'no-maps';
 let okCount = 0;
 let failedCount = 0;
+let drivingFailed = 0;
+let transitFailed = 0;
 let lastError = '';
+let lastCall = '';
 
 export const directionsStatus = (): DirectionsStatus => lastStatus;
 
@@ -49,7 +55,10 @@ export const directionsDiag = (): DirectionsDiag => ({
   available: lastStatus !== 'no-maps',
   ok: okCount,
   failed: failedCount,
+  drivingFailed,
+  transitFailed,
   lastError,
+  lastCall,
 });
 
 const legKey = (mode: string, from: { lat: number; lng: number }, to: { lat: number; lng: number }) =>
@@ -88,6 +97,8 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
     return null;
   }
 
+  lastCall = `${mode} ${from.lat.toFixed(3)},${from.lng.toFixed(3)} → ${to.lat.toFixed(3)},${to.lng.toFixed(3)}`;
+
   return new Promise<RouteLeg | null>((resolve) => {
     try {
       const service = new Service();
@@ -102,6 +113,8 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
             lastStatus = 'error';
             lastError = status;
             failedCount++;
+            if (mode === 'driving') drivingFailed++;
+            else transitFailed++;
             resolve(null);
             return;
           }
@@ -135,6 +148,15 @@ const fetchLeg = async (mode: 'driving' | 'transit', from: { lat: number; lng: n
 
 export const drivingLeg = async (from: { lat: number; lng: number }, to: { lat: number; lng: number }): Promise<RouteLeg | null> => fetchLeg('driving', from, to);
 
-export const transitLeg = async (from: { lat: number; lng: number }, to: { lat: number; lng: number }): Promise<RouteLeg | null> => fetchLeg('transit', from, to);
+export const transitLeg = async (from: { lat: number; lng: number }, to: { lat: number; lng: number }): Promise<RouteLeg | null> => {
+  const leg = await fetchLeg('transit', from, to);
+  if (leg) return leg;
+  // Les liaisons internationales n'ont souvent pas d'itinéraire transports en
+  // commun dans Google (ex. Lille → London St Pancras) : on retombe sur un
+  // itinéraire routier réel, plus précis que l'estimation locale.
+  const road = await fetchLeg('driving', from, to);
+  if (road) return { ...road, source: 'directions' };
+  return null;
+};
 
 export const clearDirectionsCache = () => cache.clear();

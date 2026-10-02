@@ -107,7 +107,7 @@
     "aiVisitGenerating": "Generating trip…",
     "tripDirectionsOk": "Real routes and durations (Google Directions)",
     "tripDirectionsFallback": "Local estimates: Google Directions unavailable (API key or quota)",
-    "tripDirectionsDiag": "Google: {{ok}} OK / {{failed}} failed · last status: {{error}}"
+    "tripDirectionsDiag": "Google: {{ok}} OK / {{failed}} failed (driving {{driving}}, transit {{transit}}) · status: {{error}} · last call: {{call}}"
   },
   "siteDetail": {
     "loading": "Loading...",
@@ -625,6 +625,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Automatic fallback to Google driving route when no transit itinerary is found (international legs)",
       "Fixed Google Directions diagnostic display (i18n interpolation)",
       "Detailed Google Directions diagnostic in the trip proposal (exact status, OK/failed calls)",
       "Real routes and schedules via Google Directions (visible diagnostic in the trip proposal)",

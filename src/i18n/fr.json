@@ -107,7 +107,7 @@
     "aiVisitGenerating": "Génération du trajet…",
     "tripDirectionsOk": "Itinéraires et durées réels (Google Directions)",
     "tripDirectionsFallback": "Estimations locales : Google Directions indisponible (clé API ou quota)",
-    "tripDirectionsDiag": "Google : {{ok}} OK / {{failed}} échecs · dernier statut : {{error}}"
+    "tripDirectionsDiag": "Google : {{ok}} OK / {{failed}} échecs (voiture {{driving}}, transports {{transit}}) · statut : {{error}} · dernier appel : {{call}}"
   },
   "siteDetail": {
     "loading": "Chargement...",
@@ -625,6 +625,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Repli automatique sur l’itinéraire routier Google quand les transports en commun sont introuvables (liaisons internationales)",
       "Correction de l’affichage du diagnostic Google Directions (interpolations i18n)",
       "Diagnostic détaillé Google Directions dans la proposition de trajet (statut exact, appels OK/échecs)",
       "Itinéraires et horaires réels via Google Directions (diagnostic visible dans la proposition de trajet)",
