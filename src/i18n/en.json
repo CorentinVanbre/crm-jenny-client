@@ -385,7 +385,8 @@
     "renameStepTitle": "Edit step",
     "prefToggleHint": "Click to select / deselect (the choice stays available)",
     "allowDifferentReturnHub": "Allow returning via a different station / airport",
-    "allowDifferentReturnHubHint": "If sites are far from the outbound hub, the return will use the station or airport (and rental car return agency) closest to the last visited site."
+    "allowDifferentReturnHubHint": "If sites are far from the outbound hub, the return will use the station or airport (and rental car return agency) closest to the last visited site.",
+    "prefRemoveHint": "Delete this choice"
   },
   "help": {
     "title": "Help — Feature guide",
@@ -632,6 +633,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Travel preferences: stations selectable/deselectable like airports, individual choice deletion (✕)",
       "Ireland trips: sites merged into a single trip (plane via Dublin/Belfast), Irish airports added to the planner",
       "Planner: fixed time cascade (leg and meeting durations applied), direct drive for nearby sites (e.g. Tournai), merged trips for neighboring countries (e.g. France+Switzerland), Swiss stations added",
       "Trips: return via a different station/airport (preference), train approach if drive > 5h, station/airport selection with persistent pool",

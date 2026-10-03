@@ -385,7 +385,8 @@
     "renameStepTitle": "Modifier l’étape",
     "prefToggleHint": "Cliquer pour sélectionner / désélectionner (le choix reste disponible)",
     "allowDifferentReturnHub": "Autoriser un retour par une autre gare / un autre aéroport",
-    "allowDifferentReturnHubHint": "Si les sites sont éloignés du hub d'aller, le retour utilisera la gare ou l'aéroport (et l'agence de retour de location) le plus proche du dernier site visité."
+    "allowDifferentReturnHubHint": "Si les sites sont éloignés du hub d'aller, le retour utilisera la gare ou l'aéroport (et l'agence de retour de location) le plus proche du dernier site visité.",
+    "prefRemoveHint": "Supprimer ce choix"
   },
   "help": {
     "title": "Aide — Guide des fonctionnalités",
@@ -632,6 +633,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Préférences de voyage : gares sélectionnables/désélectionnables comme les aéroports, suppression individuelle des choix (✕)",
       "Voyages Irlande : sites regroupés en un seul voyage (avion via Dublin/Belfast), aéroports irlandais ajoutés au planificateur",
       "Planificateur : cascade d'horaires corrigée (durées de trajet et de réunion prises en compte), voiture directe pour les sites proches (ex. Tournai), voyages groupés pour les pays frontaliers (ex. France+Suisse), gares suisses ajoutées",
       "Voyages : retour possible via une autre gare/aéroport (préférence), rapprochement train si route > 5h, gares/aéroports en sélection/désélection (pool conservé)",

@@ -166,6 +166,11 @@ export default function Visite() {
   const togglePrefItem = (kind: 'selected_stations' | 'selected_airports', value: string) => {
     setPrefs(prev => ({ ...prev, [kind]: prev[kind].includes(value) ? prev[kind].filter(v => v !== value) : [...prev[kind], value] }));
   };
+  // Suppression d'un choix du pool : retire le choix ET sa sélection.
+  const removePrefItem = (poolKind: 'preferred_stations' | 'preferred_airports', value: string) => {
+    const selKind = poolKind === 'preferred_stations' ? 'selected_stations' : 'selected_airports';
+    setPrefs(prev => ({ ...prev, [poolKind]: prev[poolKind].filter(v => v !== value), [selKind]: prev[selKind].filter(v => v !== value) }));
+  };
 
   const persistTrip = async (trip: VisitTrip, patch: Partial<VisitTrip>) => {
     setTrips(prev => prev.map(tr => tr.id === trip.id ? { ...tr, ...patch } : tr));
@@ -524,11 +529,17 @@ export default function Visite() {
                   <button style={buttonStyle} onClick={() => { addPrefItem('preferred_stations', newStation); setNewStation(''); }}>{t('visite.addStation')}</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {prefs.preferred_stations.map(st => (
-                    <button key={st} style={prefTagStyle(true)} onClick={() => togglePrefItem('preferred_stations', st)}>
-                      {st} ✕
-                    </button>
-                  ))}
+                  {prefs.preferred_stations.map(st => {
+                    const on = prefs.selected_stations.includes(st);
+                    return (
+                      <span key={st} style={{ display: 'inline-flex', alignItems: 'center', margin: '2px' }}>
+                        <button style={prefTagStyle(on)} onClick={() => togglePrefItem('selected_stations', st)} title={t('visite.prefToggleHint')}>
+                          {on ? '✓ ' : ''}{st}
+                        </button>
+                        <button style={{ ...buttonStyle, margin: 0, padding: '0 5px', fontSize: '11px' }} onClick={() => removePrefItem('preferred_stations', st)} title={t('visite.prefRemoveHint')}>✕</button>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -550,9 +561,12 @@ export default function Visite() {
                   {prefs.preferred_airports.map(ap => {
                     const on = prefs.selected_airports.includes(ap);
                     return (
-                      <button key={ap} style={prefTagStyle(on)} onClick={() => togglePrefItem('selected_airports', ap)} title={t('visite.prefToggleHint')}>
-                        {on ? '✓ ' : ''}{ap}
-                      </button>
+                      <span key={ap} style={{ display: 'inline-flex', alignItems: 'center', margin: '2px' }}>
+                        <button style={prefTagStyle(on)} onClick={() => togglePrefItem('selected_airports', ap)} title={t('visite.prefToggleHint')}>
+                          {on ? '✓ ' : ''}{ap}
+                        </button>
+                        <button style={{ ...buttonStyle, margin: 0, padding: '0 5px', fontSize: '11px' }} onClick={() => removePrefItem('preferred_airports', ap)} title={t('visite.prefRemoveHint')}>✕</button>
+                      </span>
                     );
                   })}
                 </div>
