@@ -632,6 +632,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Voyages Irlande : sites regroupés en un seul voyage (avion via Dublin/Belfast), aéroports irlandais ajoutés au planificateur",
       "Planificateur : cascade d'horaires corrigée (durées de trajet et de réunion prises en compte), voiture directe pour les sites proches (ex. Tournai), voyages groupés pour les pays frontaliers (ex. France+Suisse), gares suisses ajoutées",
       "Voyages : retour possible via une autre gare/aéroport (préférence), rapprochement train si route > 5h, gares/aéroports en sélection/désélection (pool conservé)",
       "Page Visite : horaires pré-remplis depuis le trajet calculé, et ajustement automatique des étapes suivantes lors d'un changement d'horaire ou de durée de réunion",

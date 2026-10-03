@@ -230,6 +230,15 @@ const COUNTRY_AIRPORT_HUBS: Record<string, Hub[]> = {
   Hongrie: [{ name: 'Aéroport de Budapest-Ferenc Liszt', kind: 'airport', lat: 47.4369, lng: 19.2556 }],
   Grèce: [{ name: 'Aéroport d’Athènes', kind: 'airport', lat: 37.9364, lng: 23.9445 }],
   'Royaume-Uni': [{ name: 'Aéroport de Londres-Heathrow', kind: 'airport', lat: 51.4700, lng: -0.4543 }],
+  Irlande: [
+    { name: 'Aéroport de Dublin', kind: 'airport', lat: 53.4213, lng: -6.2701 },
+    { name: 'Aéroport de Shannon', kind: 'airport', lat: 52.7020, lng: -8.9248 },
+    { name: 'Aéroport de Cork', kind: 'airport', lat: 51.8413, lng: -8.4911 },
+  ],
+  'Irlande du Nord': [
+    { name: 'Aéroport de Belfast', kind: 'airport', lat: 54.6575, lng: -5.8708 },
+    { name: 'Aéroport de Belfast-City', kind: 'airport', lat: 54.6117, lng: -5.8719 },
+  ],
 };
 
 
@@ -441,10 +450,12 @@ const clusterSites = (sites: TripSite[]): TripSite[][] => {
     let matched = -1;
     for (let i = 0; i < groups.length; i++) {
       const g = groups[i];
-      const sameCarArea = g.sites.some(x => CAR_ACCESSIBLE.has(x.pays)) && CAR_ACCESSIBLE.has(site.pays)
-        && g.sites.some(x => haversineKm({ lat: x.lat, lng: x.lng }, c) <= 600);
-      const near = haversineKm(g.centroid, c) <= 400;
-      if (sameCarArea && near) { matched = i; break; }
+      // Fusion si le site est proche d'un site du groupe (< 500 km : même zone
+      // géographique, même si le pays diffère — ex. Irlande / Irlande du Nord,
+      // France / Suisse frontaliers). Un seul voyage couvrira les deux pays.
+      const nearSite = g.sites.some(x => haversineKm({ lat: x.lat, lng: x.lng }, c) <= 500);
+      const centroidNear = haversineKm(g.centroid, c) <= 400;
+      if (nearSite && centroidNear) { matched = i; break; }
     }
     if (matched >= 0) {
       groups[matched].sites.push(site);
@@ -466,7 +477,14 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
   const plans: TripPlan[] = [];
   for (const group of groups) {
     const country = group[0].pays;
-    const pick = pickHub(country, group, origin);
+    // Garde insulaire : les sites irlandais ne sont pas atteignables en voiture
+    // depuis le continent (traversée maritime). Aucun hub ferroviaire britannique
+    // ne convient -> avion vers l'aéroport irlandais / nord-irlandais le plus
+    // proche des sites.
+    const irishCluster = group.every(s => normalizeCountry(s.pays) === normalizeCountry('Irlande') || normalizeCountry(s.pays) === normalizeCountry('Irlande du Nord') || normalizeCountry(s.pays) === normalizeCountry('Royaume-Uni') && s.lat > 54 && s.lng < -5);
+    const pick = irishCluster
+      ? { hub: (lookupCountry(COUNTRY_AIRPORT_HUBS, 'Irlande') || []).concat(lookupCountry(COUNTRY_AIRPORT_HUBS, 'Irlande du Nord') || []).reduce((acc: Hub, a: Hub) => haversineKm({ lat: a.lat, lng: a.lng }, centroid(group)) < haversineKm({ lat: acc.lat, lng: acc.lng }, centroid(group)) ? a : acc), trainPreferred: false }
+      : pickHub(country, group, origin);
     const { hub, trainPreferred } = pick;
     const driveDirect = !!pick.driveDirect;
     const steps: TripStep[] = [];
