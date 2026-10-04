@@ -387,7 +387,8 @@
     "timeQuarterlyHint": "Times in 15-minute steps.",
     "renameStep": "Rename this step",
     "renameStepShort": "✎",
-    "renameStepTitle": "Edit step"
+    "renameStepTitle": "Edit step",
+    "placeNotFound": "Place not found: pick a station or airport from the Google suggestions."
   },
   "help": {
     "title": "Help — Feature guide",
@@ -634,6 +635,9 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visite page: preferred stations and airports validated via Google Places search, selectable format with removal",
+      "Visite page: start and end times in 15-minute steps, start auto-filled from the previous step's end (manually adjustable)",
+      "Visite page: manually changing a step's date automatically updates its day number (Day 1 → Day 2)",
       "Visite page: \"Add Meeting\" button, manual meeting with duration, and \"Add a step\" renamed to \"Add trip\"",
       "Visite page: start and end times editable on every step, automatically propagated to following steps (trip or meeting duration taken into account)",
       "Travel suggestions: real train and flight durations now used in the schedule computation",

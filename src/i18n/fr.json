@@ -387,7 +387,8 @@
     "timeQuarterlyHint": "Heures par pas de 15 minutes.",
     "renameStep": "Renommer cette étape",
     "renameStepShort": "✎",
-    "renameStepTitle": "Modifier l’étape"
+    "renameStepTitle": "Modifier l’étape",
+    "placeNotFound": "Lieu introuvable : sélectionnez une gare ou un aéroport dans les suggestions Google."
   },
   "help": {
     "title": "Aide — Guide des fonctionnalités",
@@ -634,7 +635,10 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
-      "Page Visite : bouton « Ajouter Réunion », ajout manuel d'une réunion avec durée, et renommage du bouton « Ajouter étape » en « Ajouter trajet »",
+      "Page Visite : gares et aéroports privilégiés vérifiés via la recherche Google Places, format sélectionnable avec suppression",
+      "Page Visite : horaires de début et de fin en tranches de 15 minutes, début auto-rempli depuis la fin de l’étape précédente (ajustable manuellement)",
+      "Page Visite : changement manuel de date d’une étape met à jour automatiquement son numéro de jour (Jour 1 → Jour 2)",
+      "Page Visite : bouton « Ajouter Réunion », ajout manuel d’une réunion avec durée, et renommage du bouton « Ajouter étape » en « Ajouter trajet »",
       "Page Visite : horaire de début et horaire de fin modifiables manuellement sur chaque étape, avec propagation automatique sur les étapes suivantes (durée de trajet ou de réunion prise en compte)",
       "Suggestions de voyage : durées réelles des tronçons train et avion désormais prises en compte dans le calcul des horaires",
       "Page Visite : horaires pré-remplis depuis le trajet calculé, et ajustement automatique des étapes suivantes lors d'un changement d'horaire ou de durée de réunion",

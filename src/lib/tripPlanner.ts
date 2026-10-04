@@ -32,6 +32,7 @@ export interface TripStep {
   scheduledTime?: string;
   manual?: boolean;
   manualDate?: boolean;
+  manualTime?: boolean;
   meetingMinutes?: number;
   legKm?: number;
   legMinutes?: number;
@@ -694,9 +695,19 @@ export const propagateDates = (steps: TripStep[], startDate: string | null): Tri
 // (réunion au plus tôt 8h30, dernier RDV au plus tard 15h, nuit -> jour +1).
 // Les étapes dont l'utilisateur a saisi manuellement l'horaire (scheduledTime
 // non vide) ne sont pas déplacées ; elles servent de nouveau point d'ancrage.
-export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep[] => {
+// Date d'une étape pour un jour donné : dérivée de la date de début du trajet
+// si elle est connue ; sinon on conserve la date existante (ou date de l'ancre).
+const dateForDay = (st: TripStep, day: number, startDate?: string | null): string => {
+  if (st.manualDate) return st.scheduledDate || '';
+  if (startDate) return addDaysISO(startDate, day - 1);
+  return st.scheduledDate || '';
+};
+
+export const cascadeAfterEdit = (steps: TripStep[], editIndex: number, startDate?: string | null): TripStep[] => {
   const out = steps.map(st => ({ ...st }));
   if (editIndex < 0 || editIndex >= out.length - 1) return out;
+  // Début auto-rempli : la cascade écrase l'horaire d'une étape non ancrée
+  // manuellement (manualTime absent) pour refléter la fin de la précédente.
   const edited = out[editIndex];
   const anchor = edited.scheduledTime || edited.time;
   if (!anchor) return out;
@@ -704,8 +715,9 @@ export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep
   let clock = timeToMin(anchor) + stepDurationMin(edited);
   for (let i = editIndex + 1; i < out.length; i++) {
     const st = out[i];
-    // Étape ancrée manuellement : elle redevient le point de départ de la cascade.
-    if (st.scheduledTime) {
+    // Étape ancrée manuellement (manualTime + scheduledTime) : elle redevient le
+    // point de départ de la cascade. Sinon, son horaire est auto-rempli.
+    if (st.manualTime && st.scheduledTime) {
       clock = timeToMin(st.scheduledTime) + stepDurationMin(st);
       if (st.day != null) day = st.day;
       continue;
@@ -716,11 +728,13 @@ export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep
       if (start > LATEST_START_MIN + dur || (start % 1440 > 19 * 60 && start % 1440 < 5 * 60)) { day += 1; start = DEFAULT_DAY_START; }
       start = Math.max(start, EARLIEST_MIN);
       if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
-      out[i] = { ...st, day, time: fmtHHMM(start) };
+      out[i] = { ...st, day, time: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
     } else {
       if (dur > 0) {
         if (start % 1440 > 23 * 60) { day += 1; start = DEFAULT_DAY_START; }
-        out[i] = { ...st, day, time: fmtHHMM(start) };
+        out[i] = { ...st, day, time: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
+      } else {
+        out[i] = { ...st, day, scheduledDate: dateForDay(st, day, startDate) };
       }
     }
     clock = start + dur;

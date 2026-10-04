@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polyline, Autocomplete } from '@react-google-maps/api';
 import { supabase } from '../supabaseClient';
 import { useIsMobile } from '../lib/useIsMobile';
 import type { TripStep } from '../lib/tripPlanner';
@@ -143,11 +143,39 @@ export default function Visite() {
   const [newStation, setNewStation] = useState('');
   const [newAirport, setNewAirport] = useState('');
 
-  const addPrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
-    const v = value.trim();
-    if (!v) return;
-    setPrefs(prev => prev[kind].includes(v) ? prev : { ...prev, [kind]: [...prev[kind], v] });
-  };
+  // Autocomplete Google pour les gares / aéroports : on ne retient que des lieux
+  // réellement validés par Google (geometry présente), pas du texte libre.
+  const [stationAutocomplete, setStationAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [airportAutocomplete, setAirportAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const confirmStation = useCallback(() => {
+    if (!stationAutocomplete) return;
+    const place = stationAutocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      setPrefsMessage({ text: t('visite.placeNotFound'), isSuccess: false });
+      return;
+    }
+    const name = place.name || place.formatted_address || '';
+    if (!name) return;
+    setPrefs(prev => prev.preferred_stations.includes(name)
+      ? prev
+      : { ...prev, preferred_stations: [...prev.preferred_stations, name] });
+    setNewStation('');
+  }, [stationAutocomplete, t]);
+  const confirmAirport = useCallback(() => {
+    if (!airportAutocomplete) return;
+    const place = airportAutocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      setPrefsMessage({ text: t('visite.placeNotFound'), isSuccess: false });
+      return;
+    }
+    const name = place.name || place.formatted_address || '';
+    if (!name) return;
+    setPrefs(prev => prev.preferred_airports.includes(name)
+      ? prev
+      : { ...prev, preferred_airports: [...prev.preferred_airports, name] });
+    setNewAirport('');
+  }, [airportAutocomplete, t]);
+
 
   const removePrefItem = (kind: 'preferred_stations' | 'preferred_airports', value: string) => {
     setPrefs(prev => ({ ...prev, [kind]: prev[kind].filter(v => v !== value) }));
@@ -226,7 +254,7 @@ export default function Visite() {
   const updateStep = async (trip: VisitTrip, index: number, patch: Partial<TripStep>) => {
     const steps = trip.steps.map((s, i) => i === index ? { ...s, ...patch } : s);
     const cascaded = (patch.scheduledTime != null || patch.meetingMinutes != null || patch.durationMinutes != null)
-      ? cascadeAfterEdit(steps, index)
+      ? cascadeAfterEdit(steps, index, trip.start_date)
       : steps;
     await persistSteps(trip, cascaded);
   };
@@ -254,8 +282,16 @@ export default function Visite() {
     await persistTrip(trip, { start_date: startDate, steps });
   };
 
+  // Changement manuel de date d'une étape : la date est ancrée (manualDate) et le
+  // numéro de jour est recalculé par rapport à la date de début du trajet
+  // (ex. 15/10 -> 16/10 avec départ le 15/10 : "Jour 1" devient "Jour 2").
   const setStepDate = async (trip: VisitTrip, index: number, date: string) => {
-    const steps = trip.steps.map((s, i) => i === index ? { ...s, scheduledDate: date, manualDate: true } : s);
+    let newDay = trip.steps[index].day;
+    if (date && trip.start_date) {
+      const diffDays = Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${trip.start_date}T12:00:00`).getTime()) / 86400000);
+      newDay = diffDays + 1;
+    }
+    const steps = trip.steps.map((s, i) => i === index ? { ...s, scheduledDate: date, manualDate: true, ...(newDay != null && newDay > 0 ? { day: newDay } : {}) } : s);
     await persistSteps(trip, steps);
   };
 
@@ -504,14 +540,19 @@ export default function Visite() {
                   {t('visite.preferredStations')}
                 </label>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  <input
-                    type="text"
-                    value={newStation}
-                    onChange={(e) => setNewStation(e.target.value)}
-                    style={inputStyle}
-                    placeholder={t('visite.stationName')}
-                  />
-                  <button style={buttonStyle} onClick={() => { addPrefItem('preferred_stations', newStation); setNewStation(''); }}>{t('visite.addStation')}</button>
+                  <Autocomplete
+                    onLoad={setStationAutocomplete}
+                    onPlaceChanged={confirmStation}
+                  >
+                    <input
+                      type="text"
+                      value={newStation}
+                      onChange={(e) => setNewStation(e.target.value)}
+                      style={inputStyle}
+                      placeholder={t('visite.stationName')}
+                    />
+                  </Autocomplete>
+                  <button style={buttonStyle} onClick={confirmStation}>{t('visite.addStation')}</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                   {prefs.preferred_stations.map(st => (
@@ -527,14 +568,19 @@ export default function Visite() {
                   {t('visite.preferredAirports')}
                 </label>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  <input
-                    type="text"
-                    value={newAirport}
-                    onChange={(e) => setNewAirport(e.target.value)}
-                    style={inputStyle}
-                    placeholder={t('visite.airportName')}
-                  />
-                  <button style={buttonStyle} onClick={() => { addPrefItem('preferred_airports', newAirport); setNewAirport(''); }}>{t('visite.addAirport')}</button>
+                  <Autocomplete
+                    onLoad={setAirportAutocomplete}
+                    onPlaceChanged={confirmAirport}
+                  >
+                    <input
+                      type="text"
+                      value={newAirport}
+                      onChange={(e) => setNewAirport(e.target.value)}
+                      style={inputStyle}
+                      placeholder={t('visite.airportName')}
+                    />
+                  </Autocomplete>
+                  <button style={buttonStyle} onClick={confirmAirport}>{t('visite.addAirport')}</button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap' }}>
                   {prefs.preferred_airports.map(ap => (
@@ -737,7 +783,7 @@ export default function Visite() {
                           />
                           <select
                             value={step.scheduledTime || step.time || ''}
-                            onChange={(e) => updateStep(trip, index, { scheduledTime: e.target.value })}
+                            onChange={(e) => updateStep(trip, index, { scheduledTime: e.target.value, manualTime: e.target.value !== '' })}
                             style={{ ...inputStyle, width: 'auto' }}
                             title={t('visite.startTime')}
                           >
@@ -745,12 +791,12 @@ export default function Visite() {
                             {TIME_OPTIONS.map(tm => <option key={tm} value={tm}>{tm}</option>)}
                           </select>
                           <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>→</span>
-                          <input
-                            type="time"
+                          <select
                             value={stepEndTime(step)}
                             onChange={(e) => {
                               const start = step.scheduledTime || step.time;
                               const end = e.target.value;
+                              if (!end) { updateStep(trip, index, { durationMinutes: 0 }); return; }
                               if (!start) { updateStep(trip, index, { scheduledTime: end, durationMinutes: 0 }); return; }
                               const [sh, sm] = start.split(':').map(Number);
                               const [eh, em] = end.split(':').map(Number);
@@ -760,7 +806,10 @@ export default function Visite() {
                             }}
                             style={{ ...inputStyle, width: 'auto' }}
                             title={t('visite.endTime')}
-                          />
+                          >
+                            <option value="">--:--</option>
+                            {TIME_OPTIONS.map(tm => <option key={tm} value={tm}>{tm}</option>)}
+                          </select>
                           {step.type === 'meeting' && (
                             <select
                               value={step.durationMinutes ?? step.meetingMinutes ?? 120}
