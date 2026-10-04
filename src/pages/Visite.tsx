@@ -5,7 +5,7 @@ import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 import { supabase } from '../supabaseClient';
 import { useIsMobile } from '../lib/useIsMobile';
 import type { TripStep } from '../lib/tripPlanner';
-import { rebuildTripSteps, propagateDates, cascadeAfterEdit } from '../lib/tripPlanner';
+import { rebuildTripSteps, propagateDates, cascadeAfterEdit, stepDurationMin, stepEndTime } from '../lib/tripPlanner';
 
 interface VisitTrip {
   id: string;
@@ -167,23 +167,27 @@ export default function Visite() {
   };
 
   // Ajout d'une étape manuelle avec possibilité de la renommer immédiatement
-  const [newStepDraft, setNewStepDraft] = useState<{ tripId: string; label: string; detail: string } | null>(null);
+  const [newStepDraft, setNewStepDraft] = useState<{ tripId: string; label: string; detail: string; durationMinutes: number } | null>(null);
 
-  const addManualStep = (trip: VisitTrip) => {
-    setNewStepDraft({ tripId: trip.id, label: '', detail: '' });
+  const addManualStep = (trip: VisitTrip, type: 'note' | 'meeting' = 'note') => {
+    setNewStepDraft({ tripId: trip.id, label: '', detail: '', durationMinutes: type === 'meeting' ? prefs.meeting_minutes : 0 });
   };
 
   const confirmAddManualStep = async () => {
     if (!newStepDraft) return;
     const trip = trips.find(tr => tr.id === newStepDraft.tripId);
     if (!trip) { setNewStepDraft(null); return; }
+    const isMeeting = newStepDraft.durationMinutes > 0;
+    const prev = trip.steps[trip.steps.length - 1];
     const steps = [...trip.steps, {
-      type: 'note' as const,
+      type: isMeeting ? 'meeting' as const : 'note' as const,
       label: newStepDraft.label.trim() || t('visite.newStepLabel'),
       detail: newStepDraft.detail.trim(),
       manual: true,
       scheduledDate: '',
       scheduledTime: '',
+      durationMinutes: newStepDraft.durationMinutes || undefined,
+      ...(isMeeting && prev ? { scheduledDate: prev.scheduledDate || '' } : {}),
     }];
     await persistSteps(trip, steps);
     setNewStepDraft(null);
@@ -221,7 +225,7 @@ export default function Visite() {
 
   const updateStep = async (trip: VisitTrip, index: number, patch: Partial<TripStep>) => {
     const steps = trip.steps.map((s, i) => i === index ? { ...s, ...patch } : s);
-    const cascaded = (patch.scheduledTime != null || patch.meetingMinutes != null)
+    const cascaded = (patch.scheduledTime != null || patch.meetingMinutes != null || patch.durationMinutes != null)
       ? cascadeAfterEdit(steps, index)
       : steps;
     await persistSteps(trip, cascaded);
@@ -735,18 +739,46 @@ export default function Visite() {
                             value={step.scheduledTime || step.time || ''}
                             onChange={(e) => updateStep(trip, index, { scheduledTime: e.target.value })}
                             style={{ ...inputStyle, width: 'auto' }}
-                            title={t('visite.scheduledTime')}
+                            title={t('visite.startTime')}
                           >
                             <option value="">--:--</option>
                             {TIME_OPTIONS.map(tm => <option key={tm} value={tm}>{tm}</option>)}
                           </select>
+                          <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>→</span>
+                          <input
+                            type="time"
+                            value={stepEndTime(step)}
+                            onChange={(e) => {
+                              const start = step.scheduledTime || step.time;
+                              const end = e.target.value;
+                              if (!start) { updateStep(trip, index, { scheduledTime: end, durationMinutes: 0 }); return; }
+                              const [sh, sm] = start.split(':').map(Number);
+                              const [eh, em] = end.split(':').map(Number);
+                              let dur = eh * 60 + em - (sh * 60 + sm);
+                              if (dur < 0) dur += 1440;
+                              updateStep(trip, index, { durationMinutes: dur });
+                            }}
+                            style={{ ...inputStyle, width: 'auto' }}
+                            title={t('visite.endTime')}
+                          />
                           {step.type === 'meeting' && (
                             <select
-                              value={step.meetingMinutes || 120}
-                              onChange={(e) => updateStep(trip, index, { meetingMinutes: Number(e.target.value) })}
+                              value={step.durationMinutes ?? step.meetingMinutes ?? 120}
+                              onChange={(e) => updateStep(trip, index, { durationMinutes: Number(e.target.value) })}
                               style={{ ...inputStyle, width: 'auto' }}
                               title={t('visite.meetingMinutes')}
                             >
+                              {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{fmtDurationHM(min)}</option>)}
+                            </select>
+                          )}
+                          {step.type !== 'meeting' && (
+                            <select
+                              value={step.durationMinutes ?? stepDurationMin(step)}
+                              onChange={(e) => updateStep(trip, index, { durationMinutes: Number(e.target.value) })}
+                              style={{ ...inputStyle, width: 'auto' }}
+                              title={t('visite.durationMinutes')}
+                            >
+                              <option value={0}>{t('visite.noDuration')}</option>
                               {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{fmtDurationHM(min)}</option>)}
                             </select>
                           )}
@@ -759,6 +791,7 @@ export default function Visite() {
                       </div>
                     </div>
                   ))}
+                  <button style={buttonStyle} onClick={() => addManualStep(trip, 'meeting')}>{t('visite.addMeeting')}</button>
                   <button style={buttonStyle} onClick={() => addManualStep(trip)}>{t('visite.addStep')}</button>
                 </div>
               )}
@@ -800,7 +833,7 @@ export default function Visite() {
                   placeholder={t('visite.newStepLabel')}
                 />
               </div>
-              <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
                   {t('visite.stepDetail')}
                 </label>
@@ -810,6 +843,19 @@ export default function Visite() {
                   onChange={(e) => setNewStepDraft(prev => prev ? { ...prev, detail: e.target.value } : prev)}
                   style={inputStyle}
                 />
+              </div>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '5px' }}>
+                  {t('visite.durationMinutes')}
+                </label>
+                <select
+                  value={newStepDraft.durationMinutes}
+                  onChange={(e) => setNewStepDraft(prev => prev ? { ...prev, durationMinutes: Number(e.target.value) } : prev)}
+                  style={inputStyle}
+                >
+                  <option value={0}>{t('visite.noDuration')}</option>
+                  {MEETING_DURATION_OPTIONS.map(min => <option key={min} value={min}>{fmtDurationHM(min)}</option>)}
+                </select>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button type="button" onClick={() => setNewStepDraft(null)} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>

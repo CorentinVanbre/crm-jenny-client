@@ -35,6 +35,7 @@ export interface TripStep {
   meetingMinutes?: number;
   legKm?: number;
   legMinutes?: number;
+  durationMinutes?: number;
 }
 
 export interface TripPreferences {
@@ -250,6 +251,11 @@ const fmtDurationHM = (minutes: number) => {
 };
 const trainMin = (km: number) => Math.round((km / 130) * 60 + 20);
 const flightMin = (km: number) => Math.round(Math.max(km / 750, 1) * 60 + 30);
+export const timeToMin = (time: string): number => {
+  const [h, min] = time.split(':').map(Number);
+  return h * 60 + min;
+};
+
 const fmtHHMM = (m: number) => {
   const q = Math.round(m / 15) * 15;
   const mm = ((q % 1440) + 1440) % 1440;
@@ -392,7 +398,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       const durEntry = legEntry.minutes;
       originLabel = 'Lille (gare)';
       originDetail = `Train international depuis ${origin.city} (${entry.name})`;
-      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t) });
+      steps.push({ type: 'train', label: `Train ${origin.city} → ${entry.name}`, detail: `Train international ~${Math.round(legEntry.km)} km, ~${fmtDurationHM(durEntry)}`, from: origin.city, to: entry.name, day, time: fmtHHMM(t), legKm: legEntry.km, legMinutes: durEntry });
       hubArrival = t + durEntry;
 
       // Correspondance nationale si la gare d'entrée est éloignée des sites :
@@ -401,7 +407,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         const kmEntryHub = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng });
         const legNat = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: hub.lat, lng: hub.lng }, trainMin(kmEntryHub), kmEntryHub);
         const durNat = legNat.minutes;
-        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20) });
+        steps.push({ type: 'train', label: `Train ${entry.name} → ${hub.name}`, detail: `Correspondance nationale ~${Math.round(legNat.km)} km, ~${fmtDurationHM(durNat)}`, from: entry.name, to: hub.name, day, time: fmtHHMM(hubArrival + 20), legKm: legNat.km, legMinutes: durNat });
         hubArrival = hubArrival + 20 + durNat;
       }
     } else {
@@ -412,12 +418,12 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       if (flight.origin.kind === 'car') {
         steps.push({ type: 'car', label: `Voiture ${origin.city} → ${flight.origin.name}`, detail: `~${Math.round(legToAirport.km)} km, ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
       } else {
-        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t) });
+        steps.push({ type: 'train', label: `Train ${origin.city} → ${flight.origin.name}`, detail: `Trajet ferroviaire ~${fmtDurationHM(legToAirport.minutes)}`, from: origin.city, to: flight.origin.name, day, time: fmtHHMM(t), legKm: legToAirport.km, legMinutes: legToAirport.minutes });
       }
       t += legToAirport.minutes;
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
       const dur = flightMin(kmOrigin);
-      steps.push({ type: 'plane', label: `Avion ${flight.origin.name} → ${hub.name}`, detail: `~${Math.round(kmOrigin)} km, vol ~${Math.round(dur / 60)}h + enregistrement 1h30`, from: flight.origin.name, to: hub.name, day, time: fmtHHMM(t + 90) });
+      steps.push({ type: 'plane', label: `Avion ${flight.origin.name} → ${hub.name}`, detail: `~${Math.round(kmOrigin)} km, vol ~${Math.round(dur / 60)}h + enregistrement 1h30`, from: flight.origin.name, to: hub.name, day, time: fmtHHMM(t + 90), legKm: kmOrigin, legMinutes: dur + 90 });
       originLabel = `${origin.city} → ${flight.origin.name}`;
       originDetail = flight.origin.kind === 'car' ? `Voiture depuis ${origin.city} (${flight.origin.name})` : `Train depuis ${origin.city} (${flight.origin.name})`;
       hubArrival = t + 90 + dur;
@@ -469,17 +475,17 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       if (hub.name !== entry.name) {
         const kmNatBack = haversineKm({ lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng });
         const legNatBack = await realLeg('transit', { lat: hub.lat, lng: hub.lng }, { lat: entry.lat, lng: entry.lng }, trainMin(kmNatBack), kmNatBack);
-        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15) });
+        steps.push({ type: 'train', label: `Train ${hub.name} → ${entry.name} (retour)`, detail: `Correspondance nationale ~${Math.round(legNatBack.km)} km, ~${fmtDurationHM(legNatBack.minutes)}`, from: hub.name, to: entry.name, day, time: fmtHHMM(returnClock + 15), legKm: legNatBack.km, legMinutes: legNatBack.minutes });
         returnClock = returnClock + 15 + legNatBack.minutes;
       }
       const kmEntryLille = haversineKm({ lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng });
       const legBackIntl = await realLeg('transit', { lat: entry.lat, lng: entry.lng }, { lat: origin.lat, lng: origin.lng }, trainMin(kmEntryLille), kmEntryLille);
-      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20) });
+      steps.push({ type: 'train', label: `Train ${entry.name} → ${origin.city} (retour)`, detail: `Train international ~${Math.round(legBackIntl.km)} km, ~${fmtDurationHM(legBackIntl.minutes)}`, from: entry.name, to: origin.city, day, time: fmtHHMM(returnClock + 20), legKm: legBackIntl.km, legMinutes: legBackIntl.minutes });
     } else {
       const flight = pickOutboundFlight(hub, origin, prefs);
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
       const dur = flightMin(kmOrigin);
-      steps.push({ type: 'plane', label: `Avion ${hub.name} → ${flight.origin.name} (retour)`, detail: 'Retour par le même aéroport', from: hub.name, to: flight.origin.name, day, time: fmtHHMM(backArrive) });
+      steps.push({ type: 'plane', label: `Avion ${hub.name} → ${flight.origin.name} (retour)`, detail: 'Retour par le même aéroport', from: hub.name, to: flight.origin.name, day, time: fmtHHMM(backArrive), legKm: kmOrigin, legMinutes: dur });
       steps.push({
         type: flight.origin.kind === 'car' ? 'car' : 'train',
         label: flight.origin.kind === 'car' ? `Voiture ${flight.origin.name} → ${origin.city} (retour)` : `Train ${flight.origin.name} → ${origin.city} (retour)`,
@@ -648,12 +654,19 @@ export const rebuildTripSteps = async (steps: TripStep[], orderedMeetings: TripS
   return [...rebuilt, ...adaptedReturn];
 };
 
-const timeToMin = (time: string): number => {
-  const [h, min] = time.split(':').map(Number);
-  return h * 60 + min;
+
+
+// Durée effective d'une étape : durée saisie manuellement, sinon durée de
+// réunion ou durée du tronçon (leg) connu.
+export const stepDurationMin = (st: TripStep): number =>
+  st.durationMinutes ?? (st.type === 'meeting' ? (st.meetingMinutes ?? DEFAULT_MEETING_MIN) : (st.legMinutes ?? 0));
+
+// Horaire de fin d'une étape : début + durée effective ('' si pas d'horaire).
+export const stepEndTime = (st: TripStep): string => {
+  const start = st.scheduledTime || st.time;
+  if (!start) return '';
+  return fmtHHMM(timeToMin(start) + stepDurationMin(st));
 };
-
-
 
 // Addition de jours sur une date ISO (YYYY-MM-DD)
 export const addDaysISO = (isoDate: string, days: number): string => {
@@ -688,27 +701,29 @@ export const cascadeAfterEdit = (steps: TripStep[], editIndex: number): TripStep
   const anchor = edited.scheduledTime || edited.time;
   if (!anchor) return out;
   let day = edited.day ?? 1;
-  let clock = timeToMin(anchor);
-  if (edited.type === 'meeting') clock += edited.meetingMinutes ?? DEFAULT_MEETING_MIN;
+  let clock = timeToMin(anchor) + stepDurationMin(edited);
   for (let i = editIndex + 1; i < out.length; i++) {
     const st = out[i];
-    if (st.scheduledTime) { clock = timeToMin(st.scheduledTime); day = st.day ?? day; if (st.type === 'meeting') clock += st.meetingMinutes ?? DEFAULT_MEETING_MIN; continue; }
-    const legMin = st.legMinutes ?? (st.type === 'car' ? driveMin(haversineKm({ lat: st.lat ?? 0, lng: st.lng ?? 0 }, { lat: st.lat ?? 0, lng: st.lng ?? 0 })) : 0);
+    // Étape ancrée manuellement : elle redevient le point de départ de la cascade.
+    if (st.scheduledTime) {
+      clock = timeToMin(st.scheduledTime) + stepDurationMin(st);
+      if (st.day != null) day = st.day;
+      continue;
+    }
+    const dur = stepDurationMin(st);
+    let start = clock;
     if (st.type === 'meeting') {
-      const meetingMin = st.meetingMinutes ?? DEFAULT_MEETING_MIN;
-      let arrive = clock + legMin;
-      if (arrive > LATEST_START_MIN + meetingMin || (arrive % 1440 > 19 * 60 && arrive % 1440 < 5 * 60)) { day += 1; arrive = DEFAULT_DAY_START; }
-      let start = Math.max(arrive, EARLIEST_MIN);
+      if (start > LATEST_START_MIN + dur || (start % 1440 > 19 * 60 && start % 1440 < 5 * 60)) { day += 1; start = DEFAULT_DAY_START; }
+      start = Math.max(start, EARLIEST_MIN);
       if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
       out[i] = { ...st, day, time: fmtHHMM(start) };
-      clock = start + meetingMin;
     } else {
-      if (legMin > 0) {
-        let depart = clock;
-        if (depart % 1440 > 23 * 60) { day += 1; depart = DEFAULT_DAY_START - legMin < 0 ? DEFAULT_DAY_START : depart; }
-        out[i] = { ...st, day, time: fmtHHMM(depart) };
+      if (dur > 0) {
+        if (start % 1440 > 23 * 60) { day += 1; start = DEFAULT_DAY_START; }
+        out[i] = { ...st, day, time: fmtHHMM(start) };
       }
     }
+    clock = start + dur;
   }
   return out;
 };
