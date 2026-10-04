@@ -635,6 +635,9 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page Visite : l'horaire du titre d'une étape s'ajuste quand on modifie l'heure de départ",
+      "Page Visite : enregistrement aéroport de 2h pris en compte (génération et recalcul des étapes avion)",
+      "Page Visite : changer la date d'une étape décale les dates et jours des étapes suivantes",
       "Page Visite : gares et aéroports privilégiés vérifiés via la recherche Google Places, format sélectionnable avec suppression",
       "Page Visite : horaires de début et de fin en tranches de 15 minutes, début auto-rempli depuis la fin de l’étape précédente (ajustable manuellement)",
       "Page Visite : changement manuel de date d’une étape met à jour automatiquement son numéro de jour (Jour 1 → Jour 2)",

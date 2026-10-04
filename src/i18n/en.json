@@ -635,6 +635,9 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Visite page: step title time updates when the departure time is edited",
+      "Visite page: 2-hour airport check-in taken into account (flight step generation and recalculation)",
+      "Visite page: changing a step's date shifts the dates and days of the following steps",
       "Visite page: preferred stations and airports validated via Google Places search, selectable format with removal",
       "Visite page: start and end times in 15-minute steps, start auto-filled from the previous step's end (manually adjustable)",
       "Visite page: manually changing a step's date automatically updates its day number (Day 1 → Day 2)",

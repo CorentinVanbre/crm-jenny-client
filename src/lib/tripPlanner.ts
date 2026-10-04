@@ -72,6 +72,8 @@ const AIRPORTS: Record<string, { name: string; lat: number; lng: number }> = {
 };
 
 const CRL_CAR_FROM_LILLE_MIN = 105;
+// Enregistrement aéroport : 2h avant le vol.
+const CHECKIN_MIN = 120;
 
 interface Hub {
   name: string;
@@ -424,10 +426,10 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
       t += legToAirport.minutes;
       const kmOrigin = haversineKm({ lat: flight.origin.lat, lng: flight.origin.lng }, { lat: hub.lat, lng: hub.lng });
       const dur = flightMin(kmOrigin);
-      steps.push({ type: 'plane', label: `Avion ${flight.origin.name} → ${hub.name}`, detail: `~${Math.round(kmOrigin)} km, vol ~${Math.round(dur / 60)}h + enregistrement 1h30`, from: flight.origin.name, to: hub.name, day, time: fmtHHMM(t + 90), legKm: kmOrigin, legMinutes: dur + 90 });
+      steps.push({ type: 'plane', label: `Avion ${flight.origin.name} → ${hub.name}`, detail: `~${Math.round(kmOrigin)} km, vol ~${Math.round(dur / 60)}h + enregistrement ${fmtDurationHM(CHECKIN_MIN)}`, from: flight.origin.name, to: hub.name, day, time: fmtHHMM(t + CHECKIN_MIN), legKm: kmOrigin, legMinutes: dur });
       originLabel = `${origin.city} → ${flight.origin.name}`;
       originDetail = flight.origin.kind === 'car' ? `Voiture depuis ${origin.city} (${flight.origin.name})` : `Train depuis ${origin.city} (${flight.origin.name})`;
-      hubArrival = t + 90 + dur;
+      hubArrival = t + CHECKIN_MIN + dur;
     }
 
     steps.push({ type: 'car', label: 'Voiture de location — prise en charge', detail: `Location au départ de ${hub.name}`, to: hub.name, day, time: fmtHHMM(hubArrival) });
@@ -494,7 +496,7 @@ export const planTripAsync = async (sites: TripSite[], prefs?: TripPreferences):
         from: flight.origin.name,
         to: origin.city,
         day,
-        time: fmtHHMM(backArrive + dur + 90),
+        time: fmtHHMM(backArrive + dur + CHECKIN_MIN),
       });
     }
 
@@ -722,17 +724,20 @@ export const cascadeAfterEdit = (steps: TripStep[], editIndex: number, startDate
       if (st.day != null) day = st.day;
       continue;
     }
-    const dur = stepDurationMin(st);
     let start = clock;
+    // Étape avion : l'horaire affiché est le décollage, précédé de
+    // l'enregistrement (2h) après la fin de l'étape précédente.
+    if (st.type === 'plane') start += CHECKIN_MIN;
+    const dur = stepDurationMin(st);
     if (st.type === 'meeting') {
       if (start > LATEST_START_MIN + dur || (start % 1440 > 19 * 60 && start % 1440 < 5 * 60)) { day += 1; start = DEFAULT_DAY_START; }
       start = Math.max(start, EARLIEST_MIN);
       if (start > LATEST_START_MIN) { day += 1; start = DEFAULT_DAY_START; }
-      out[i] = { ...st, day, time: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
+      out[i] = { ...st, day, time: fmtHHMM(start), scheduledTime: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
     } else {
       if (dur > 0) {
         if (start % 1440 > 23 * 60) { day += 1; start = DEFAULT_DAY_START; }
-        out[i] = { ...st, day, time: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
+        out[i] = { ...st, day, time: fmtHHMM(start), scheduledTime: fmtHHMM(start), scheduledDate: dateForDay(st, day, startDate) };
       } else {
         out[i] = { ...st, day, scheduledDate: dateForDay(st, day, startDate) };
       }

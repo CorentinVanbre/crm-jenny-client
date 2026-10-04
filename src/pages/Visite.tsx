@@ -285,13 +285,37 @@ export default function Visite() {
   // Changement manuel de date d'une étape : la date est ancrée (manualDate) et le
   // numéro de jour est recalculé par rapport à la date de début du trajet
   // (ex. 15/10 -> 16/10 avec départ le 15/10 : "Jour 1" devient "Jour 2").
+  // Changement manuel de date d'une étape : la date est ancrée (manualDate), son
+  // numéro de jour est recalculé depuis la date de début du trajet, et les
+  // étapes suivantes suivent le même décalage de jours (dates + jours).
   const setStepDate = async (trip: VisitTrip, index: number, date: string) => {
-    let newDay = trip.steps[index].day;
+    const step = trip.steps[index];
+    let newDay = step.day;
     if (date && trip.start_date) {
       const diffDays = Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${trip.start_date}T12:00:00`).getTime()) / 86400000);
       newDay = diffDays + 1;
     }
-    const steps = trip.steps.map((s, i) => i === index ? { ...s, scheduledDate: date, manualDate: true, ...(newDay != null && newDay > 0 ? { day: newDay } : {}) } : s);
+    const dayDelta = (newDay != null && newDay > 0 && step.day != null) ? newDay - step.day : 0;
+    const addDays = (iso: string, days: number): string => {
+      const [y, m, dd] = iso.split('-').map(Number);
+      if (!y || !m || !dd) return iso;
+      const d = new Date(y, m - 1, dd + days, 12, 0, 0);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+    const steps = trip.steps.map((s, i) => {
+      if (i === index) {
+        return { ...s, scheduledDate: date, manualDate: true, ...(newDay != null && newDay > 0 ? { day: newDay } : {}) };
+      }
+      if (i > index && dayDelta !== 0) {
+        return {
+          ...s,
+          ...(s.day != null ? { day: s.day + dayDelta } : {}),
+          ...(s.scheduledDate && !s.manualDate ? { scheduledDate: addDays(s.scheduledDate, dayDelta) } : {}),
+        };
+      }
+      return s;
+    });
     await persistSteps(trip, steps);
   };
 
@@ -770,7 +794,7 @@ export default function Visite() {
                       <div style={{ flex: 1, minWidth: '220px' }}>
                         <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: step.type === 'meeting' ? 'bold' : 200, fontSize: '14px' }}>
                           {STEP_ICONS[step.type] || '•'} {step.type === 'meeting' ? `${visitNumber(trip, step.siteName || step.label)}. ` : ''}{step.label}
-                          {step.day ? ` · ${t('visite.day')} ${step.day}` : ''} {step.time ? `· ${step.time}` : ''}
+                          {step.day ? ` · ${t('visite.day')} ${step.day}` : ''} {(step.scheduledTime || step.time) ? `· ${step.scheduledTime || step.time}` : ''}
                         </div>
                         {step.detail && <div style={{ fontSize: '12px', fontFamily: 'Barlow, sans-serif', fontWeight: 200 }}>{step.detail}</div>}
                         <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
