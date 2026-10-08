@@ -25,6 +25,7 @@ interface Site {
   datevisite: string;
   nb_contact: number;
   dates_visites: string[];
+  owner: string;
 }
 
 interface Groupe {
@@ -65,9 +66,18 @@ export default function SiteDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+
+  useEffect(() => {
+    const checkOwnership = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsOwner(!!user && !!site && site.owner === user.id);
+    };
+    checkOwnership();
+  }, [site]);
 
   // Données du formulaire
-  const [formData, setFormData] = useState<Omit<Site, 'id' | 'nb_contact' | 'latitude' | 'longitude' | 'dates_visites'> & { dates_visites?: string[] }>({
+  const [formData, setFormData] = useState<Omit<Site, 'id' | 'nb_contact' | 'latitude' | 'longitude' | 'dates_visites' | 'owner'> & { dates_visites?: string[] }>({
     groupe: '',
     noms: '',
     adress: { formatted: '' },
@@ -703,6 +713,22 @@ export default function SiteDetail() {
     setIsModified(true);
   };
 
+  // Supprimer le site (uniquement par son propriétaire, après confirmation)
+  const handleDelete = async () => {
+    if (!site) return;
+    if (!window.confirm(t('siteDetail.confirmDelete'))) return;
+    try {
+      const { error: deleteError } = await supabase
+        .from('sites')
+        .delete()
+        .eq('id', site.id);
+      if (deleteError) throw deleteError;
+      navigate('/sites');
+    } catch (err: any) {
+      setSaveMessage({ text: `Erreur: ${err.message}`, isSuccess: false });
+    }
+  };
+
   // Annuler les modifications
   const handleCancelEdit = () => {
     setIsEditing(false);
@@ -956,6 +982,13 @@ export default function SiteDetail() {
     textAlign: 'center'
   });
 
+  const deleteButtonStyle = {
+    ...baseButtonStyle,
+    backgroundColor: '#FF4444',
+    color: '#fff',
+    borderColor: '#FF4444'
+  };
+
   const copyButtonStyle = {
     ...baseButtonStyle,
     padding: '0 15px',
@@ -1041,6 +1074,11 @@ export default function SiteDetail() {
           >
             {t('siteDetail.save')}
           </button>
+          {!isEditing && isOwner && (
+            <button onClick={handleDelete} style={deleteButtonStyle}>
+              {t('siteDetail.delete')}
+            </button>
+          )}
         </div>
       </div>
 
