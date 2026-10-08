@@ -157,7 +157,9 @@
       "Visités il y a +18mois": "Visités il y a +18mois",
       "A visiter": "A visiter",
       "Fermés": "Fermés"
-    }
+    },
+    "delete": "Supprimer",
+    "confirmDelete": "Voulez-vous vraiment supprimer définitivement ce site ? Cette action est irréversible."
   },
   "contacts": {
     "addTitle": "Ajouter un contact",
@@ -634,6 +636,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Bouton « Supprimer » sur la page SiteDetail : suppression d'un site par son propriétaire uniquement, avec demande de confirmation",
       "Page Visite : bouton « Ajouter Réunion », ajout manuel d'une réunion avec durée, et renommage du bouton « Ajouter étape » en « Ajouter trajet »",
       "Page Visite : horaire de début et horaire de fin modifiables manuellement sur chaque étape, avec propagation automatique sur les étapes suivantes (durée de trajet ou de réunion prise en compte)",
       "Suggestions de voyage : durées réelles des tronçons train et avion désormais prises en compte dans le calcul des horaires",
