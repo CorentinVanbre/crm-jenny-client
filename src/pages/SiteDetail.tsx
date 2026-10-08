@@ -415,7 +415,12 @@ export default function SiteDetail() {
 
   const areContactRequiredFieldsFilled = () => {
     const requiredFields = ['noms', 'prenom', 'fonction', 'groupe', 'site', 'langue', 'email', 'genre'];
-    return requiredFields.every(field => contactFormData[field as keyof typeof contactFormData]);
+    return requiredFields.every(field => {
+      if (contactFormData[field as keyof typeof contactFormData]) return true;
+      return editingContactId && initialContactData
+        ? !initialContactData[field as keyof typeof initialContactData]
+        : false;
+    });
   };
 
   const hasContactFormChanged = initialContactData
@@ -426,7 +431,11 @@ export default function SiteDetail() {
     const requiredFields = ['noms', 'prenom', 'fonction', 'groupe', 'site', 'langue', 'email', 'genre'];
     const newErrors: Record<string, string> = {};
     requiredFields.forEach(field => {
-      if (!contactFormData[field as keyof typeof contactFormData]) {
+      const value = contactFormData[field as keyof typeof contactFormData];
+      const wasInitiallyEmpty = editingContactId && initialContactData
+        ? !initialContactData[field as keyof typeof initialContactData]
+        : false;
+      if (!value && !wasInitiallyEmpty) {
         newErrors[field] = t('contacts.required');
       }
     });
