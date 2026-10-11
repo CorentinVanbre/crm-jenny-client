@@ -7,4 +7,4 @@ create policy "sites_delete_own"
   on public.sites
   for delete
   to authenticated
-  using (owner = auth.uid());
+  using (owner = auth.uid()::text);
