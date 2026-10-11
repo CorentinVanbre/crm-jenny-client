@@ -159,7 +159,8 @@
       "Fermés": "Fermés"
     },
     "delete": "Supprimer",
-    "confirmDelete": "Voulez-vous vraiment supprimer définitivement ce site ? Cette action est irréversible."
+    "confirmDelete": "Voulez-vous vraiment supprimer définitivement ce site ? Cette action est irréversible.",
+    "deleteBlocked": "Suppression impossible : vous n'êtes pas propriétaire de ce site, ou la suppression est bloquée par la sécurité de la base."
   },
   "contacts": {
     "addTitle": "Ajouter un contact",
@@ -636,6 +637,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Bouton « Supprimer » : correction de la suppression (aucune ligne supprimée quand la policy RLS bloque), avec message d'erreur explicite",
       "Bouton « Supprimer » sur la page SiteDetail : suppression d'un site par son propriétaire uniquement, avec demande de confirmation",
       "Page Visite : bouton « Ajouter Réunion », ajout manuel d'une réunion avec durée, et renommage du bouton « Ajouter étape » en « Ajouter trajet »",
       "Page Visite : horaire de début et horaire de fin modifiables manuellement sur chaque étape, avec propagation automatique sur les étapes suivantes (durée de trajet ou de réunion prise en compte)",

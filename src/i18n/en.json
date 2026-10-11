@@ -159,7 +159,8 @@
       "Fermés": "Closed"
     },
     "delete": "Delete",
-    "confirmDelete": "Are you sure you want to permanently delete this site? This action cannot be undone."
+    "confirmDelete": "Are you sure you want to permanently delete this site? This action cannot be undone.",
+    "deleteBlocked": "Deletion failed: you do not own this site, or the deletion is blocked by database security."
   },
   "contacts": {
     "addTitle": "Add a contact",
@@ -636,6 +637,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "\"Delete\" button: fixed deletion being a no-op (0 rows) when blocked by RLS, now shows an explicit error",
       "\"Delete\" button on the SiteDetail page: site deletion restricted to the site owner, with confirmation prompt",
       "Visite page: \"Add Meeting\" button, manual meeting with duration, and \"Add a step\" renamed to \"Add trip\"",
       "Visite page: start and end times editable on every step, automatically propagated to following steps (trip or meeting duration taken into account)",

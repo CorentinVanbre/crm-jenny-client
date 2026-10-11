@@ -718,11 +718,12 @@ export default function SiteDetail() {
     if (!site) return;
     if (!window.confirm(t('siteDetail.confirmDelete'))) return;
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError, count } = await supabase
         .from('sites')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', site.id);
       if (deleteError) throw deleteError;
+      if (count === 0) throw new Error(t('siteDetail.deleteBlocked'));
       navigate('/sites');
     } catch (err: any) {
       setSaveMessage({ text: `Erreur: ${err.message}`, isSuccess: false });
