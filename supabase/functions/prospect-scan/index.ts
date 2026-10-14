@@ -5,9 +5,11 @@
 // Pipeline :
 //   1. Lit les groupes (groupes.site_web) + sites existants (sites.groupe,
 //      sites.noms, sites.domaine, sites.pays) pour bâtir un profil de recherche.
-//   2. Génère des requêtes de recherche web (Mistral AI) ciblant les domaines
-//      existants + Chimie / Calcination / Incinération (broyeurs à boulets,
-//      fours rotatifs).
+//   2. Génère des requêtes de recherche web (Mistral AI) à partir du profil
+//      des sites existants (domaines + domaines adjacents autorisés), en
+//      couvrant TOUS les continents (au moins la moitié des requêtes sur des
+//      pays absents de la base), et en tenant compte des retours utilisateurs
+//      (suggestions ajoutées / refusées / déjà existantes).
 //   3. Exécute les recherches web (Serper.dev = vrais résultats Google) et
 //      collecte des candidats (URL de page = source_url, titre = site candidat).
 //   4. Pour chaque candidat : géocodage (OpenStreetMap Nominatim) du pays de
@@ -194,9 +196,27 @@ const PROCESS_KEYWORDS = [
   " broyeur à boulets",
 ];
 
+// Domaines adjacents autorisés : procédés/équipements similaires à la base
+// (broyeurs à boulets, fours rotatifs) — le modèle peut les explorer si pertinents.
+const ADJACENT_DOMAINS = [
+  "Chaux",
+  "Verre",
+  "Céramique / Tuiles",
+  "Réfractaires",
+  "Scories / Laitier",
+  "Sable fracturé / Silice",
+  "Coke de pétrole / Charbon actif",
+  "Mines & concentrateurs",
+  "Alumine / Bauxite",
+  "Pigments / TiO2",
+  "Lithium",
+  "Métallurgie extractive (zinc/cuivre)",
+];
+
 async function generateQueries(
   groupes: Groupe[],
-  sites: ExistingSite[]
+  sites: ExistingSite[],
+  feedback: Feedback[]
 ): Promise<string[]> {
   const domainSet = new Set(sites.map((s) => s.domaine));
   // On ajoute systématiquement les domaines cibles demandés
@@ -209,25 +229,64 @@ async function generateQueries(
   const knownGroupNames = groupes.map((g) => g.nom_groupe).slice(0, 60);
   const knownCountries = Array.from(new Set(sites.map((s) => s.pays).filter(Boolean))).slice(0, 30);
 
-  const prompt = `Tu es un assistant de prospection B2B. On cherche des INSTALLATIONS INDUSTRIELLES réelles (usines, cimenteries, cimenteries, usines chimiques, fours de calcination, usines d'incinération) — PAS des articles de blog, des pages Wikipédia, des fiches produit sur les machines, ni des annuaires de constructeurs.
+  // Profil du portefeuille existant : sert de référence de similarité
+  const siteProfile = sites
+    .slice(0, 60)
+    .map((s) => `${s.groupe} | ${s.noms} | ${s.domaine} | ${s.pays}`)
+    .join("\n");
 
-Domaines ciblés : ${Array.from(domainSet).join(", ")}.
-Pays déjà présents dans la base (privilégier ces zones) : ${knownCountries.join(", ")}.
+  // Feedback utilisateur : signaux à répliquer / éviter dans la génération
+  const fbApproved = feedback
+    .filter((f) => f.approved === "approved")
+    .slice(0, 15)
+    .map((f) => `${f.noms} (${f.domaine})${f.groupe ? " — " + f.groupe : ""}`);
+  const fbRefused = feedback
+    .filter((f) => f.approved === "refused")
+    .slice(0, 15)
+    .map((f) => `${f.noms} (${f.domaine})${f.score_reason ? " — " + f.score_reason : ""}`);
+  const fbExisting = feedback
+    .filter((f) => f.approved === "existing")
+    .slice(0, 15)
+    .map((f) => `${f.noms} (${f.domaine})`);
+  const feedbackSection = (fbApproved.length || fbRefused.length || fbExisting.length)
+    ? `
+Feedback utilisateur sur les dernières suggestions :
+- Suggestions AJOUTÉES à la base (profils à privilégier, cherche des usines similaires) :
+${fbApproved.join("\n") || "(aucune)"}
+- Suggestions REFUSÉES (types de sites/contenus à ne pas reproposer) :
+${fbRefused.join("\n") || "(aucune)"}
+- Suggestions « déjà existantes » (zones/segments déjà bien couverts, ne pas reproposer) :
+${fbExisting.join("\n") || "(aucune)"}
+`
+    : "";
+
+  const prompt = `Tu es un assistant de prospection B2B. On cherche des INSTALLATIONS INDUSTRIELLES réelles (usines, cimenteries, usines chimiques, fours de calcination, usines d'incinération...) — PAS des articles de blog, des pages Wikipédia, des fiches produit sur les machines, ni des annuaires de constructeurs.
+
+Domaines déjà présents dans la base : ${Array.from(domainSet).join(", ")}.
+Domaines adjacents autorisés (procédés/équipements similaires : broyage à boulets, fours rotatifs, pyrotraitement) — à explorer si pertinents : ${ADJACENT_DOMAINS.join(", ")}.
+
+Portefeuille existant (sites déjà répertoriés, à utiliser comme PROFIL DE SIMILARITÉ) :
+${siteProfile}
+
+Objectif : trouver des installations industrielles NON RÉPERTORIÉES, similaires à ce portefeuille — mêmes domaines d'activité, procédés similaires (broyage, pyrotraitement), équipements semblables (broyeurs à boulets, fours rotatifs, broyeurs verticaux, tours de préchauffage).
+
+Pays déjà présents dans la base (une partie des requêtes peut continuer à couvrir ces zones) : ${knownCountries.join(", ")}.
+IMPORTANT : cherche sur TOUS les continents, dans TOUS les pays du monde, pas uniquement ceux déjà présents. Au moins la MOITIÉ des requêtes doivent cibler des pays ou régions ABSENTS de la base (Afrique, Asie du Sud-Est, Asie du Sud, Amérique latine, Moyen-Orient, Europe de l'Est, Océanie...).
 
 Groupes industriels déjà connus (chercher d'autres usines de ces groupes non encore répertoriées) :
 ${knownGroups.join("\n")}
-
+${feedbackSection}
 Génère 16 requêtes de recherche web (style Google/Bing) qui retournent des PAGES DE SITES INDUSTRIELS RÉELS, c'est-à-dire des usines nommées avec une adresse. Évite les requêtes génériques sur les mots-clés des machines ("broyeur à boulets", "ball mill", "rotary kiln") qui renvoient du contenu technique/article.
 
 Types de requêtes efficaces à générer :
 1. "site:<domaine_d_un_groupe_connu> usine" ou "site:<domaine> plant" pour découvrir d'autres sites d'un groupe
-2. "<nom_de_groupe> usine <pays>" / "<group> plant <country>"
-3. "cimenterie <pays>" / "cement plant <country>" (par pays présent dans la base)
-4. "usine de calcination <pays>" / "lime plant <country>"
+2. "<nom_de_groupe> usine <pays>" / "<group> plant <country>" — y compris dans des pays où le groupe n'est pas encore répertorié
+3. "cimenterie <pays>" / "cement plant <country>" — alterner entre pays de la base et NOUVEAUX pays (tous continents)
+4. "usine de calcination <pays>" / "lime plant <country>" (nouvelles zones)
 5. "usine d'incinération <pays>" / "waste-to-energy plant <country>"
 6. "usine chimique <pays>" / "chemical plant <country>"
-7. "cimenterie <ville connue du secteur>" / "cement plant <city>"
-8. "groupe cimentier <pays> implantations" / "cement group <country> plants"
+7. Domaines adjacents : "usine de chaux <pays>", "verrerie <pays>", "usine céramique <pays>", "slag grinding plant <pays>", "silica sand plant <pays>", "alumina refinery <pays>", "TiO2 pigment plant <pays>", "lithium plant <pays>", "zinc plant <pays>"...
+8. Requêtes de découverte par zone : "largest cement plants in <continent/pays>", "industrial plant directory <pays>", "cimenteries <région>", "mines concentrator <pays>"
 
 Réponds UNIQUEMENT avec un objet JSON {"queries": ["requête 1", "requête 2"]} sans aucun texte autour, sans markdown.`;
   const queries = await callMistralText(prompt);
@@ -336,7 +395,7 @@ Pour CHAQUE candidat ci-dessous (titre de page web + URL + extrait), extraire un
 - groupe : le groupe industriel propriétaire si identifiable (ex: "CRH", "LafargeHolcim", "Republic Cement (CRH)"). Sinon vide.
 - domaine : un de Ciment, Mineralurgie, Platre, Papeterie, Fertilisant, Chimie, Calcination, Incinération, Autre.
 - pays : le pays probable du site (vide si inconnu).
-- score : pertinence 0-100 (proximité process/zone géographique vs base, mention broyeur à boulets/four rotatif/ciment/clinker/chimie/calcination/incinération). Pénalise fortement (score <= 15) les blogs, annuaires, Wikipédia, LinkedIn, questions/réponses type "Quel est...", sites de petites annonces, news génériques.
+- score : pertinence 0-100. Critères : proximité des PROCÉDÉS et ÉQUIPEMENTS avec la base (broyeur à boulets, four rotatif, broyage, pyrotraitement, clinker, chaux, calcination...), similarité du domaine d'activité avec le portefeuille, et BONUS DÉCOUVERTE si le site est dans un pays absent de la base. Pénalise fortement (score <= 15) les blogs, annuaires, Wikipédia, LinkedIn, questions/réponses type "Quel est...", sites de petites annonces, news génériques.
 - raison : courte explication.
 ${feedbackSection}
 Candidats :
@@ -741,7 +800,7 @@ Deno.serve(async (req) => {
     console.log(`Base: ${groupes.length} groupes, ${sites.length} sites, ${feedback.length} feedbacks`);
 
     // 2. Générer les requêtes
-    const queries = await generateQueries(groupes, sites);
+    const queries = await generateQueries(groupes, sites, feedback);
     console.log(`Requêtes générées: ${queries.length}`);
 
     // 3. Recherche web (Serper.dev = vrais résultats Google), par vagues
