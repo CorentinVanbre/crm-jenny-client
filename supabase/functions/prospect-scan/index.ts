@@ -42,7 +42,10 @@ const MAX_CANDIDATES = 160;
 // budget wall clock du worker Supabase, ~400 s, ce qui provoque un kill brutal
 // "shutdown" + 500 sans réponse du handler)
 const FETCH_TIMEOUT_MS = 15_000;
-const MISTRAL_TIMEOUT_MS = 60_000;
+// Timeout réduit : le scoring se fait par vagues parallèles ; un timeout trop
+// long fait dépasser le wall clock (~400 s) du worker Supabase, qui tue
+// brutalement la fonction (500 "Cannot read properties of undefined").
+const MISTRAL_TIMEOUT_MS = 40_000;
 // Budget maximal consacré au géocodage Nominatim avant insertion (safety net)
 const GEOCODE_BUDGET_MS = 60_000;
 
@@ -366,15 +369,27 @@ S suggestions bien reçues (favorise ce type) :\n${positives.join("\n") || "(auc
 
   // On score par lots pour limiter la taille des prompts ; les lots sont
   // interrogés en parallèle par vagues (sans dépasser le budget wall clock)
-  const BATCH = 8;
+  // BATCH 12 x 4 vagues parallèles : 146 candidats = 3 vagues max (~2 min au
+  // pire cas), contre 5 vagues avec des lots de 8 qui faisaient dépasser le
+  // wall clock du worker.
+  const BATCH = 12;
   const PARALLEL_BATCHES = 4;
-  const batches: Candidate[][] = [];
-  for (let i = 0; i < candidates.length; i += BATCH) {
-    batches.push(candidates.slice(i, i + BATCH));
+  // Plafond de candidats à scorer : au-delà, on garde les premiers (ordre
+  // d'arrivée des requêtes) pour tenir dans le budget d'exécution.
+  const MAX_TO_SCORE = 120;
+  const toScore = candidates.slice(0, MAX_TO_SCORE);
+  if (candidates.length > MAX_TO_SCORE) {
+    console.warn(`Scoring limité aux ${MAX_TO_SCORE} premiers candidats (${candidates.length} reçus)`);
   }
+  const batches: Candidate[][] = [];
+  for (let i = 0; i < toScore.length; i += BATCH) {
+    batches.push(toScore.slice(i, i + BATCH));
+  }
+  console.log(`Scoring: ${toScore.length} candidats en ${batches.length} lots`);
 
   const batchResults: Array<Array<ScoreResult>> = [];
   for (let v = 0; v < batches.length; v += PARALLEL_BATCHES) {
+    console.log(`Scoring: vague ${Math.floor(v / PARALLEL_BATCHES) + 1}/${Math.ceil(batches.length / PARALLEL_BATCHES)}`);
     const wave = batches.slice(v, v + PARALLEL_BATCHES);
     const waveResults = await Promise.all(
       wave.map(async (batch) => {
