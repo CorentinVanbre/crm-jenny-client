@@ -264,7 +264,8 @@
     "themeLight": "Light mode",
     "themeDark": "Dark mode",
     "themeAuto": "Automatic mode (based on device settings)",
-    "themeSaved": "Theme saved."
+    "themeSaved": "Theme saved.",
+    "spanish": "Spanish"
   },
   "emails": {
     "title": "Emails",
@@ -643,6 +644,8 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "«Help» page: accessible to signed-in users only",
+      "Spanish: new site language, selectable in «My account» in addition to French and English",
       "Dark mode: choose light, dark or automatic mode (based on device settings) in \\\"My account\\\"",
       "\"Delete\" button: fixed deletion being a no-op (0 rows) when blocked by RLS, now shows an explicit error",
       "\"Delete\" button on the SiteDetail page: site deletion restricted to the site owner, with confirmation prompt",

@@ -1,0 +1,699 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "loading": "Cargando...",
+    "search": "Buscar",
+    "select": "Seleccionar",
+    "required": "Este campo es obligatorio",
+    "back": "Volver",
+    "open": "Abrir",
+    "never": "Nunca",
+    "error": "Error",
+    "notConnected": "No conectado",
+    "confirm": "Confirmar"
+  },
+  "header": {
+    "sites": "Sitios",
+    "contacts": "Contactos",
+    "emails": "Emails",
+    "login": "Iniciar sesión",
+    "account": "Mi cuenta",
+    "editProfile": "Editar mi perfil",
+    "logout": "Cerrar sesión",
+    "menu": "☰ Menú",
+    "zones": "Gestión de zonas",
+    "prospection": "Prospección",
+    "visite": "Visita",
+    "help": "Ayuda"
+  },
+  "home": {
+    "welcome": "Bienvenido a",
+    "subtitle": "Su socio esencial para optimizar el rendimiento comercial.",
+    "organizeTitle": "Organizar, planificar, rendir",
+    "organizeText1": "Estructure sus tareas, priorice sus acciones y planifique sus visitas de forma eficiente.",
+    "organizeText2": "le acompaña 24/7 para mantenerse concentrado, organizado y siempre un paso adelante."
+  },
+  "sites": {
+    "loading": "Cargando sitios...",
+    "noResults": "Ningún sitio encontrado.",
+    "matchingCount": "{{count}} sitios correspondientes",
+    "searchPlaceholder": "Buscar por nombre, grupo, país",
+    "addGroup": "Añadir grupo",
+    "editGroup": "Editar grupo",
+    "addSite": "Añadir sitio",
+    "addGroupTitle": "Añadir un nuevo grupo",
+    "editGroupTitle": "Editar un grupo",
+    "addSiteTitle": "Añadir un nuevo sitio",
+    "groupName": "Nombre del grupo *",
+    "websiteAddress": "Dirección del sitio web",
+    "siteName": "Nombre del sitio *",
+    "group": "Grupo *",
+    "domain": "Sector *",
+    "color": "Color *",
+    "address": "Dirección *",
+    "country": "País *",
+    "observations": "Observaciones",
+    "websitePlaceholder": "p. ej. https://example.com",
+    "groupNamePlaceholder": "p. ej. Nuevo grupo",
+    "siteNamePlaceholder": "p. ej. Sitio principal",
+    "groupSearchPlaceholder": "Buscar un grupo...",
+    "addressPlaceholder": "Buscar una dirección...",
+    "countryAutoPlaceholder": "Seleccione una dirección para rellenar automáticamente",
+    "observationsPlaceholder": "Notas adicionales",
+    "groupExists": "Este nombre de grupo ya existe",
+    "siteExists": "Este nombre de sitio ya existe",
+    "groupAdded": "¡Grupo añadido con éxito!",
+    "groupEdited": "¡Grupo editado con éxito!",
+    "siteAdded": "¡Sitio añadido con éxito!",
+    "saving": "Guardando...",
+    "editing": "Editando...",
+    "contactsCount": "Contacto",
+    "contactsCountPlural": "Contactos",
+    "lastVisit": "Última visita",
+    "seeMore": "Ver más",
+    "domains": {
+      "Ciment": "Cemento",
+      "Mineralurgie": "Mineralurgia",
+      "Platre": "Yeso",
+      "Papeterie": "Papel",
+      "Fertilisant": "Fertilizante",
+      "Autre": "Otro"
+    },
+    "colors": {
+      "Non visités": "No visitados",
+      "Visités": "Visitados",
+      "Visités il y a +18mois": "Visitados hace más de 18 meses",
+      "A visiter": "Por visitar",
+      "Fermés": "Cerrados"
+    },
+    "aiVisitMode": "Modo de visita IA",
+    "aiVisitTitle": "Modo de visita IA",
+    "aiVisitHelp": "Haga clic en los marcadores de los sitios de clientes a visitar y genere una propuesta de viaje optimizada (salida desde Lille, tren preferido, avión vía CRL / Lille-Lesquin / CDG-ORY si es necesario, coche de alquiler en el destino).",
+    "aiVisitSelected_one": "{{count}} sitio seleccionado",
+    "aiVisitSelected_other": "{{count}} sitios seleccionados",
+    "aiVisitGenerate": "Generar viaje",
+    "aiVisitReset": "Restablecer",
+    "tripTitle": "Propuesta de viaje",
+    "tripAssumptions": "Parámetros: salida desde Lille · tren preferido · avión vía CRL (coche desde Lille) o Lille-Lesquin / CDG-ORY (tren desde Lille) · reunión de 2h por sitio (como muy pronto 8:30, última reunión empezando a las 15:00 como muy tarde) · regreso por el mismo hub.",
+    "tripHubStation": "llegada a la estación",
+    "tripHubAirport": "llegada al aeropuerto",
+    "tripDay": "Día {{day}}:",
+    "tripLocalCar": "{{km}} km de conducción local",
+    "tripName": "Nombre del viaje",
+    "tripSave": "Guardar viaje",
+    "tripSaved": "¡Viaje guardado! Encuéntrelo en la página Visita.",
+    "aiVisitGenerating": "Generando viaje…",
+    "tripDirectionsOk": "Rutas y duraciones reales",
+    "tripDirectionsFallback": "Estimaciones locales (rutas reales no disponibles)",
+    "tripDirectionsDiag": "{{ok}} OK / {{failed}} fallidos (coche {{driving}}, transporte público {{transit}}) · estado: {{error}} · última llamada: {{call}}"
+  },
+  "siteDetail": {
+    "loading": "Cargando...",
+    "notFound": "Sitio no encontrado",
+    "backToSites": "Volver a los sitios",
+    "edit": "Editar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "name": "Nombre",
+    "group": "Grupo",
+    "groupSearchPlaceholder": "Buscar un grupo...",
+    "domain": "Sector",
+    "color": "Color",
+    "country": "País",
+    "visitDate": "Fecha de la última visita",
+    "address": "Dirección",
+    "addressPlaceholder": "Buscar una dirección...",
+    "observations": "Observaciones",
+    "visitHistory": "Historial de visitas",
+    "siteContacts": "Contactos del sitio",
+    "copyEmails": "Copiar emails",
+    "addContact": "Añadir contacto",
+    "noActiveEmail": "Ningún email de contacto activo encontrado.",
+    "emailsCopied": "¡Emails copiados al portapapeles!",
+    "copyError": "Error al copiar los emails",
+    "saveSuccess": "¡Cambios guardados con éxito!",
+    "function": "Función",
+    "email": "Email",
+    "mobile": "Móvil",
+    "fixe": "Teléfono fijo",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "never": "Nunca",
+    "domains": {
+      "Ciment": "Cemento",
+      "Mineralurgie": "Mineralurgia",
+      "Platre": "Yeso",
+      "Papeterie": "Papel",
+      "Fertilisant": "Fertilizante",
+      "Autre": "Otro"
+    },
+    "colors": {
+      "Non visités": "No visitados",
+      "Visités": "Visitados",
+      "Visités il y a +18mois": "Visitados hace más de 18 meses",
+      "A visiter": "Por visitar",
+      "Fermés": "Cerrados"
+    },
+    "delete": "Eliminar",
+    "confirmDelete": "¿Seguro que desea eliminar definitivamente este sitio? Esta acción no se puede deshacer.",
+    "deleteBlocked": "Fallo al eliminar: usted no es el propietario de este sitio, o la eliminación está bloqueada por la seguridad de la base de datos."
+  },
+  "contacts": {
+    "addTitle": "Añadir un contacto",
+    "editTitle": "Editar un contacto",
+    "activeContact": "Contacto activo",
+    "aiMode": "Modo IA",
+    "analyze": "Analizar",
+    "analyzing": "Analizando...",
+    "scanImage": "Tarjeta de visita",
+    "takePhoto": "Tomar una foto",
+    "cardScanHint": "Importe una foto de una tarjeta de visita para rellenar los campos automáticamente.",
+    "imageInvalid": "Archivo de imagen no válido.",
+    "imageAnalyzeError": "No se pudo analizar la imagen. Inténtelo de nuevo.",
+    "lastName": "Apellido *",
+    "firstName": "Nombre *",
+    "function": "Función *",
+    "genre": "Género *",
+    "group": "Grupo *",
+    "fixe": "Teléfono fijo",
+    "site": "Sitio *",
+    "mobile": "Móvil",
+    "language": "Idioma *",
+    "email": "Email *",
+    "observations": "Observaciones",
+    "select": "Seleccionar",
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Email no válido",
+    "unauthorizedChars": "Caracteres no autorizados",
+    "emailContainsChars": "El email contiene caracteres no autorizados",
+    "fillAllRequired": "Rellene todos los campos obligatorios",
+    "contactEdited": "¡Contacto editado con éxito!",
+    "contactSaved": "¡Contacto guardado con éxito!",
+    "checking": "Comprobando...",
+    "edit": "Editar",
+    "save": "Guardar",
+    "alreadyExists": "ya existe",
+    "reset": "Restablecer",
+    "cancel": "Cancelar",
+    "listTitle": "Lista de contactos",
+    "searchPlaceholder": "Buscar un contacto...",
+    "matchingCount": "{{count}} contactos correspondientes",
+    "activeOnly": "Solo activos",
+    "loading": "Cargando...",
+    "noResults": "Ningún contacto encontrado.",
+    "functionLabel": "Función",
+    "groupLabel": "Grupo",
+    "siteLabel": "Sitio",
+    "emailLabel": "Email",
+    "mobileLabel": "Móvil",
+    "fixeLabel": "Teléfono fijo",
+    "statusLabel": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "genres": {
+      "Homme": "Hombre",
+      "Femme": "Mujer",
+      "Autre": "Otro"
+    },
+    "languages": {
+      "Français": "Francés",
+      "Anglais": "Inglés",
+      "Espagnol": "Español"
+    }
+  },
+  "profile": {
+    "title": "Mi perfil",
+    "emailSection": "Cambiar el email",
+    "newEmail": "Nuevo email",
+    "newEmailPlaceholder": "Introduzca su nuevo email",
+    "emailUpdated": "Email actualizado. Revise su bandeja de entrada para confirmar.",
+    "enterEmail": "Introduzca un email.",
+    "sameEmail": "Este email es idéntico al actual.",
+    "updateEmail": "Actualizar el email",
+    "passwordSection": "Cambiar la contraseña",
+    "newPassword": "Nueva contraseña",
+    "passwordPlaceholder": "Introduzca la nueva contraseña",
+    "confirmPassword": "Confirmar la contraseña",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+    "passwordMismatch": "Las contraseñas no coinciden.",
+    "passwordUpdated": "Contraseña actualizada con éxito.",
+    "updatePassword": "Actualizar la contraseña",
+    "languageSection": "Idioma preferido",
+    "language": "Idioma",
+    "languageUpdated": "Idioma actualizado.",
+    "languageSaved": "Idioma guardado.",
+    "saveLanguage": "Guardar el idioma",
+    "assignedCountries": "Países asignados",
+    "loadingZones": "Cargando zonas...",
+    "noCountries": "Ningún país asignado.",
+    "personalInfo": "Información personal",
+    "emailLabel": "Email",
+    "idLabel": "ID",
+    "createdOn": "Cuenta creada el",
+    "editEmail": "Editar el email",
+    "editPassword": "Editar la contraseña",
+    "preferredLanguage": "Idioma preferido",
+    "french": "Français",
+    "english": "English",
+    "themeSection": "Apariencia",
+    "theme": "Tema",
+    "themeLight": "Modo claro",
+    "themeDark": "Modo oscuro",
+    "themeAuto": "Modo automático (según los ajustes del dispositivo)",
+    "themeSaved": "Tema guardado.",
+    "spanish": "Español"
+  },
+  "emails": {
+    "title": "Emails",
+    "fetch": "Obtener emails",
+    "fetching": "Obteniendo...",
+    "copy": "Copiar emails",
+    "copySuccess": "¡Emails copiados al portapapeles!",
+    "copyError": "Error al copiar los emails",
+    "noEmails": "Ningún email encontrado para los criterios seleccionados.",
+    "noEmailsToCopy": "Ningún email que copiar.",
+    "results": "Resultados",
+    "emailsCount": "{{count}} emails obtenidos",
+    "duplicatesIgnored": "{{count}} duplicados ignorados",
+    "contactsCount": "{{count}} contactos",
+    "selectAll": "Seleccionar todo",
+    "deselectAll": "Deseleccionar todo",
+    "countries": "Países",
+    "languages": "Idiomas",
+    "loading": "Cargando...",
+    "noZones": "Ningún país asignado. Contacte con un administrador.",
+    "byLanguage": "por idioma",
+    "totalContacts": "{{count}} contactos filtrados",
+    "activeOnly": "Solo activos",
+    "error": "Error: {{message}}"
+  },
+  "adminZones": {
+    "title": "Gestión de zonas",
+    "selectUser": "Seleccionar un usuario",
+    "noUsers": "Ningún usuario que mostrar.",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "selectAll": "Seleccionar todo",
+    "deselectAll": "Deseleccionar todo",
+    "noChanges": "Ningún cambio que guardar.",
+    "saved": "Zonas guardadas con éxito.",
+    "saveError": "Error al guardar las zonas."
+  },
+  "prospection": {
+    "title": "Prospección",
+    "subtitle": "Sugerencias de sitios y grupos del análisis semanal de IA (molinos de bolas / hornos rotatorios).",
+    "sitesSection": "Prospección de sitios",
+    "watchSection": "Búsqueda de información / vigilancia comercial",
+    "watchDescription": "Búsqueda de información sobre sitios existentes: noticias, proyectos, ampliaciones, contactos, eventos relevantes (función de IA próxima).",
+    "watchPlaceholder": "La vigilancia comercial sobre sitios existentes estará disponible aquí en breve (IA).",
+    "loadMore": "Mostrar más ({{shown}}/{{total}} mostradas)",
+    "groupSite": "Grupo / Sitio",
+    "searchPlaceholder": "Buscar por grupo, sitio, sector, país",
+    "matchingCount": "{{count}} sugerencias correspondientes",
+    "pendingOnly": "Solo pendientes",
+    "loading": "Cargando sugerencias...",
+    "noResults": "Ninguna sugerencia encontrada.",
+    "address": "Dirección",
+    "domain": "Sector",
+    "country": "País",
+    "relevance": "Puntuación de relevancia",
+    "source": "Fuente",
+    "createdDate": "Fecha de creación",
+    "openSource": "Abrir la fuente",
+    "unknown": "Desconocido",
+    "refuse": "Eliminar",
+    "analyze": "Analizar",
+    "existing": "Ya existe",
+    "analyzeTitle": "Analizar la sugerencia",
+    "sourceObs": "Sitio web identificado",
+    "statusApproved": "Aprobado",
+    "statusRefused": "Rechazado",
+    "statusExisting": "Ya en la base",
+    "domains": {
+      "Ciment": "Cemento",
+      "Mineralurgie": "Mineralurgia",
+      "Platre": "Yeso",
+      "Papeterie": "Papel",
+      "Fertilisant": "Fertilizante",
+      "Chimie": "Química",
+      "Calcination": "Calcinación",
+      "Incinération": "Incineración",
+      "Autre": "Otro"
+    }
+  },
+  "visite": {
+    "title": "Visitas a clientes — proyectos de viaje",
+    "subtitle": "Sus proyectos de viaje guardados desde la página Sitios (modo de visita IA).",
+    "goToSites": "Crear un viaje desde la página Sitios →",
+    "loading": "Cargando...",
+    "noTrips": "Aún no hay ningún viaje guardado.",
+    "sites": "sitios",
+    "countries": "Países",
+    "localCar": "Coche de alquiler en el destino",
+    "totalKm": "≈ {{km}} km de conducción local",
+    "statusDraft": "Borrador",
+    "statusPlanned": "Planificado",
+    "statusDone": "Completado",
+    "stepsTitle": "Etapas del viaje",
+    "addStep": "Añadir trayecto",
+    "addMeeting": "Añadir reunión",
+    "newStepLabel": "Nueva etapa",
+    "day": "Día",
+    "scheduledDate": "Fecha de visita",
+    "scheduledTime": "Hora de visita",
+    "startTime": "Hora de inicio",
+    "endTime": "Hora de fin",
+    "durationMinutes": "Duración",
+    "noDuration": "Sin duración",
+    "confirmDelete": "¿Eliminar este proyecto de viaje?",
+    "tripDeleted": "Viaje eliminado.",
+    "prefsTitle": "Mis preferencias de viaje",
+    "prefsSummary": "Ciudad de origen: {{city}} · {{stations}} estación(es) · {{airports}} aeropuerto(s) preferido(s)",
+    "originCity": "Ciudad de origen",
+    "preferredStations": "Estaciones de salida preferidas",
+    "preferredAirports": "Aeropuertos de salida preferidos",
+    "prefsSaved": "Preferencias guardadas.",
+    "startDate": "Fecha de inicio del viaje",
+    "from": "desde",
+    "newStepTitle": "Nueva etapa",
+    "stepName": "Nombre de la etapa",
+    "stepDetail": "Detalle (opcional)",
+    "reorderHint": "Solo puede reordenar las visitas a clientes (🤝): los trayectos se adaptan automáticamente al nuevo orden.",
+    "meetingDuration": "Duración estándar de las reuniones (minutos)",
+    "addStation": "Añadir una estación",
+    "addAirport": "Añadir un aeropuerto",
+    "stationName": "Nombre de la estación",
+    "airportName": "Nombre del aeropuerto",
+    "prefsAddHint": "Puede añadir cualquier estación o aeropuerto del mundo.",
+    "exportPdf": "Exportar en PDF",
+    "visitOrder": "Orden de visita",
+    "meetingMinutes": "Duración de la reunión (min)",
+    "roadbook": "Libro de ruta",
+    "timeQuarterlyHint": "Horas en pasos de 15 minutos.",
+    "renameStep": "Renombrar esta etapa",
+    "renameStepShort": "✎",
+    "renameStepTitle": "Editar la etapa"
+  },
+  "help": {
+    "title": "Ayuda — Guía de funcionalidades",
+    "subtitle": "Encuentre aquí una explicación de todas las funcionalidades de cada página de JENNY.",
+    "searchPlaceholder": "Buscar por palabras clave...",
+    "searchResults": "Resultados de la búsqueda (por relevancia):",
+    "searchNoResults": "Ningún resultado para esta búsqueda.",
+    "expandAll": "Desplegar todo",
+    "collapseAll": "Plegar todo",
+    "pages": [
+      {
+        "title": "Inicio",
+        "description": "Presentación de JENNY y la lista de funcionalidades añadidas recientemente.",
+        "themes": [
+          {
+            "title": "Visión general de la herramienta",
+            "features": [
+              "Presentación de JENNY y su misión: optimizar su rendimiento comercial.",
+              "Presentación de los principios clave: organizar, planificar, rendir."
+            ]
+          },
+          {
+            "title": "Funcionalidades recientes",
+            "features": [
+              "Sección «Funcionalidades añadidas recientemente»: siga las últimas novedades del sitio.",
+              "La lista se actualiza en cada actualización significativa del sitio."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Sitios",
+        "description": "Gestión de sitios industriales y grupos, con mapa interactivo y planificación de visitas asistida por IA.",
+        "themes": [
+          {
+            "title": "Lista y búsqueda de sitios",
+            "features": [
+              "Lista de sitios con búsqueda por nombre, grupo o país y contador de sitios correspondientes.",
+              "Colores de estado: No visitados, Visitados, Visitados hace más de 18 meses, Por visitar, Cerrados.",
+              "Número de contactos por sitio e historial de la última visita."
+            ]
+          },
+          {
+            "title": "Grupos y creación de sitios",
+            "features": [
+              "Creación y edición de grupos; el cambio de nombre de un grupo se propaga a los sitios y contactos asociados.",
+              "Creación de sitios: nombre, grupo, sector, color de estado, dirección (búsqueda automática), país y observaciones.",
+              "El cambio de nombre de un sitio se propaga automáticamente a sus contactos."
+            ]
+          },
+          {
+            "title": "Modo de visita IA",
+            "features": [
+              "Haga clic en los marcadores de los sitios a visitar en el mapa y genere un viaje optimizado (tren preferido, avión si es necesario, coche de alquiler en el destino).",
+              "Guarde el viaje generado como proyecto de viaje y encuéntrelo en la página Visita."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Detalle del sitio",
+        "description": "Ficha completa del sitio: información, historial de visitas y contactos asociados.",
+        "themes": [
+          {
+            "title": "Información del sitio",
+            "features": [
+              "Edición de la información: nombre, grupo, sector, color, país, dirección, observaciones, fecha de la última visita.",
+              "Historial de visitas del sitio."
+            ]
+          },
+          {
+            "title": "Contactos del sitio",
+            "features": [
+              "Lista de contactos del sitio con función, emails, teléfonos y estado activo/inactivo.",
+              "Añadir un contacto directamente desde la ficha del sitio.",
+              "Copia en un clic de todos los emails activos de los contactos del sitio."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Contactos",
+        "description": "Gestión completa de su directorio de contactos.",
+        "themes": [
+          {
+            "title": "Lista y búsqueda de contactos",
+            "features": [
+              "Lista de contactos con búsqueda y contador de contactos correspondientes.",
+              "Filtro «Solo activos» y estado activo/inactivo por contacto."
+            ]
+          },
+          {
+            "title": "Añadir y editar un contacto",
+            "features": [
+              "Campos: apellido, nombre, función, género, grupo, sitio, teléfonos (fijo y móvil), idioma, email y observaciones.",
+              "Desactivación de un contacto (p. ej. si deja la empresa) sin eliminarlo."
+            ]
+          },
+          {
+            "title": "Modo IA (tarjeta de visita)",
+            "features": [
+              "Importe una foto de una tarjeta de visita para rellenar automáticamente los campos (incluidos género e idioma).",
+              "Comprobación de duplicados antes de guardar."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Emails",
+        "description": "Extracción rápida de los emails de sus contactos según sus zonas.",
+        "themes": [
+          {
+            "title": "Filtros y obtención",
+            "features": [
+              "Obtención de emails filtrada por país e idioma.",
+              "Filtro «Solo activos» activado por defecto, selección de país/idioma y seleccionar/deseleccionar todo.",
+              "Carga completa de los contactos, incluso más allá de 1000 filas."
+            ]
+          },
+          {
+            "title": "Copia de emails",
+            "features": [
+              "Copia de los emails obtenidos al portapapeles en un clic.",
+              "Mostrar el número de duplicados ignorados durante la obtención."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Prospección",
+        "description": "Sugerencias de prospección del análisis semanal de IA (molinos de bolas / hornos rotatorios).",
+        "themes": [
+          {
+            "title": "Lista de sugerencias",
+            "features": [
+              "Lista de sugerencias de sitios y grupos con búsqueda y filtro «Solo pendientes».",
+              "Visualización en lotes de 50 sugerencias, carga completa más allá de 1000 filas.",
+              "Sección «Búsqueda de información / vigilancia comercial» sobre sitios existentes (función de IA próxima)."
+            ]
+          },
+          {
+            "title": "Ordenar sugerencias",
+            "features": [
+              "Ordenación haciendo clic en los títulos de columna (ascendente/descendente).",
+              "Ordenación por tasa de relevancia o por fecha de creación."
+            ]
+          },
+          {
+            "title": "Gestionar una sugerencia",
+            "features": [
+              "Abrir la fuente, eliminar o analizar para crear el sitio.",
+              "Estados: Aprobado / Rechazado / Ya en la base de datos."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Visita",
+        "description": "Gestión de sus proyectos de viaje a clientes creados desde el modo de visita IA de la página Sitios.",
+        "themes": [
+          {
+            "title": "Proyectos de viaje",
+            "features": [
+              "Lista de sus viajes con estado (Borrador, Planificado, Completado), países visitados y kilometraje total.",
+              "Eliminación de un proyecto de viaje.",
+              "Mapa dinámico del viaje y exportación en PDF del libro de ruta (marca Jenny, mapa incluido)."
+            ]
+          },
+          {
+            "title": "Preferencias de viaje",
+            "features": [
+              "Ciudad de origen, estaciones y aeropuertos de salida preferidos (entrada libre en todo el mundo).",
+              "Duración estándar de las reuniones o personalizada por sitio."
+            ]
+          },
+          {
+            "title": "Etapas del viaje",
+            "features": [
+              "Añadir y renombrar etapas, fecha y hora de visita (pasos de 15 minutos).",
+              "Reordenación de las visitas a clientes: los días y horarios se reprograman automáticamente, los trayectos se adaptan."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Mi perfil",
+        "description": "Gestión de su cuenta personal.",
+        "themes": [
+          {
+            "title": "Credenciales",
+            "features": [
+              "Cambio de email (con confirmación por email) y cambio de contraseña.",
+              "Restablecimiento de la contraseña en caso de olvido."
+            ]
+          },
+          {
+            "title": "Preferencias e información",
+            "features": [
+              "Idioma preferido (Français / English / Español) aplicado a todo el sitio.",
+              "Información personal y lista de países asignados (zonas)."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Gestión de zonas (admin)",
+        "description": "Página reservada al administrador para asignar países a los usuarios.",
+        "themes": [
+          {
+            "title": "Asignación de zonas",
+            "features": [
+              "Selección de usuario y asignación de sus países (zonas de acción).",
+              "Seleccionar todo / deseleccionar todo y guardar.",
+              "Mapa dinámico de las zonas asignadas."
+            ]
+          },
+          {
+            "title": "Impacto de las zonas",
+            "features": [
+              "Estas zonas determinan qué contactos y emails puede ver cada usuario en las páginas Emails y Contactos."
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Inicio de sesión / Restablecimiento",
+        "description": "Acceso a su cuenta JENNY.",
+        "themes": [
+          {
+            "title": "Conectarse y desconectarse",
+            "features": [
+              "Inicie sesión con su email y contraseña.",
+              "Cierre sesión desde el menú «Mi cuenta»."
+            ]
+          },
+          {
+            "title": "Contraseña olvidada",
+            "features": [
+              "Restablecimiento de la contraseña vía el enlace «contraseña olvidada»."
+            ]
+          }
+        ]
+      }
+    ],
+    "recentTitle": "Funcionalidades añadidas recientemente:",
+    "recentItems": [
+      "Modo oscuro: elija el modo claro, oscuro o automático (según los ajustes del dispositivo) en «Mi cuenta»",
+      "Español: nuevo idioma del sitio, seleccionable en «Mi cuenta» además de francés e inglés",
+      "Página «Ayuda»: accesible solo para usuarios conectados",
+      "Botón «Eliminar»: corrección de la eliminación (0 filas eliminadas cuando la política RLS bloquea), con mensaje de error explícito",
+      "Botón «Eliminar» en la página Detalle del sitio: eliminación de un sitio solo por su propietario, con petición de confirmación",
+      "Página Visita: botón «Añadir reunión», reunión manual con duración, y renombrado del botón «Añadir etapa» a «Añadir trayecto»",
+      "Página Visita: hora de inicio y hora de fin modificables manualmente en cada etapa, con propagación automática a las etapas siguientes (duración del trayecto o de la reunión tenida en cuenta)",
+      "Sugerencias de viaje: las duraciones reales de los tramos en tren y avión se tienen ahora en cuenta en el cálculo de los horarios",
+      "Página Visita: horarios prerellenados desde el trayecto calculado, y ajuste automático de las etapas siguientes al cambiar un horario o una duración de reunión",
+      "PDF: mapa ampliado automáticamente sobre el trayecto completo; botón «Confirmar» corregido",
+      "Reordenación de las visitas: duraciones y distancias reales conservadas, solo los trayectos modificados se recalculan",
+      "Reordenación de las visitas: las etapas manuales ahora se conservan",
+      "Página Visita: flechas de desplazamiento para las etapas manuales (en cualquier parte del programa) y renombrado de cualquier etapa en cualquier momento",
+      "Repliegue automático a la ruta en coche de Google cuando no se encuentra itinerario en transporte público (tramos internacionales)",
+      "Corrección de la visualización del diagnóstico de Google Directions (interpolaciones i18n)",
+      "Diagnóstico detallado de Google Directions en la propuesta de trayecto (estado exacto, llamadas OK/fallidas)",
+      "Itinerarios y horarios reales vía Google Directions (diagnóstico visible en la propuesta de trayecto)",
+      "Duraciones e itinerarios reales vía la API de Google Directions para la generación de los trayectos (coche y transporte público), con repliegue automático a estimaciones",
+      "Corrección de la visualización de las duraciones de trayecto en coche en el programa de visita",
+      "Sugerencias de viaje más inteligentes: tren internacional hasta la estación de entrada del país (p. ej. St Pancras), luego correspondencia en tren nacional hasta la estación más cercana a los sitios antes de coger el coche",
+      "Selección inteligente del hub de viaje: aeropuerto más cercano a los sitios (p. ej. Sevilla), salvaguardia para destinos lejanos (ultramar)",
+      "Página «Ayuda»: ventanas desplegables por página y por tema, con barra de búsqueda por palabras clave",
+      "Reordenación de las visitas: horarios y números de día recalculados; PDF sin ventana «orden de visita», mención del desarrollador en la cabecera",
+      "Exportación en PDF del libro de ruta con mapa dinámico e identidad gráfica Jenny (colores, logo)",
+      "Página Visita: estaciones/aeropuertos en texto libre, duración de reunión estándar y por sitio, pasos de 15 minutos, corrección de la fecha de salida, numeración de las visitas, exportación en PDF del libro de ruta con mapa",
+      "Página Visita: preferencias de viaje (ciudad de origen, estaciones/aeropuertos preferidos), fecha de inicio desplegada en las etapas, renombrado de etapas, mapa dinámico del viaje y reordenación de las visitas a clientes con adaptación automática de los trayectos",
+      "Nuevo «Modo de visita IA»: sugerencias de viaje optimizadas desde el mapa de sitios + página «Visita» para gestionar sus proyectos de viaje",
+      "Ordenación de las sugerencias de prospección haciendo clic en los títulos de columna (ascendente/descendente)",
+      "Columna de fecha de creación para las sugerencias en la página Prospección",
+      "Corrección del campo grupo en la página Detalle del sitio (campo mostrado [object Object])",
+      "Nueva sección «Búsqueda de información / vigilancia comercial» en la página Prospección (IA próximamente)",
+      "Sugerencias de prospección mostradas como una lista con lotes de 50",
+      "Filtro «Solo activos» activado por defecto en la página Emails",
+      "Mostrar el número de duplicados ignorados al obtener los emails",
+      "Carga completa de los contactos de la página Emails (más allá de 1000 filas)",
+      "Mapa dinámico de zonas en la gestión de zonas (página admin)",
+      "Fondos de zona de la página Emails armonizados con las demás páginas",
+      "Añadir un contacto directamente desde la página Detalle del sitio",
+      "Prerrelleno por IA del género y del idioma de un contacto",
+      "Carga completa de las sugerencias de prospección (más allá de 1000 filas)",
+      "Ordenar las sugerencias de prospección por fecha o puntuación de relevancia",
+      "Cambio de nombre de un sitio propagado automáticamente a sus contactos",
+      "Cambio de nombre de un grupo propagado a los sitios y contactos asociados",
+      "Extracción de emails de contactos filtrada por país e idioma",
+      "Relleno automático del formulario de contacto con IA",
+      "Actualización automática del estado de los sitios cada mañana",
+      "Versión móvil optimizada y simplificada",
+      "Desactivación de contactos (p. ej. si dejan la empresa)",
+      "Número de contactos por sitio",
+      "Historial de las últimas visitas de cada sitio"
+    ]
+  }
+}
