@@ -19,10 +19,12 @@ import { UserZonesProvider } from './lib/userZones';
 import AdminRoute from './components/AdminRoute';
 import AdminZones from './pages/AdminZones';
 import LanguageSync from './components/LanguageSync';
+import { ThemeProvider } from './lib/theme';
 
 export default function App() {
   return (
     <LanguageSync>
+      <ThemeProvider>
       <UserZonesProvider>
         <Router>
           <GoogleMapsWrapper>
@@ -122,6 +124,7 @@ export default function App() {
           </GoogleMapsWrapper>
         </Router>
       </UserZonesProvider>
+      </ThemeProvider>
     </LanguageSync>
   );
 }
@@ -134,7 +137,7 @@ const appContainerStyle = {
   overflowX: 'hidden',
   margin: 0,
   padding: 0,
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--bg-page)',
 };
 
 const mainStyle = {

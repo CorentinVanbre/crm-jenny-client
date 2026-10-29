@@ -258,7 +258,13 @@
     "editPassword": "Edit password",
     "preferredLanguage": "Preferred language",
     "french": "Français",
-    "english": "English"
+    "english": "English",
+    "themeSection": "Appearance",
+    "theme": "Theme",
+    "themeLight": "Light mode",
+    "themeDark": "Dark mode",
+    "themeAuto": "Automatic mode (based on device settings)",
+    "themeSaved": "Theme saved."
   },
   "emails": {
     "title": "Emails",
@@ -637,6 +643,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Dark mode: choose light, dark or automatic mode (based on device settings) in \\\"My account\\\"",
       "\"Delete\" button: fixed deletion being a no-op (0 rows) when blocked by RLS, now shows an explicit error",
       "\"Delete\" button on the SiteDetail page: site deletion restricted to the site owner, with confirmation prompt",
       "Visite page: \"Add Meeting\" button, manual meeting with duration, and \"Add a step\" renamed to \"Add trip\"",

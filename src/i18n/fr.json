@@ -258,7 +258,13 @@
     "editPassword": "Modifier le mot de passe",
     "preferredLanguage": "Langue préférée",
     "french": "Français",
-    "english": "English"
+    "english": "English",
+    "themeSection": "Apparence",
+    "theme": "Thème",
+    "themeLight": "Mode clair",
+    "themeDark": "Mode sombre",
+    "themeAuto": "Mode automatique (selon l'appareil)",
+    "themeSaved": "Thème enregistré."
   },
   "emails": {
     "title": "Emails",
@@ -637,6 +643,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Mode sombre : choix du mode clair, sombre ou automatique (selon les réglages de l'appareil) dans « Mon compte »",
       "Bouton « Supprimer » : correction de la suppression (aucune ligne supprimée quand la policy RLS bloque), avec message d'erreur explicite",
       "Bouton « Supprimer » sur la page SiteDetail : suppression d'un site par son propriétaire uniquement, avec demande de confirmation",
       "Page Visite : bouton « Ajouter Réunion », ajout manuel d'une réunion avec durée, et renommage du bouton « Ajouter étape » en « Ajouter trajet »",

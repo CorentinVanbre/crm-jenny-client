@@ -809,7 +809,7 @@ export default function SiteDetail() {
       case 'a visiter':
         return '#FF0000';
       default:
-        return '#000000';
+        return 'var(--text-primary)';
     }
   };
 
@@ -866,21 +866,21 @@ export default function SiteDetail() {
   // Style de base pour les boutons
   const baseButtonStyle = {
     padding: '10px 20px',
-    border: '1px solid black',
+    border: '1px solid var(--border-strong)',
     borderRadius: '4px',
     cursor: 'pointer',
     fontSize: '14px',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
     textDecoration: 'none',
-    color: 'black',
+    color: 'var(--text-primary)',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E5E5E4',
+    backgroundColor: 'var(--accent-primary)',
     transition: 'background-color 0.2s ease',
     ':hover': {
-      backgroundColor: '#d1d1d1'
+      backgroundColor: 'var(--border-color)'
     }
   };
 
@@ -891,16 +891,16 @@ export default function SiteDetail() {
   // Style pour le bouton désactivé (comme dans Contacts.tsx)
   const disabledButtonStyle = {
     ...baseButtonStyle,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'var(--bg-surface-alt)',
     opacity: 0.5,
     cursor: 'not-allowed',
     ':hover': {
-      backgroundColor: '#f5f5f5'
+      backgroundColor: 'var(--bg-surface-alt)'
     }
   };
 
   const formContainerStyle = {
-    backgroundColor: '#A6A6A6',
+    backgroundColor: 'var(--bg-header)',
     borderRadius: '8px',
     padding: '20px',
     marginBottom: '20px'
@@ -932,7 +932,7 @@ export default function SiteDetail() {
     fontSize: '14px',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
-    backgroundColor: isEditing ? '#fff' : '#f5f5f5',
+    backgroundColor: isEditing ? 'var(--bg-surface)' : 'var(--bg-surface-alt)',
     width: '100%',
     boxSizing: 'border-box' as const
   };
@@ -955,7 +955,7 @@ export default function SiteDetail() {
     right: 0,
     maxHeight: '200px',
     overflowY: 'auto',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid #ddd',
     borderRadius: '4px',
     zIndex: 1000,
@@ -977,16 +977,16 @@ export default function SiteDetail() {
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
     fontSize: '14px',
-    backgroundColor: isSuccess ? '#d4edda' : '#f8d7da',
-    color: isSuccess ? '#155724' : '#721c24',
-    border: `1px solid ${isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+    backgroundColor: isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+    color: isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+    border: `1px solid ${isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
     textAlign: 'center'
   });
 
   const deleteButtonStyle = {
     ...baseButtonStyle,
     backgroundColor: '#FF4444',
-    color: '#fff',
+    color: 'var(--bg-surface)',
     borderColor: '#FF4444'
   };
 
@@ -1002,7 +1002,7 @@ export default function SiteDetail() {
 
   // Style pour les cartes de visite
   const cardStyle = {
-    backgroundColor: '#A6A6A6',
+    backgroundColor: 'var(--bg-header)',
     border: '1px solid #ddd',
     borderRadius: '8px',
     padding: '15px',
@@ -1023,9 +1023,9 @@ export default function SiteDetail() {
   const modifyButtonStyle = {
     height: '25px',
     padding: '0 10px',
-    border: '1px solid black',
+    border: '1px solid var(--border-strong)',
     borderRadius: '4px',
-    backgroundColor: '#E5E5E4',
+    backgroundColor: 'var(--accent-primary)',
     cursor: 'pointer',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
@@ -1034,7 +1034,7 @@ export default function SiteDetail() {
     marginRight: '0',
     transition: 'background-color 0.2s ease',
     ':hover': {
-      backgroundColor: '#d1d1d1'
+      backgroundColor: 'var(--border-color)'
     }
   };
 
@@ -1111,7 +1111,7 @@ export default function SiteDetail() {
               disabled={!isEditing}
               style={{
                 ...inputStyle,
-                backgroundColor: isEditing ? '#fff' : '#f5f5f5'
+                backgroundColor: isEditing ? 'var(--bg-surface)' : 'var(--bg-surface-alt)'
               }}
               placeholder={t('siteDetail.groupSearchPlaceholder')}
             />
@@ -1123,7 +1123,7 @@ export default function SiteDetail() {
                     onClick={() => handleSelectGroup(groupe)}
                     style={{
                       ...dropdownItemStyle,
-                      backgroundColor: formData.groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent'
+                      backgroundColor: formData.groupe === groupe.nom_groupe ? 'var(--bg-surface-alt)' : 'transparent'
                     }}
                   >
                     {groupe.nom_groupe}
@@ -1214,7 +1214,7 @@ export default function SiteDetail() {
               type="text"
               value={formData.adress.formatted}
               readOnly
-              style={{ ...inputStyle, backgroundColor: '#f5f5f5' }}
+              style={{ ...inputStyle, backgroundColor: 'var(--bg-surface-alt)' }}
             />
           )}
         </div>
@@ -1299,7 +1299,7 @@ export default function SiteDetail() {
           marginBottom: '15px',
           fontFamily: 'Barlow, sans-serif',
           fontSize: '14px',
-          color: '#155724',
+          color: 'var(--success-text)',
           fontWeight: 200,
           textAlign: 'right'
         }}>
@@ -1379,7 +1379,7 @@ export default function SiteDetail() {
               position: 'fixed',
               top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               borderRadius: '8px',
               padding: '20px',
               zIndex: 1000,
@@ -1431,7 +1431,7 @@ export default function SiteDetail() {
                       value={contactFormData.noms}
                       onChange={(e) => setContactFormData({ ...contactFormData, noms: e.target.value })}
                       onBlur={() => setTouchedContactFields(prev => new Set(prev).add('noms'))}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('noms') && !contactFormData.noms) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('noms') && !contactFormData.noms) ? '#ff4444' : 'var(--border-color)' }}
                     />
                     {touchedContactFields.has('noms') && !contactFormData.noms && <span style={{ color: '#ff4444', fontSize: '12px' }}>{t('contacts.required')}</span>}
                   </div>
@@ -1442,7 +1442,7 @@ export default function SiteDetail() {
                       value={contactFormData.prenom}
                       onChange={(e) => setContactFormData({ ...contactFormData, prenom: e.target.value })}
                       onBlur={() => setTouchedContactFields(prev => new Set(prev).add('prenom'))}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('prenom') && !contactFormData.prenom) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('prenom') && !contactFormData.prenom) ? '#ff4444' : 'var(--border-color)' }}
                     />
                     {touchedContactFields.has('prenom') && !contactFormData.prenom && <span style={{ color: '#ff4444', fontSize: '12px' }}>{t('contacts.required')}</span>}
                   </div>
@@ -1457,7 +1457,7 @@ export default function SiteDetail() {
                       value={contactFormData.fonction}
                       onChange={(e) => setContactFormData({ ...contactFormData, fonction: e.target.value })}
                       onBlur={() => setTouchedContactFields(prev => new Set(prev).add('fonction'))}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('fonction') && !contactFormData.fonction) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('fonction') && !contactFormData.fonction) ? '#ff4444' : 'var(--border-color)' }}
                     />
                     {touchedContactFields.has('fonction') && !contactFormData.fonction && <span style={{ color: '#ff4444', fontSize: '12px' }}>{t('contacts.required')}</span>}
                   </div>
@@ -1467,7 +1467,7 @@ export default function SiteDetail() {
                       value={contactFormData.genre}
                       onChange={(e) => setContactFormData({ ...contactFormData, genre: e.target.value })}
                       onBlur={() => setTouchedContactFields(prev => new Set(prev).add('genre'))}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('genre') && !contactFormData.genre) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('genre') && !contactFormData.genre) ? '#ff4444' : 'var(--border-color)' }}
                     >
                       <option value="">{t('contacts.select')}</option>
                       <option value="Homme">{t('contacts.genres.Homme')}</option>
@@ -1489,7 +1489,7 @@ export default function SiteDetail() {
                         onChange={(e) => handleContactGroupeSearch(e.target.value)}
                         onBlur={() => { setShowContactGroupeDropdown(false); setTouchedContactFields(prev => new Set(prev).add('groupe')); }}
                         onFocus={() => { setShowContactGroupeDropdown(true); setTouchedContactFields(prev => new Set(prev).add('groupe')); }}
-                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: 'auto', flex: 1, borderColor: (touchedContactFields.has('groupe') && !contactFormData.groupe) ? '#ff4444' : '#ddd' }}
+                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: 'auto', flex: 1, borderColor: (touchedContactFields.has('groupe') && !contactFormData.groupe) ? '#ff4444' : 'var(--border-color)' }}
                       />
                       {showContactGroupeDropdown && filteredContactGroupes.length > 0 && (
                         <div style={dropdownStyle} onMouseDown={(e) => e.preventDefault()}>
@@ -1507,7 +1507,7 @@ export default function SiteDetail() {
                       type="tel"
                       value={contactFormData.num_fixe}
                       onChange={(e) => setContactFormData({ ...contactFormData, num_fixe: e.target.value })}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
@@ -1524,7 +1524,7 @@ export default function SiteDetail() {
                         onBlur={() => { setShowContactSiteDropdown(false); setTouchedContactFields(prev => new Set(prev).add('site')); }}
                         onFocus={() => { if (contactFormData.groupe) setShowContactSiteDropdown(true); setTouchedContactFields(prev => new Set(prev).add('site')); }}
                         disabled={!contactFormData.groupe}
-                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, width: 'auto', flex: 1, borderColor: (touchedContactFields.has('site') && !contactFormData.site) ? '#ff4444' : '#ddd', backgroundColor: !contactFormData.groupe ? '#f5f5f5' : '#fff' }}
+                        style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, width: 'auto', flex: 1, borderColor: (touchedContactFields.has('site') && !contactFormData.site) ? '#ff4444' : 'var(--border-color)', backgroundColor: !contactFormData.groupe ? 'var(--bg-surface-alt)' : 'var(--bg-surface)' }}
                       />
                       {showContactSiteDropdown && contactFormData.groupe && filteredContactSites.length > 0 && (
                         <div style={dropdownStyle} onMouseDown={(e) => e.preventDefault()}>
@@ -1542,7 +1542,7 @@ export default function SiteDetail() {
                       type="tel"
                       value={contactFormData.num_mobile}
                       onChange={(e) => setContactFormData({ ...contactFormData, num_mobile: e.target.value })}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
@@ -1555,7 +1555,7 @@ export default function SiteDetail() {
                       value={contactFormData.langue}
                       onChange={(e) => setContactFormData({ ...contactFormData, langue: e.target.value })}
                       onBlur={() => setTouchedContactFields(prev => new Set(prev).add('langue'))}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('langue') && !contactFormData.langue) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('langue') && !contactFormData.langue) ? '#ff4444' : 'var(--border-color)' }}
                     >
                       <option value="">{t('contacts.select')}</option>
                       <option value="Français">{t('contacts.languages.Français')}</option>
@@ -1580,7 +1580,7 @@ export default function SiteDetail() {
                           await checkContactEmailAvailability(contactFormData.email);
                         }
                       }}
-                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('email') && (!contactFormData.email || contactErrors.email || contactEmailExistsError)) ? '#ff4444' : '#ddd' }}
+                      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', borderColor: (touchedContactFields.has('email') && (!contactFormData.email || contactErrors.email || contactEmailExistsError)) ? '#ff4444' : 'var(--border-color)' }}
                     />
                     {touchedContactFields.has('email') && !contactFormData.email && <span style={{ color: '#ff4444', fontSize: '12px' }}>{t('contacts.required')}</span>}
                     {contactErrors.email && <span style={{ color: '#ff4444', fontSize: '12px' }}>{contactErrors.email}</span>}
@@ -1606,8 +1606,8 @@ export default function SiteDetail() {
                           fontWeight: 200,
                           border: '1px solid #ddd',
                           borderRadius: '4px',
-                          backgroundColor: '#000',
-                          color: '#fff',
+                          backgroundColor: 'var(--text-primary)',
+                          color: 'var(--bg-surface)',
                           cursor: isAnalyzingContactAI || !contactFormData.observations.trim() ? 'not-allowed' : 'pointer',
                           opacity: isAnalyzingContactAI || !contactFormData.observations.trim() ? 0.5 : 1,
                         }}
@@ -1620,7 +1620,7 @@ export default function SiteDetail() {
                     value={contactFormData.observations}
                     onChange={(e) => setContactFormData({ ...contactFormData, observations: e.target.value })}
                     onPaste={handleContactPaste}
-                    style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: '#fff', width: '100%', boxSizing: 'border-box', height: '260px', resize: 'vertical' }}
+                    style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', fontWeight: 200, backgroundColor: 'var(--bg-surface)', width: '100%', boxSizing: 'border-box', height: '260px', resize: 'vertical' }}
                   />
                 </div>
               </div>
@@ -1631,9 +1631,9 @@ export default function SiteDetail() {
               <div style={{
                 padding: '10px', margin: '10px 0', borderRadius: '4px',
                 fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-                backgroundColor: contactConfirmMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: contactConfirmMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${contactConfirmMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`
+                backgroundColor: contactConfirmMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: contactConfirmMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${contactConfirmMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`
               }}>
                 {contactConfirmMessage.text}
               </div>
@@ -1646,8 +1646,8 @@ export default function SiteDetail() {
                   type="submit"
                   disabled={!hasContactFormChanged || !areContactRequiredFieldsFilled() || contactEmailExistsError || isCheckingContactEmail}
                   style={{
-                    height: '30px', padding: '0 15px', border: '1px solid black', borderRadius: '4px',
-                    backgroundColor: '#E5E5E4', cursor: hasContactFormChanged && areContactRequiredFieldsFilled() && !contactEmailExistsError ? 'pointer' : 'not-allowed',
+                    height: '30px', padding: '0 15px', border: '1px solid var(--border-strong)', borderRadius: '4px',
+                    backgroundColor: 'var(--accent-primary)', cursor: hasContactFormChanged && areContactRequiredFieldsFilled() && !contactEmailExistsError ? 'pointer' : 'not-allowed',
                     fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     opacity: hasContactFormChanged && areContactRequiredFieldsFilled() && !contactEmailExistsError ? 1 : 0.5
@@ -1662,7 +1662,7 @@ export default function SiteDetail() {
               <button
                 type="button"
                 onClick={resetContactForm}
-                style={{ height: '30px', padding: '0 15px', border: '1px solid black', borderRadius: '4px', backgroundColor: '#E5E5E4', cursor: 'pointer', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ height: '30px', padding: '0 15px', border: '1px solid var(--border-strong)', borderRadius: '4px', backgroundColor: 'var(--accent-primary)', cursor: 'pointer', fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 {t('contacts.cancel')}
               </button>

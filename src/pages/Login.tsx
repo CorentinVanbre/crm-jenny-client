@@ -367,8 +367,8 @@ const inputStyle: React.CSSProperties = {
 
 const buttonStyle: React.CSSProperties = {
   padding: '10px 15px',
-  backgroundColor: '#000',
-  color: '#fff',
+  backgroundColor: 'var(--text-primary)',
+  color: 'var(--bg-surface)',
   border: 'none',
   borderRadius: '4px',
   cursor: 'pointer',
@@ -378,7 +378,7 @@ const buttonStyle: React.CSSProperties = {
 const linkButtonStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#000',
+  color: 'var(--text-primary)',
   cursor: 'pointer',
   fontSize: '14px',
   textDecoration: 'underline',
@@ -389,7 +389,7 @@ const langButtonStyle: React.CSSProperties = {
   padding: '4px 10px',
   border: '1px solid #ddd',
   borderRadius: '4px',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   cursor: 'pointer',
   fontSize: '13px',
 };
@@ -398,14 +398,14 @@ const langButtonActiveStyle: React.CSSProperties = {
   padding: '4px 10px',
   border: '1px solid #000',
   borderRadius: '4px',
-  backgroundColor: '#000',
-  color: '#fff',
+  backgroundColor: 'var(--text-primary)',
+  color: 'var(--bg-surface)',
   cursor: 'pointer',
   fontSize: '13px',
 };
 
 const passwordRulesStyle: React.CSSProperties = {
   fontSize: '12px',
-  color: '#666',
+  color: 'var(--text-secondary)',
   margin: '-5px 0 0 0',
 };

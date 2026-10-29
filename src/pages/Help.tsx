@@ -245,7 +245,7 @@ const containerStyle: CSSProperties = {
   width: '100%',
   padding: '20px 30px',
   boxSizing: 'border-box',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   minHeight: 'calc(100vh - 180px)',
   display: 'flex',
   justifyContent: 'center',
@@ -263,13 +263,13 @@ const heroStyle: CSSProperties = {
 
 const titleStyle: CSSProperties = {
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '15px',
 };
 
 const subtitleStyle: CSSProperties = {
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const searchSectionStyle: CSSProperties = {
@@ -285,7 +285,7 @@ const searchInputStyle: CSSProperties = {
   fontWeight: 300,
   border: '1px solid #000',
   borderRadius: '4px',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
 };
 
 const toolbarStyle: CSSProperties = {
@@ -295,10 +295,10 @@ const toolbarStyle: CSSProperties = {
 };
 
 const toolbarButtonStyle: CSSProperties = {
-  background: '#A6A6A6',
+  background: 'var(--bg-header)',
   border: '1px solid #000',
   borderRadius: '4px',
-  color: '#000',
+  color: 'var(--text-primary)',
   cursor: 'pointer',
   fontSize: '15px',
   fontFamily: 'Barlow, sans-serif',
@@ -308,7 +308,7 @@ const toolbarButtonStyle: CSSProperties = {
 
 const sectionStyle: CSSProperties = {
   marginBottom: '20px',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   border: '1px solid #000',
   borderRadius: '4px',
   padding: '15px 20px',
@@ -316,7 +316,7 @@ const sectionStyle: CSSProperties = {
 
 const sectionTitleStyle: CSSProperties = {
   fontWeight: '400',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '15px',
   textAlign: 'left',
 };
@@ -336,12 +336,12 @@ const pageButtonStyle: CSSProperties = {
 
 const pageTitleStyle: CSSProperties = {
   fontWeight: '400',
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const pageDescriptionStyle: CSSProperties = {
   fontWeight: '200',
-  color: '#444',
+  color: 'var(--text-secondary)',
 };
 
 const themesContainerStyle: CSSProperties = {
@@ -363,7 +363,7 @@ const themeButtonStyle: CSSProperties = {
   textAlign: 'left',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 400,
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const resultButtonStyle: CSSProperties = {
@@ -377,17 +377,17 @@ const resultButtonStyle: CSSProperties = {
   textAlign: 'left',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 300,
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const resultPageStyle: CSSProperties = {
-  color: '#555',
+  color: 'var(--text-secondary)',
   fontWeight: 200,
 };
 
 const textStyle: CSSProperties = {
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '10px',
   lineHeight: '1.6',
 };
@@ -400,7 +400,7 @@ const listStyle: CSSProperties = {
 
 const listItemStyle: CSSProperties = {
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '8px',
   lineHeight: '1.5',
 };

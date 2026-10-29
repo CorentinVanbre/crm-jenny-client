@@ -39,7 +39,7 @@ const containerStyle = {
   width: '100%',
   padding: '20px 30px',
   boxSizing: 'border-box',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   minHeight: 'calc(100vh - 180px)',
   display: 'flex',
   justifyContent: 'center',
@@ -59,13 +59,13 @@ const titleStyle = {
   fontSize: '48px',
   fontWeight: '200',
   marginBottom: '15px',
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const subtitleStyle = {
   fontSize: '24px',
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '10px',
 };
 
@@ -76,14 +76,14 @@ const featuresStyle = {
 const sectionTitleStyle = {
   fontSize: '28px',
   fontWeight: '400',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '20px',
 };
 
 const textStyle = {
   fontSize: '18px',
   fontWeight: '200',
-  color: '#000',
+  color: 'var(--text-primary)',
   marginBottom: '15px',
   lineHeight: '1.6',
 };

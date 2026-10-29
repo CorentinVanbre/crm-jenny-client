@@ -43,7 +43,7 @@ interface Groupe {
 const colorTagColors: Record<string, { background: string; text: string }> = {
   'Non visités': { background: '#000000', text: '#FFFFFF' },
   'Visités': { background: '#008000', text: '#FFFFFF' },
-  'Visités il y a +18mois': { background: '#FFA500', text: '#000000' },
+  'Visités il y a +18mois': { background: '#FFA500', text: 'var(--text-primary)' },
   'A visiter': { background: '#FF0000', text: '#FFFFFF' },
   'Fermés': { background: '#0000FF', text: '#FFFFFF' },
 };
@@ -742,9 +742,9 @@ export default function Sites() {
   const buttonStyle = {
     height: '30px',
     padding: '0 15px',
-    border: '1px solid black',
+    border: '1px solid var(--border-strong)',
     borderRadius: '4px',
-    backgroundColor: '#E5E5E4',
+    backgroundColor: 'var(--accent-primary)',
     cursor: 'pointer',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
@@ -758,7 +758,7 @@ export default function Sites() {
   const tagBaseStyle = {
     height: '30px',
     padding: '0 12px',
-    border: '1px solid black',
+    border: '1px solid var(--border-strong)',
     borderRadius: '4px',
     cursor: 'pointer',
     fontFamily: 'Barlow, sans-serif',
@@ -774,17 +774,17 @@ export default function Sites() {
 
   const domainTagStyle = (isSelected: boolean) => ({
     ...tagBaseStyle,
-    backgroundColor: '#E5E5E4',
+    backgroundColor: 'var(--accent-primary)',
     fontWeight: isSelected ? 'bold' : 200,
-    color: '#000000',
+    color: 'var(--text-primary)',
   });
 
   const colorTagStyle = (tag: string, isSelected: boolean) => {
-    const colors = colorTagColors[tag] || { background: '#E5E5E4', text: '#000000' };
+    const colors = colorTagColors[tag] || { background: 'var(--accent-primary)', text: 'var(--text-primary)' };
     return {
       ...tagBaseStyle,
-      backgroundColor: isSelected ? colors.background : '#E5E5E4',
-      color: isSelected ? colors.text : '#000000',
+      backgroundColor: isSelected ? colors.background : 'var(--accent-primary)',
+      color: isSelected ? colors.text : 'var(--text-primary)',
       fontWeight: isSelected ? 'bold' : 200,
     };
   };
@@ -796,7 +796,7 @@ export default function Sites() {
     fontSize: '14px',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     width: '100%',
     boxSizing: 'border-box' as const
   };
@@ -816,7 +816,7 @@ export default function Sites() {
     right: 0,
     maxHeight: '200px',
     overflowY: 'auto',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     border: '1px solid #ddd',
     borderRadius: '4px',
     zIndex: 1000,
@@ -877,7 +877,7 @@ export default function Sites() {
             bottom: '10px',
             left: '10px',
             zIndex: 10,
-            backgroundColor: 'rgba(229, 229, 228, 0.92)',
+            backgroundColor: 'var(--bg-page)',
             border: '1px solid #000',
             borderRadius: '4px',
             padding: '5px 10px',
@@ -912,7 +912,7 @@ export default function Sites() {
         width: 'calc(100% - 20px)',
         maxWidth: '980px',
         margin: '0 auto 20px',
-        backgroundColor: '#A6A6A6',
+        backgroundColor: 'var(--bg-header)',
         borderRadius: '8px',
         padding: '10px',
         boxSizing: 'border-box'
@@ -969,7 +969,7 @@ export default function Sites() {
                   fontFamily: 'Barlow, sans-serif',
                   fontWeight: 200,
                   fontSize: '14px',
-                  backgroundColor: '#fff',
+                  backgroundColor: 'var(--bg-surface)',
                   boxSizing: 'border-box' as const
                 }}
               />
@@ -1017,7 +1017,7 @@ export default function Sites() {
                   fontFamily: 'Barlow, sans-serif',
                   fontWeight: 200,
                   fontSize: '14px',
-                  backgroundColor: '#fff'
+                  backgroundColor: 'var(--bg-surface)'
                 }}
               />
               <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', margin: '0 5px', whiteSpace: 'nowrap' }}>
@@ -1047,7 +1047,7 @@ export default function Sites() {
           width: 'calc(100% - 20px)',
           maxWidth: '980px',
           margin: '0 auto 20px',
-          backgroundColor: '#E5E5E4',
+          backgroundColor: 'var(--accent-primary)',
           border: '2px solid #000',
           borderRadius: '8px',
           padding: '15px',
@@ -1064,7 +1064,7 @@ export default function Sites() {
               {visitSites.map(s => (
                 <span key={s.id} style={{
                   ...tagBaseStyle,
-                  backgroundColor: '#fff',
+                  backgroundColor: 'var(--bg-surface)',
                   border: '1px solid #000',
                   fontWeight: 'bold',
                 }} onClick={() => toggleVisitSite(s)}>
@@ -1093,7 +1093,7 @@ export default function Sites() {
             <div
               key={site.id}
               style={{
-                backgroundColor: '#A6A6A6',
+                backgroundColor: 'var(--bg-header)',
                 border: '1px solid #ddd',
                 borderRadius: '8px',
                 padding: '10px',
@@ -1119,7 +1119,7 @@ export default function Sites() {
                 paddingTop: '10px',
                 borderTop: '1px solid #eee',
                 fontSize: '14px',
-                color: '#555',
+                color: 'var(--text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
@@ -1137,7 +1137,7 @@ export default function Sites() {
                     marginLeft: 'auto',
                     marginRight: '0',
                     textDecoration: 'none',
-                    color: 'black'
+                    color: 'var(--text-primary)'
                   }}
                 >
                   {t('common.open')}
@@ -1170,7 +1170,7 @@ export default function Sites() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               borderRadius: '8px',
               padding: '20px',
               zIndex: 1000,
@@ -1197,7 +1197,7 @@ export default function Sites() {
                   const exists = await checkGroupExists(value);
                   setGroupNameError(exists ? t('sites.groupExists') : '');
                 }}
-                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : '#ddd' }}
+                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : 'var(--border-color)' }}
                 placeholder={t('sites.groupNamePlaceholder')}
               />
               {groupNameError && <span style={errorStyle}>{groupNameError}</span>}
@@ -1222,23 +1222,23 @@ export default function Sites() {
                 fontFamily: 'Barlow, sans-serif',
                 fontWeight: 200,
                 fontSize: '14px',
-                backgroundColor: submitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: submitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${submitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: submitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: submitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${submitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {submitMessage.text}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={handleCloseGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+              <button type="button" onClick={handleCloseGroupModal} style={{ ...buttonStyle, backgroundColor: 'var(--accent-primary)' }}>{t('common.cancel')}</button>
               <button
                 type="button"
                 onClick={handleAddGroup}
                 disabled={!newGroupData.nom_groupe.trim() || !!groupNameError || isSubmitting}
                 style={{
                   ...buttonStyle,
-                  backgroundColor: '#E5E5E4',
+                  backgroundColor: 'var(--accent-primary)',
                   opacity: (!newGroupData.nom_groupe.trim() || !!groupNameError || isSubmitting) ? 0.5 : 1,
                   cursor: (!newGroupData.nom_groupe.trim() || !!groupNameError || isSubmitting) ? 'not-allowed' : 'pointer'
                 }}
@@ -1272,7 +1272,7 @@ export default function Sites() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               borderRadius: '8px',
               padding: '20px',
               zIndex: 1000,
@@ -1294,7 +1294,7 @@ export default function Sites() {
                 value={editGroupData.nom_groupe}
                 onChange={handleEditGroupNameChange}
                 onFocus={() => setShowGroupDropdown(true)}
-                style={{ ...inputStyle, borderColor: editGroupNameError ? '#ff4444' : '#ddd' }}
+                style={{ ...inputStyle, borderColor: editGroupNameError ? '#ff4444' : 'var(--border-color)' }}
                 placeholder={t('sites.groupSearchPlaceholder')}
               />
               {showGroupDropdown && !isGroupSelected && filteredGroupes.length > 0 && (
@@ -1303,7 +1303,7 @@ export default function Sites() {
                     <div
                       key={groupe.ID}
                       onClick={() => handleSelectGroup(groupe)}
-                      style={{ ...dropdownItemStyle, backgroundColor: editGroupData.nom_groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent' }}
+                      style={{ ...dropdownItemStyle, backgroundColor: editGroupData.nom_groupe === groupe.nom_groupe ? 'var(--bg-surface-alt)' : 'transparent' }}
                     >
                       {groupe.nom_groupe}
                     </div>
@@ -1332,23 +1332,23 @@ export default function Sites() {
                 fontFamily: 'Barlow, sans-serif',
                 fontWeight: 200,
                 fontSize: '14px',
-                backgroundColor: editSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: editSubmitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${editSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: editSubmitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: editSubmitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${editSubmitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {editSubmitMessage.text}
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={handleCloseEditGroupModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+              <button type="button" onClick={handleCloseEditGroupModal} style={{ ...buttonStyle, backgroundColor: 'var(--accent-primary)' }}>{t('common.cancel')}</button>
               <button
                 type="button"
                 onClick={handleUpdateGroup}
                 disabled={!hasEditFormChanged() || !!editGroupNameError || isEditingSubmitting}
                 style={{
                   ...buttonStyle,
-                  backgroundColor: '#E5E5E4',
+                  backgroundColor: 'var(--accent-primary)',
                   opacity: (!hasEditFormChanged() || !!editGroupNameError || isEditingSubmitting) ? 0.5 : 1,
                   cursor: (!hasEditFormChanged() || !!editGroupNameError || isEditingSubmitting) ? 'not-allowed' : 'pointer'
                 }}
@@ -1382,7 +1382,7 @@ export default function Sites() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               borderRadius: '8px',
               padding: '20px',
               zIndex: 1000,
@@ -1406,7 +1406,7 @@ export default function Sites() {
                   type="text"
                   value={newSiteData.noms}
                   onChange={handleSiteNameChange}
-                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : '#ddd' }}
+                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : 'var(--border-color)' }}
                   placeholder={t('sites.siteNamePlaceholder')}
                 />
                 {siteNameError && <span style={errorStyle}>{siteNameError}</span>}
@@ -1434,7 +1434,7 @@ export default function Sites() {
                       <div
                         key={groupe.ID}
                         onClick={() => handleSelectSiteGroup(groupe)}
-                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent' }}
+                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? 'var(--bg-surface-alt)' : 'transparent' }}
                       >
                         {groupe.nom_groupe}
                       </div>
@@ -1507,7 +1507,7 @@ export default function Sites() {
                 type="text"
                 value={newSiteData.pays}
                 readOnly
-                style={{ ...inputStyle, backgroundColor: '#f5f5f5' }}
+                style={{ ...inputStyle, backgroundColor: 'var(--bg-surface-alt)' }}
                 placeholder={t('sites.countryAutoPlaceholder')}
               />
             </div>
@@ -1533,9 +1533,9 @@ export default function Sites() {
                 fontFamily: 'Barlow, sans-serif',
                 fontWeight: 200,
                 fontSize: '14px',
-                backgroundColor: siteSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: siteSubmitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${siteSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: siteSubmitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: siteSubmitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${siteSubmitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {siteSubmitMessage.text}
@@ -1543,7 +1543,7 @@ export default function Sites() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={handleCloseSiteModal} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>
+              <button type="button" onClick={handleCloseSiteModal} style={{ ...buttonStyle, backgroundColor: 'var(--accent-primary)' }}>
                 {t('common.cancel')}
               </button>
               <button
@@ -1552,7 +1552,7 @@ export default function Sites() {
                 disabled={!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting}
                 style={{
                   ...buttonStyle,
-                  backgroundColor: '#E5E5E4',
+                  backgroundColor: 'var(--accent-primary)',
                   opacity: (!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting) ? 0.5 : 1,
                   cursor: (!newSiteData.noms.trim() || !!siteNameError || !newSiteData.groupe.trim() || !newSiteData.latitude.trim() || !newSiteData.longitude.trim() || isSiteSubmitting) ? 'not-allowed' : 'pointer'
                 }}
@@ -1586,7 +1586,7 @@ export default function Sites() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               borderRadius: '8px',
               padding: '20px',
               zIndex: 1000,
@@ -1604,13 +1604,13 @@ export default function Sites() {
             <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', textAlign: 'center', marginBottom: '6px' }}>
               {t('sites.tripAssumptions')}
             </p>
-            <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', textAlign: 'center', marginBottom: '15px', color: '#555' }}>
+            <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', textAlign: 'center', marginBottom: '15px', color: 'var(--text-secondary)' }}>
               {directionsStatus() === 'ok'
                 ? `✅ ${t('sites.tripDirectionsOk')} (${directionsDiag().ok})`
                 : `⚠️ ${t('sites.tripDirectionsFallback')} · ${t('sites.tripDirectionsDiag', { ok: directionsDiag().ok, failed: directionsDiag().failed, driving: directionsDiag().drivingFailed, transit: directionsDiag().transitFailed, error: directionsDiag().lastError || '-', call: directionsDiag().lastCall || '-' })}`}
             </p>
             {visitPlans.map((plan, pi) => (
-              <div key={pi} style={{ backgroundColor: '#E5E5E4', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
+              <div key={pi} style={{ backgroundColor: 'var(--accent-primary)', borderRadius: '6px', padding: '12px', marginBottom: '12px' }}>
                 <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '4px' }}>
                   {plan.outboundMode === 'train' ? '🚆' : '✈️'} {plan.country} — {plan.hubName}
                 </div>
@@ -1630,7 +1630,7 @@ export default function Sites() {
                     </span>
                     {step.day ? <strong>{t('sites.tripDay', { day: step.day })} </strong> : ''}
                     {step.time ? `${step.time} — ` : ''}{step.label}
-                    {step.detail ? <span style={{ color: '#444' }}> ({step.detail})</span> : null}
+                    {step.detail ? <span style={{ color: 'var(--text-secondary)' }}> ({step.detail})</span> : null}
                   </div>
                 ))}
                 <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px', marginTop: '8px' }}>
@@ -1660,9 +1660,9 @@ export default function Sites() {
                 fontFamily: 'Barlow, sans-serif',
                 fontWeight: 200,
                 fontSize: '14px',
-                backgroundColor: tripSaveMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: tripSaveMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${tripSaveMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: tripSaveMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: tripSaveMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${tripSaveMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {tripSaveMessage.text}
@@ -1670,14 +1670,14 @@ export default function Sites() {
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={() => setShowTripModal(false)} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+              <button type="button" onClick={() => setShowTripModal(false)} style={{ ...buttonStyle, backgroundColor: 'var(--accent-primary)' }}>{t('common.cancel')}</button>
               <button
                 type="button"
                 onClick={handleSaveTrip}
                 disabled={isSavingTrip}
                 style={{
                   ...buttonStyle,
-                  backgroundColor: '#E5E5E4',
+                  backgroundColor: 'var(--accent-primary)',
                   opacity: isSavingTrip ? 0.5 : 1,
                   cursor: isSavingTrip ? 'not-allowed' : 'pointer'
                 }}

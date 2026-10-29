@@ -329,7 +329,7 @@ export default function Prospection() {
       <h2 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '20px', marginBottom: '15px' }}>
         {t('prospection.title')}
       </h2>
-      <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '20px', color: '#333' }}>
+      <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', marginBottom: '20px', color: 'var(--text-primary)' }}>
         {t('prospection.subtitle')}
       </p>
 
@@ -364,9 +364,9 @@ export default function Prospection() {
         <div style={{
           padding: '10px', margin: '10px 0', borderRadius: '4px',
           fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-          backgroundColor: message.isSuccess ? '#d4edda' : '#f8d7da',
-          color: message.isSuccess ? '#155724' : '#721c24',
-          border: `1px solid ${message.isSuccess ? '#c3e6cb' : '#f5c6cb'}`
+          backgroundColor: message.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+          color: message.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+          border: `1px solid ${message.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`
         }}>
           {message.text}
         </div>
@@ -384,9 +384,9 @@ export default function Prospection() {
           <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px' }}>{t('prospection.noResults')}</p>
         ) : (
           <>
-            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#fff' }}>
+            <div style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--bg-surface)' }}>
               {!isMobile && (
-                <div style={{ display: 'flex', gap: '10px', padding: '8px 10px', backgroundColor: '#E5E5E4', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px', padding: '8px 10px', backgroundColor: 'var(--accent-primary)', borderBottom: '1px solid #ddd', alignItems: 'center' }}>
                   {([
                     ['groupe', t('prospection.groupSite'), 2],
                     ['score', t('prospection.relevance'), 1],
@@ -413,7 +413,7 @@ export default function Prospection() {
                   style={{
                     display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '6px' : '10px',
                     padding: '10px', borderTop: '1px solid #eee', alignItems: isMobile ? 'stretch' : 'center',
-                    backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? '#d4edda' : s.approved === 'existing' ? '#fff3cd' : 'transparent',
+                    backgroundColor: s.approved === 'refused' ? '#cfcfcf' : s.approved === 'approved' ? 'var(--success-bg)' : s.approved === 'existing' ? '#fff3cd' : 'transparent',
                     opacity: s.approved ? 0.8 : 1,
                   }}
                 >
@@ -428,7 +428,7 @@ export default function Prospection() {
                       </span>
                     )}
                     {s.domaine && (
-                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#444' }}>
+                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: 'var(--text-secondary)' }}>
                         {t('prospection.domain')}: {s.domaine}
                       </div>
                     )}
@@ -443,7 +443,7 @@ export default function Prospection() {
                       <div style={{ width: `${s.score}%`, height: '100%', backgroundColor: scoreColor(s.score) }} />
                     </div>
                     {s.score_reason && (
-                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', color: '#444', marginTop: '2px' }}>
+                      <div style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {s.score_reason}
                       </div>
                     )}
@@ -469,7 +469,7 @@ export default function Prospection() {
                   {/* Source de la suggestion */}
                   <div style={{ flex: 1, minWidth: 0, fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '13px' }}>
                     {s.source_url ? (
-                      <a href={s.source_url} target="_blank" rel="noopener noreferrer" style={{ color: '#000', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                      <a href={s.source_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
                         {t('prospection.openSource')}
                       </a>
                     ) : (
@@ -498,7 +498,7 @@ export default function Prospection() {
                       disabled={!!s.approved}
                       style={{
                         height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
-                        backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: '#000',
+                        backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: 'var(--text-primary)',
                         cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
                         fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
                       }}
@@ -531,7 +531,7 @@ export default function Prospection() {
                   onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
                   style={{
                     height: '32px', padding: '0 20px', border: '1px solid #000', borderRadius: '4px',
-                    backgroundColor: '#E5E5E4', cursor: 'pointer',
+                    backgroundColor: 'var(--accent-primary)', cursor: 'pointer',
                     fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
                   }}
                 >
@@ -548,17 +548,17 @@ export default function Prospection() {
         <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '10px' }}>
           {t('prospection.watchSection')}
         </h3>
-        <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: '#333', marginBottom: '15px' }}>
+        <p style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '15px' }}>
           {t('prospection.watchDescription')}
         </p>
         <div
           style={{
             padding: '30px 20px', border: '2px dashed #bbb', borderRadius: '8px',
-            backgroundColor: '#f5f5f5', textAlign: 'center',
+            backgroundColor: 'var(--bg-surface-alt)', textAlign: 'center',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
           }}
         >
-          <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: '#555' }}>
+          <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px', color: 'var(--text-secondary)' }}>
             {t('prospection.watchPlaceholder')}
           </span>
         </div>
@@ -578,7 +578,7 @@ export default function Prospection() {
                   type="text"
                   value={newSiteData.noms}
                   onChange={handleSiteNameChange}
-                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : '#ddd' }}
+                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : 'var(--border-color)' }}
                   placeholder={t('sites.siteNamePlaceholder')}
                 />
                 {siteNameError && <span style={errorStyle}>{siteNameError}</span>}
@@ -600,7 +600,7 @@ export default function Prospection() {
                       <div
                         key={groupe.ID}
                         onClick={() => handleSelectSiteGroup(groupe)}
-                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent' }}
+                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? 'var(--bg-surface-alt)' : 'transparent' }}
                       >
                         {groupe.nom_groupe}
                       </div>
@@ -647,7 +647,7 @@ export default function Prospection() {
 
             <div style={{ marginBottom: '15px' }}>
               <label style={modalLabelStyle}>{t('sites.country')}</label>
-              <input type="text" value={newSiteData.pays} readOnly style={{ ...inputStyle, backgroundColor: '#f5f5f5' }} placeholder={t('sites.countryAutoPlaceholder')} />
+              <input type="text" value={newSiteData.pays} readOnly style={{ ...inputStyle, backgroundColor: 'var(--bg-surface-alt)' }} placeholder={t('sites.countryAutoPlaceholder')} />
             </div>
 
             <div style={{ marginBottom: '15px' }}>
@@ -664,9 +664,9 @@ export default function Prospection() {
               <div style={{
                 padding: '10px', marginBottom: '15px', borderRadius: '4px',
                 fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-                backgroundColor: siteSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: siteSubmitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${siteSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: siteSubmitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: siteSubmitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${siteSubmitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {siteSubmitMessage.text}
@@ -703,7 +703,7 @@ const inputStyle = {
   fontSize: '14px',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   width: '100%',
   boxSizing: 'border-box' as const
 };
@@ -722,7 +722,7 @@ const dropdownStyle = {
   right: 0,
   maxHeight: '200px',
   overflowY: 'auto',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   border: '1px solid #ddd',
   borderRadius: '4px',
   zIndex: 1000,
@@ -740,9 +740,9 @@ const dropdownItemStyle = {
 const buttonStyle = {
   height: '30px',
   padding: '0 15px',
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
@@ -764,7 +764,7 @@ const modalStyle: React.CSSProperties = {
   position: 'fixed',
   top: '50%', left: '50%',
   transform: 'translate(-50%, -50%)',
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   borderRadius: '8px',
   padding: '20px',
   zIndex: 1000,
@@ -779,7 +779,7 @@ const listHeaderStyle: React.CSSProperties = {
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 'bold',
   fontSize: '13px',
-  color: '#000',
+  color: 'var(--text-primary)',
 };
 
 const modalTitleStyle: React.CSSProperties = {

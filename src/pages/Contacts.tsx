@@ -796,7 +796,7 @@ export default function Contacts() {
                 style={{ display: 'none' }}
               />
             </div>
-            <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: '#555' }}>
+            <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: 'var(--text-secondary)' }}>
               {t('contacts.cardScanHint')}
             </span>
             {imageError && <span style={errorStyle}>{imageError}</span>}
@@ -818,7 +818,7 @@ export default function Contacts() {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('noms'))}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('noms') && !formData.noms) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('noms') && !formData.noms) ? '#ff4444' : 'var(--border-color)'
                   }}
                 />
                 {touchedFields.has('noms') && !formData.noms && <span style={errorStyle}>{t('contacts.required')}</span>}
@@ -833,7 +833,7 @@ export default function Contacts() {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('prenom'))}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('prenom') && !formData.prenom) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('prenom') && !formData.prenom) ? '#ff4444' : 'var(--border-color)'
                   }}
                 />
                 {touchedFields.has('prenom') && !formData.prenom && <span style={errorStyle}>{t('contacts.required')}</span>}
@@ -851,7 +851,7 @@ export default function Contacts() {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('fonction'))}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('fonction') && !formData.fonction) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('fonction') && !formData.fonction) ? '#ff4444' : 'var(--border-color)'
                   }}
                 />
                 {touchedFields.has('fonction') && !formData.fonction && <span style={errorStyle}>{t('contacts.required')}</span>}
@@ -865,7 +865,7 @@ export default function Contacts() {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('genre'))}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('genre') && !formData.genre) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('genre') && !formData.genre) ? '#ff4444' : 'var(--border-color)'
                   }}
                 >
                   <option value="">{t('contacts.select')}</option>
@@ -898,7 +898,7 @@ export default function Contacts() {
                       ...inputStyle,
                       width: 'auto',
                       flex: 1,
-                      borderColor: (touchedFields.has('groupe') && !formData.groupe) ? '#ff4444' : '#ddd'
+                      borderColor: (touchedFields.has('groupe') && !formData.groupe) ? '#ff4444' : 'var(--border-color)'
                     }}
                   />
                   <button
@@ -959,8 +959,8 @@ export default function Contacts() {
                       ...inputStyle,
                       width: 'auto',
                       flex: 1,
-                      borderColor: (touchedFields.has('site') && !formData.site) ? '#ff4444' : '#ddd',
-                      backgroundColor: !formData.groupe ? '#f5f5f5' : '#fff'
+                      borderColor: (touchedFields.has('site') && !formData.site) ? '#ff4444' : 'var(--border-color)',
+                      backgroundColor: !formData.groupe ? 'var(--bg-surface-alt)' : 'var(--bg-surface)'
                     }}
                   />
                   <button
@@ -1007,7 +1007,7 @@ export default function Contacts() {
                   onBlur={() => setTouchedFields(prev => new Set(prev).add('langue'))}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('langue') && !formData.langue) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('langue') && !formData.langue) ? '#ff4444' : 'var(--border-color)'
                   }}
                 >
                   <option value="">{t('contacts.select')}</option>
@@ -1036,7 +1036,7 @@ export default function Contacts() {
                   }}
                   style={{
                     ...inputStyle,
-                    borderColor: (touchedFields.has('email') && (!formData.email || errors.email || emailExistsError)) ? '#ff4444' : '#ddd'
+                    borderColor: (touchedFields.has('email') && (!formData.email || errors.email || emailExistsError)) ? '#ff4444' : 'var(--border-color)'
                   }}
                 />
                 {touchedFields.has('email') && !formData.email && <span style={errorStyle}>{t('contacts.required')}</span>}
@@ -1063,8 +1063,8 @@ export default function Contacts() {
                       fontWeight: 200,
                       border: '1px solid #ddd',
                       borderRadius: '4px',
-                      backgroundColor: '#000',
-                      color: '#fff',
+                      backgroundColor: 'var(--text-primary)',
+                      color: 'var(--bg-surface)',
                       cursor: isAnalyzingAI || !formData.observations.trim() ? 'not-allowed' : 'pointer',
                       opacity: isAnalyzingAI || !formData.observations.trim() ? 0.5 : 1,
                     }}
@@ -1092,9 +1092,9 @@ export default function Contacts() {
             fontFamily: 'Barlow, sans-serif',
             fontWeight: 200,
             fontSize: '14px',
-            backgroundColor: confirmationMessage.isSuccess ? '#d4edda' : '#f8d7da',
-            color: confirmationMessage.isSuccess ? '#155724' : '#721c24',
-            border: `1px solid ${confirmationMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`
+            backgroundColor: confirmationMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+            color: confirmationMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+            border: `1px solid ${confirmationMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`
           }}>
             {confirmationMessage.text}
           </div>
@@ -1254,7 +1254,7 @@ export default function Contacts() {
                   const exists = await checkGroupExists(value);
                   setGroupNameError(exists ? t('sites.groupExists') : '');
                 }}
-                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : '#ddd' }}
+                style={{ ...inputStyle, borderColor: groupNameError ? '#ff4444' : 'var(--border-color)' }}
                 placeholder={t('sites.groupNamePlaceholder')}
               />
               {groupNameError && <span style={errorStyle}>{groupNameError}</span>}
@@ -1273,9 +1273,9 @@ export default function Contacts() {
               <div style={{
                 padding: '10px', marginBottom: '15px', borderRadius: '4px',
                 fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-                backgroundColor: groupSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: groupSubmitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${groupSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: groupSubmitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: groupSubmitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${groupSubmitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {groupSubmitMessage.text}
@@ -1314,7 +1314,7 @@ export default function Contacts() {
                   type="text"
                   value={newSiteData.noms}
                   onChange={handleSiteNameChange}
-                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : '#ddd' }}
+                  style={{ ...inputStyle, borderColor: siteNameError ? '#ff4444' : 'var(--border-color)' }}
                   placeholder={t('sites.siteNamePlaceholder')}
                 />
                 {siteNameError && <span style={errorStyle}>{siteNameError}</span>}
@@ -1336,7 +1336,7 @@ export default function Contacts() {
                       <div
                         key={groupe.ID}
                         onClick={() => handleSelectSiteGroup(groupe)}
-                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? '#f0f0f0' : 'transparent' }}
+                        style={{ ...dropdownItemStyle, backgroundColor: newSiteData.groupe === groupe.nom_groupe ? 'var(--bg-surface-alt)' : 'transparent' }}
                       >
                         {groupe.nom_groupe}
                       </div>
@@ -1383,7 +1383,7 @@ export default function Contacts() {
 
             <div style={{ marginBottom: '15px' }}>
               <label style={modalLabelStyle}>{t('sites.country')}</label>
-              <input type="text" value={newSiteData.pays} readOnly style={{ ...inputStyle, backgroundColor: '#f5f5f5' }} placeholder={t('sites.countryAutoPlaceholder')} />
+              <input type="text" value={newSiteData.pays} readOnly style={{ ...inputStyle, backgroundColor: 'var(--bg-surface-alt)' }} placeholder={t('sites.countryAutoPlaceholder')} />
             </div>
 
             <div style={{ marginBottom: '15px' }}>
@@ -1400,9 +1400,9 @@ export default function Contacts() {
               <div style={{
                 padding: '10px', marginBottom: '15px', borderRadius: '4px',
                 fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-                backgroundColor: siteSubmitMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                color: siteSubmitMessage.isSuccess ? '#155724' : '#721c24',
-                border: `1px solid ${siteSubmitMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                backgroundColor: siteSubmitMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                color: siteSubmitMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                border: `1px solid ${siteSubmitMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                 textAlign: 'center'
               }}>
                 {siteSubmitMessage.text}
@@ -1433,7 +1433,7 @@ export default function Contacts() {
 
 // Styles
 const formContainerStyle = {
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   padding: '10px',
   borderRadius: '8px',
   marginBottom: '30px',
@@ -1511,7 +1511,7 @@ const inputStyle = {
   fontSize: '14px',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   width: '100%',
   boxSizing: 'border-box' as const
 };
@@ -1530,7 +1530,7 @@ const dropdownStyle = {
   right: 0,
   maxHeight: '200px',
   overflowY: 'auto',
-  backgroundColor: '#fff',
+  backgroundColor: 'var(--bg-surface)',
   border: '1px solid #ddd',
   borderRadius: '4px',
   zIndex: 1000,
@@ -1548,9 +1548,9 @@ const dropdownItemStyle = {
 const buttonStyle = {
   height: '30px',
   padding: '0 15px',
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
@@ -1563,9 +1563,9 @@ const buttonStyle = {
 const modifyButtonStyle = {
   height: '25px',
   padding: '0 10px',
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
@@ -1580,7 +1580,7 @@ const gridStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   border: '1px solid #ddd',
   borderRadius: '8px',
   padding: '10px',
@@ -1602,9 +1602,9 @@ const addButtonStyle: React.CSSProperties = {
   width: '38px',
   height: '38px',
   flexShrink: 0,
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 700,
@@ -1627,7 +1627,7 @@ const modalStyle: React.CSSProperties = {
   position: 'fixed',
   top: '50%', left: '50%',
   transform: 'translate(-50%, -50%)',
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   borderRadius: '8px',
   padding: '20px',
   zIndex: 1000,
