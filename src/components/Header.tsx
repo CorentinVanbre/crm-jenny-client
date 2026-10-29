@@ -119,10 +119,12 @@ export default function Header() {
           {t('header.emails')}
         </Link>
       )}
-      <Link to="/help" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/help') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/help') } as React.CSSProperties}
-        onClick={closeMobileMenu}>
-        {t('header.help')}
-      </Link>
+      {user && (
+        <Link to="/help" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/help') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/help') } as React.CSSProperties}
+          onClick={closeMobileMenu}>
+          {t('header.help')}
+        </Link>
+      )}
       {user && (
         <Link to="/profile" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/profile') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/profile') } as React.CSSProperties}
           onClick={closeMobileMenu}>

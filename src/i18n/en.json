@@ -266,7 +266,8 @@
     "themeLight": "Light mode",
     "themeDark": "Dark mode",
     "themeAuto": "Automatic mode (based on device settings)",
-    "themeSaved": "Theme saved."
+    "themeSaved": "Theme saved.",
+    "spanish": "Spanish"
   },
   "emails": {
     "title": "Emails",
@@ -655,6 +656,8 @@
       "Hamburger menu in the header: groups the Zone management, Emails, Help and My account pages",
       "Zone management page (admin): generate a temporary password for a user (if they lost it) and change their preferred language",
       "Prospecting page: two tabs \"Site prospecting\" and \"Information search / commercial watch\"",
+      "«Help» page: accessible to signed-in users only",
+      "Spanish: new site language, selectable in «My account» in addition to French and English",
       "Dark mode: choose light, dark or automatic mode (based on device settings) in \\\"My account\\\"",
       "\"Delete\" button: fixed deletion being a no-op (0 rows) when blocked by RLS, now shows an explicit error",
       "\"Delete\" button on the SiteDetail page: site deletion restricted to the site owner, with confirmation prompt",

@@ -147,6 +147,7 @@ export default function Profile() {
           <select value={langue} onChange={e => setLangue(e.target.value)} style={inputStyle}>
             <option value="fr">{t('profile.french')}</option>
             <option value="en">{t('profile.english')}</option>
+            <option value="es">{t('profile.spanish')}</option>
           </select>
         </div>
         <button onClick={handleSaveLangue} style={buttonStyle}>{t('profile.saveLanguage')}</button>

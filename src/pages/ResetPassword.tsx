@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
-type Lang = 'fr' | 'en';
+type Lang = 'fr' | 'en' | 'es';
 
 const translations = {
   fr: {
@@ -38,6 +38,23 @@ const translations = {
     },
     passwordRules: 'Min. 10 characters, with uppercase, lowercase, numbers and special characters.',
     backToLogin: 'Back to sign in',
+  },
+  es: {
+    title: 'Restablecer la contraseña',
+    password: 'Nueva contraseña',
+    confirmPassword: 'Confirmar la contraseña',
+    submit: 'Restablecer',
+    submitting: 'Restableciendo...',
+    success: 'Su contraseña ha sido restablecida. Ya puede iniciar sesión.',
+    verifying: 'Verificando el enlace...',
+    errors: {
+      passwordTooShort: 'Mínimo 10 caracteres',
+      passwordWeak: 'La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales',
+      passwordMismatch: 'Las contraseñas no coinciden',
+      invalidLink: 'El enlace de restablecimiento no es válido o ha caducado.',
+    },
+    passwordRules: 'Mín. 10 caracteres, con mayúsculas, minúsculas, números y caracteres especiales.',
+    backToLogin: 'Volver al inicio de sesión',
   },
 };
 
@@ -128,6 +145,12 @@ export default function ResetPassword() {
           style={lang === 'en' ? langButtonActiveStyle : langButtonStyle}
         >
           EN
+        </button>
+        <button
+          onClick={() => switchLang('es')}
+          style={lang === 'es' ? langButtonActiveStyle : langButtonStyle}
+        >
+          ES
         </button>
       </div>
 

@@ -266,7 +266,8 @@
     "themeLight": "Mode clair",
     "themeDark": "Mode sombre",
     "themeAuto": "Mode automatique (selon l'appareil)",
-    "themeSaved": "Thème enregistré."
+    "themeSaved": "Thème enregistré.",
+    "spanish": "Espagnol"
   },
   "emails": {
     "title": "Emails",
@@ -655,6 +656,8 @@
       "Menu hamburger dans le header : regroupe les pages Gestion des zones, Emails, Aide et Mon compte",
       "Page Gestion des zones (admin) : génération d'un mot de passe provisoire pour un utilisateur (en cas de perte) et modification de sa langue préférée",
       "Page Prospection : deux onglets « Prospection des sites » et « Recherche d'information / veille commerciale »",
+      "Page « Aide » : accessible uniquement aux utilisateurs connectés",
+      "Espagnol : nouvelle langue du site, sélectionnable dans « Mon compte » en plus du français et de l'anglais",
       "Mode sombre : choix du mode clair, sombre ou automatique (selon les réglages de l'appareil) dans « Mon compte »",
       "Bouton « Supprimer » : correction de la suppression (aucune ligne supprimée quand la policy RLS bloque), avec message d'erreur explicite",
       "Bouton « Supprimer » sur la page SiteDetail : suppression d'un site par son propriétaire uniquement, avec demande de confirmation",
