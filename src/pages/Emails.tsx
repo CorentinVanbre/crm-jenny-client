@@ -420,7 +420,7 @@ const titleStyle: React.CSSProperties = {
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   border: '1px solid #ddd',
   borderRadius: '8px',
   padding: '20px',
@@ -442,7 +442,7 @@ const sectionLabelStyle: React.CSSProperties = {
 
 const mutedStyle: React.CSSProperties = {
   fontSize: '13px',
-  color: '#666',
+  color: 'var(--text-secondary)',
   marginTop: '8px',
   marginBottom: '4px',
 };
@@ -463,7 +463,7 @@ const tagsRowStyle: React.CSSProperties = {
 const tagBaseStyle: React.CSSProperties = {
   height: '30px',
   padding: '0 12px',
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
   cursor: 'pointer',
   fontFamily: 'Barlow, sans-serif',
@@ -479,9 +479,9 @@ const tagBaseStyle: React.CSSProperties = {
 
 const langTagStyle = (isSelected: boolean): React.CSSProperties => ({
   ...tagBaseStyle,
-  backgroundColor: '#E5E5E4',
+  backgroundColor: 'var(--accent-primary)',
   fontWeight: isSelected ? 'bold' : 200,
-  color: '#000000',
+  color: 'var(--text-primary)',
 });
 
 const resultsHeaderStyle: React.CSSProperties = {
@@ -528,7 +528,7 @@ const continentHeaderStyle: React.CSSProperties = {
 const countStyle: React.CSSProperties = {
   marginLeft: '10px',
   fontSize: '13px',
-  color: '#666',
+  color: 'var(--text-secondary)',
   fontWeight: 200,
 };
 
@@ -555,26 +555,26 @@ const disabledCountryLabelStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   cursor: 'not-allowed',
-  color: '#aaa',
+  color: 'var(--text-muted)',
 };
 
 const baseButton: React.CSSProperties = {
   padding: '10px 20px',
-  border: '1px solid black',
+  border: '1px solid var(--border-strong)',
   borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '14px',
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
-  backgroundColor: '#E5E5E4',
-  color: 'black',
+  backgroundColor: 'var(--accent-primary)',
+  color: 'var(--text-primary)',
 };
 
 const buttonStyle: React.CSSProperties = { ...baseButton };
 
 const disabledButtonStyle: React.CSSProperties = {
   ...baseButton,
-  backgroundColor: '#f5f5f5',
+  backgroundColor: 'var(--bg-surface-alt)',
   opacity: 0.5,
   cursor: 'not-allowed',
 };
@@ -586,8 +586,8 @@ const messageStyle = (isSuccess: boolean): React.CSSProperties => ({
   fontFamily: 'Barlow, sans-serif',
   fontWeight: 200,
   fontSize: '14px',
-  backgroundColor: isSuccess ? '#d4edda' : '#f8d7da',
-  color: isSuccess ? '#155724' : '#721c24',
-  border: `1px solid ${isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+  backgroundColor: isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+  color: isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+  border: `1px solid ${isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
   textAlign: 'center',
 });

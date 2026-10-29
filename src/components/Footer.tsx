@@ -9,7 +9,7 @@ export default function Footer() {
 }
 
 const footerStyle = {
-  backgroundColor: '#A6A6A6',
+  backgroundColor: 'var(--bg-header)',
   height: '40px',
   width: '100%',
   display: 'flex',
@@ -20,7 +20,7 @@ borderTop: '1px solid #000', // ✅ Ligne noire en haut du footer
 };
 
 const footerTextStyle = {
-  color: '#000',
+  color: 'var(--text-primary)',
   margin: 0,
   textAlign: 'center',
 };

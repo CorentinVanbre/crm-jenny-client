@@ -395,14 +395,14 @@ export default function Visite() {
               }
               var path = data.pts.map(function (p) { return { lat: p.lat, lng: p.lng }; });
               if (path.length > 1) {
-                var pl = new g.Polyline({ path: path, strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 });
+                var pl = new g.Polyline({ path: path, strokeColor: '#1a73e8', strokeWeight: 2, strokeOpacity: 0.7 });
                 pl.setMap(map);
               }
               data.pts.forEach(function (p) {
                 var mk = new g.Marker({
                   position: { lat: p.lat, lng: p.lng },
                   title: p.label,
-                  label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#fff', fontWeight: 'bold' } : undefined
+                  label: p.kind === 'meeting' && p.num ? { text: String(p.num), color: '#ffffff', fontWeight: 'bold' } : undefined
                 });
                 mk.setMap(map);
               });
@@ -426,9 +426,9 @@ export default function Visite() {
   const buttonStyle = {
     height: '30px',
     padding: '0 15px',
-    border: '1px solid black',
+    border: '1px solid var(--border-strong)',
     borderRadius: '4px',
-    backgroundColor: '#E5E5E4',
+    backgroundColor: 'var(--accent-primary)',
     cursor: 'pointer',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
@@ -445,14 +445,14 @@ export default function Visite() {
     fontSize: '14px',
     fontFamily: 'Barlow, sans-serif',
     fontWeight: 200,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--bg-surface)',
     width: '100%',
     boxSizing: 'border-box' as const,
   };
 
   const prefTagStyle = (selected: boolean) => ({
     ...buttonStyle,
-    backgroundColor: selected ? '#A6A6A6' : '#fff',
+    backgroundColor: selected ? 'var(--bg-header)' : 'var(--bg-surface)',
     fontWeight: selected ? 'bold' as const : 200,
     margin: '2px',
   });
@@ -476,7 +476,7 @@ export default function Visite() {
         </p>
 
         {/* Préférences de voyage (haut de la page) */}
-        <div style={{ backgroundColor: '#A6A6A6', borderRadius: '8px', padding: '15px', marginBottom: '20px', boxShadow: '2px 3px 2px rgba(0,0,0,0.3)' }}>
+        <div style={{ backgroundColor: 'var(--bg-header)', borderRadius: '8px', padding: '15px', marginBottom: '20px', boxShadow: '2px 3px 2px rgba(0,0,0,0.3)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ fontWeight: 'bold', fontSize: '16px', fontFamily: 'Barlow, sans-serif' }}>📍 {t('visite.prefsTitle')}</div>
             <button style={buttonStyle} onClick={() => setShowPrefsPanel(!showPrefsPanel)}>{showPrefsPanel ? '−' : '+'}</button>
@@ -567,9 +567,9 @@ export default function Visite() {
                 <div style={{
                   padding: '10px', marginTop: '10px', borderRadius: '4px',
                   fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-                  backgroundColor: prefsMessage.isSuccess ? '#d4edda' : '#f8d7da',
-                  color: prefsMessage.isSuccess ? '#155724' : '#721c24',
-                  border: `1px solid ${prefsMessage.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+                  backgroundColor: prefsMessage.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+                  color: prefsMessage.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+                  border: `1px solid ${prefsMessage.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
                   textAlign: 'center',
                 }}>{prefsMessage.text}</div>
               )}
@@ -587,9 +587,9 @@ export default function Visite() {
           <div style={{
             padding: '10px', marginBottom: '15px', borderRadius: '4px',
             fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '14px',
-            backgroundColor: message.isSuccess ? '#d4edda' : '#f8d7da',
-            color: message.isSuccess ? '#155724' : '#721c24',
-            border: `1px solid ${message.isSuccess ? '#c3e6cb' : '#f5c6cb'}`,
+            backgroundColor: message.isSuccess ? 'var(--success-bg)' : 'var(--error-bg)',
+            color: message.isSuccess ? 'var(--success-text)' : 'var(--error-text)',
+            border: `1px solid ${message.isSuccess ? 'var(--success-border)' : 'var(--error-border)'}`,
             textAlign: 'center',
           }}>{message.text}</div>
         )}
@@ -601,7 +601,7 @@ export default function Visite() {
         ) : (
           tripsWithPoints.map(({ trip, pts }) => (
             <div key={trip.id} style={{
-              backgroundColor: '#A6A6A6',
+              backgroundColor: 'var(--bg-header)',
               border: '1px solid #ddd',
               borderRadius: '8px',
               padding: '15px',
@@ -666,14 +666,14 @@ export default function Visite() {
                       >
                         <Polyline
                           path={pts.map(p => ({ lat: p.lat, lng: p.lng }))}
-                          options={{ strokeColor: '#000000', strokeWeight: 2, strokeOpacity: 0.7 }}
+                          options={{ strokeColor: '#1a73e8', strokeWeight: 2, strokeOpacity: 0.7 }}
                         />
                         {pts.map((p, i) => (
                           <Marker
                             key={i}
                             position={{ lat: p.lat, lng: p.lng }}
                             title={p.kind === 'meeting' ? `${visitNumber(trip, p.label)}. ${p.label}` : p.label}
-                            label={p.kind === 'meeting' ? { text: String(visitNumber(trip, p.label)), color: '#fff', fontWeight: 'bold' } : undefined}
+                            label={p.kind === 'meeting' ? { text: String(visitNumber(trip, p.label)), color: '#ffffff', fontWeight: 'bold' } : undefined}
                           />
                         ))}
                       </GoogleMap>
@@ -681,7 +681,7 @@ export default function Visite() {
                   )}
 
                   {trip.plans?.map((plan, pi) => (
-                    <div key={pi} style={{ backgroundColor: '#E5E5E4', borderRadius: '6px', padding: '10px', marginBottom: '10px' }}>
+                    <div key={pi} style={{ backgroundColor: 'var(--accent-primary)', borderRadius: '6px', padding: '10px', marginBottom: '10px' }}>
                       <div style={{ fontWeight: 'bold', fontSize: '15px' }}>
                         {plan.outboundMode === 'train' ? '🚆' : '✈️'} {plan.country} — {plan.hubName}
                       </div>
@@ -697,7 +697,7 @@ export default function Visite() {
                   </div>
                   {trip.steps.map((step: TripStep, index: number) => (
                     <div key={index} style={{
-                      backgroundColor: '#E5E5E4',
+                      backgroundColor: 'var(--accent-primary)',
                       borderRadius: '6px',
                       padding: '10px',
                       marginBottom: '8px',
@@ -812,7 +812,7 @@ export default function Visite() {
             <div
               style={{
                 position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                backgroundColor: '#A6A6A6', borderRadius: '8px', padding: '20px', zIndex: 1000,
+                backgroundColor: 'var(--bg-header)', borderRadius: '8px', padding: '20px', zIndex: 1000,
                 width: '420px', maxWidth: '90%', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
               }}
               onClick={e => e.stopPropagation()}
@@ -858,7 +858,7 @@ export default function Visite() {
                 </select>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button type="button" onClick={() => setNewStepDraft(null)} style={{ ...buttonStyle, backgroundColor: '#E5E5E4' }}>{t('common.cancel')}</button>
+                <button type="button" onClick={() => setNewStepDraft(null)} style={{ ...buttonStyle, backgroundColor: 'var(--accent-primary)' }}>{t('common.cancel')}</button>
                 <button type="button" onClick={confirmAddManualStep} style={buttonStyle}>{t('common.save')}</button>
               </div>
             </div>
@@ -878,7 +878,7 @@ export default function Visite() {
             <div
               style={{
                 position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                backgroundColor: '#A6A6A6', borderRadius: '8px', padding: '20px', zIndex: 1000,
+                backgroundColor: 'var(--bg-header)', borderRadius: '8px', padding: '20px', zIndex: 1000,
                 width: '420px', maxWidth: '90%', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
               }}
               onClick={e => e.stopPropagation()}

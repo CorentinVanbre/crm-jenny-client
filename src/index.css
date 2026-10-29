@@ -1,6 +1,52 @@
 /* Import de la police Barlow Extra Light (weight 200) depuis Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@200;400;700&display=swap');
 
+:root {
+  --bg-page: #E5E5E4;
+  --bg-surface: #fff;
+  --bg-surface-alt: #f5f5f5;
+  --bg-header: #A6A6A6;
+  --text-primary: #000;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --border-color: #ddd;
+  --border-strong: #000;
+  --accent-primary: #E5E5E4;
+  --accent-primary-text: #000;
+  --success-bg: #d4edda;
+  --success-text: #155724;
+  --success-border: #c3e6cb;
+  --error-bg: #f8d7da;
+  --error-text: #721c24;
+  --error-border: #f5c6cb;
+  --warning-bg: #fff3cd;
+  --link-color: #0000ff;
+  color-scheme: light;
+}
+
+html.dark {
+  --bg-page: #1d1d1c;
+  --bg-surface: #2a2a29;
+  --bg-surface-alt: #353534;
+  --bg-header: #3a3a39;
+  --text-primary: #f2f2f0;
+  --text-secondary: #c0c0be;
+  --text-muted: #9a9a98;
+  --border-color: #4a4a48;
+  --border-strong: #6e6e6c;
+  --accent-primary: #454544;
+  --accent-primary-text: #f2f2f0;
+  --success-bg: #1e3a2a;
+  --success-text: #8fd6a8;
+  --success-border: #2e5a40;
+  --error-bg: #42201f;
+  --error-text: #f0a0a0;
+  --error-border: #6e2e2c;
+  --warning-bg: #4a3d1e;
+  --link-color: #8ab4ff;
+  color-scheme: dark;
+}
+
 /* Réinitialisation des marges/paddings */
 html, body {
   margin: 0;
@@ -8,6 +54,9 @@ html, body {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Appliquer Barlow Extra Light à TOUT le texte */
