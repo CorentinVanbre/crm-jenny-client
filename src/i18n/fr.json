@@ -34,7 +34,9 @@
     "subtitle": "Votre partenaire essentiel pour optimiser la performance commerciale.",
     "organizeTitle": "Organisez, planifiez, performez",
     "organizeText1": "Structurez vos tâches, priorisez vos actions et planifiez vos visites de manière efficace.",
-    "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance."
+    "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
+    "recentTitle": "Fonctionnalités ajoutées récemment :",
+    "recentSeeAll": "Voir toutes les fonctionnalités ajoutées récemment (page Aide)"
   },
   "sites": {
     "loading": "Chargement des sites...",
@@ -534,7 +536,7 @@
             "features": [
               "Liste des suggestions de sites et groupes avec recherche et filtre « En attente uniquement ».",
               "Affichage par paquets de 50 suggestions, chargement complet au-delà de 1000 lignes.",
-              "Section « Recherche d'information / veille commerciale » sur les sites existants (fonctionnalité IA à venir)."
+              "Deux onglets : « Prospection des sites » et « Recherche d'information / veille commerciale » sur les sites existants (fonctionnalité IA à venir)."
             ]
           },
           {
@@ -614,6 +616,13 @@
             ]
           },
           {
+            "title": "Compte de l'utilisateur",
+            "features": [
+              "Génération d'un mot de passe provisoire en cas de perte du mot de passe (à transmettre à l'utilisateur).",
+              "Modification de la langue préférée de l'utilisateur (Français / English)."
+            ]
+          },
+          {
             "title": "Impact des zones",
             "features": [
               "Ces zones déterminent les contacts et emails visibles par chaque utilisateur dans les pages Emails et Contacts."
@@ -643,6 +652,9 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Menu hamburger dans le header : regroupe les pages Gestion des zones, Emails, Aide et Mon compte",
+      "Page Gestion des zones (admin) : génération d'un mot de passe provisoire pour un utilisateur (en cas de perte) et modification de sa langue préférée",
+      "Page Prospection : deux onglets « Prospection des sites » et « Recherche d'information / veille commerciale »",
       "Mode sombre : choix du mode clair, sombre ou automatique (selon les réglages de l'appareil) dans « Mon compte »",
       "Bouton « Supprimer » : correction de la suppression (aucune ligne supprimée quand la policy RLS bloque), avec message d'erreur explicite",
       "Bouton « Supprimer » sur la page SiteDetail : suppression d'un site par son propriétaire uniquement, avec demande de confirmation",

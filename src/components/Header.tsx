@@ -10,11 +10,13 @@ export default function Header() {
   const [user, setUser] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false
   );
   const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const hamburgerMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,6 +48,7 @@ export default function Header() {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) setShowProfileMenu(false);
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) setShowMobileMenu(false);
+      if (hamburgerMenuRef.current && !hamburgerMenuRef.current.contains(event.target)) setShowHamburgerMenu(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -58,18 +61,10 @@ export default function Header() {
     navigate('/');
   };
 
-  const closeMobileMenu = () => { setShowMobileMenu(false); setShowProfileMenu(false); };
+  const closeMobileMenu = () => { setShowMobileMenu(false); setShowProfileMenu(false); setShowHamburgerMenu(false); };
 
   const navLinks = (
     <>
-      {user?.user_metadata?.role === 'admin' && (
-        <Link to="/admin/zones" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/admin/zones') } : { ...linkStyle, fontWeight: activeFontWeight('/admin/zones') }}
-          onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
-          onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
-          onClick={closeMobileMenu}>
-          {t('header.zones')}
-        </Link>
-      )}
       {user && (
         <>
           <Link to="/sites" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/sites') } : { ...linkStyle, fontWeight: activeFontWeight('/sites') }}
@@ -90,12 +85,6 @@ export default function Header() {
             onClick={closeMobileMenu}>
             {t('header.contacts')}
           </Link>
-          <Link to="/emails" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/emails') } : { ...linkStyle, fontWeight: activeFontWeight('/emails') }}
-            onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
-            onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
-            onClick={closeMobileMenu}>
-            {t('header.emails')}
-          </Link>
           <Link to="/prospection" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/prospection') } : { ...linkStyle, fontWeight: activeFontWeight('/prospection') }}
             onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
             onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
@@ -112,12 +101,34 @@ export default function Header() {
           {t('header.login')}
         </Link>
       )}
-      <Link to="/help" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/help') } : { ...linkStyle, fontWeight: activeFontWeight('/help') }}
-        onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.05)'; }}
-        onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
+    </>
+  );
+
+  // Pages regroupées dans le menu hamburger
+  const hamburgerLinks = (
+    <>
+      {user?.user_metadata?.role === 'admin' && (
+        <Link to="/admin/zones" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/admin/zones') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/admin/zones') } as React.CSSProperties}
+          onClick={closeMobileMenu}>
+          {t('header.zones')}
+        </Link>
+      )}
+      {user && (
+        <Link to="/emails" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/emails') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/emails') } as React.CSSProperties}
+          onClick={closeMobileMenu}>
+          {t('header.emails')}
+        </Link>
+      )}
+      <Link to="/help" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/help') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/help') } as React.CSSProperties}
         onClick={closeMobileMenu}>
         {t('header.help')}
       </Link>
+      {user && (
+        <Link to="/profile" style={isMobile ? { ...mobileLinkStyle, fontWeight: activeMobileFontWeight('/profile') } : { ...dropdownLinkStyle, fontWeight: activeFontWeight('/profile') } as React.CSSProperties}
+          onClick={closeMobileMenu}>
+          {t('header.account')}
+        </Link>
+      )}
     </>
   );
 
@@ -132,6 +143,7 @@ export default function Header() {
           {showMobileMenu && (
             <div style={mobileDropdownStyle}>
               {navLinks}
+              {hamburgerLinks}
               {user && (
                 <div ref={profileMenuRef} style={{ borderTop: '1px solid #000', marginTop: '5px', paddingTop: '5px' }}>
                   <Link to="/profile" style={mobileLinkStyle} onClick={closeMobileMenu}>
@@ -167,6 +179,19 @@ export default function Header() {
               )}
             </div>
           )}
+          <div ref={hamburgerMenuRef} style={{ position: 'relative' }}>
+            <button onClick={() => setShowHamburgerMenu(!showHamburgerMenu)} style={accountButtonStyle} aria-label={t('header.menu')}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+              {t('header.menu')}
+            </button>
+            {showHamburgerMenu && (
+              <div style={dropdownStyle}>
+                {hamburgerLinks}
+              </div>
+            )}
+          </div>
         </nav>
       )}
     </header>
