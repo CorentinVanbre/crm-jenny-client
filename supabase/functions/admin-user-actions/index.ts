@@ -154,9 +154,17 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "langue invalide (fr ou en attendu)" }, 400);
     }
     const mergedMetadata = { ...(target.user_metadata as Record<string, unknown> | undefined), langue };
-    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, { data: mergedMetadata });
+    // GoTrueAdminApi: la métadonnée utilisateur se transmet via `user_metadata`
+    // (et non `data`, qui est ignoré silencieusement par l'endpoint admin).
+    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, { user_metadata: mergedMetadata });
     if (updateError) {
-      return jsonResponse({ error: `Erreur mise à jour de la langue: ${updateError.message}` }, 500);
+      // Relit l'utilisateur pour renvoyer la valeur réellement persistée
+    const { data: freshData, error: freshError } = await adminClient.auth.admin.getUserById(userId);
+    if (freshError || !freshData?.user) {
+      return jsonResponse({ error: "Langue enregistrée mais relecture impossible" }, 500);
+    }
+    const storedLangue = ((freshData.user.user_metadata as Record<string, unknown> | undefined)?.langue as string) || "fr";
+    return jsonResponse({ ok: true, langue: storedLangue });
     }
     return jsonResponse({ ok: true, langue });
   }
