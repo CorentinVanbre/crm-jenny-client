@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-type Lang = 'fr' | 'en';
+type Lang = 'fr' | 'en' | 'es';
 
 const translations = {
   fr: {
@@ -72,6 +72,40 @@ const translations = {
       registered: 'Registration submitted. An administrator must validate your account before you can sign in.',
     },
     passwordRules: 'Min. 10 characters, with uppercase, lowercase, numbers and special characters.',
+  },
+  es: {
+    title: 'Iniciar sesión',
+    email: 'Email',
+    password: 'Contraseña',
+    confirmPassword: 'Confirmar la contraseña',
+    login: 'Iniciar sesión',
+    loggingIn: 'Iniciando sesión...',
+    register: 'Registrarse',
+    registering: 'Registrando...',
+    forgotPassword: '¿Contraseña olvidada?',
+    sendReset: 'Enviar el enlace de restablecimiento',
+    sending: 'Enviando...',
+    backToLogin: 'Volver al inicio de sesión',
+    noAccount: '¿Aún no tiene cuenta?',
+    haveAccount: '¿Ya tiene una cuenta?',
+    forgotLink: '¿Contraseña olvidada?',
+    registerLink: 'Registrarse',
+    loginLink: 'Iniciar sesión',
+    errors: {
+      emailRequired: 'El email es obligatorio',
+      invalidEmail: 'Email no válido',
+      passwordRequired: 'La contraseña es obligatoria',
+      passwordTooShort: 'Mínimo 10 caracteres',
+      passwordWeak: 'La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales',
+      passwordMismatch: 'Las contraseñas no coinciden',
+      accountPending: 'Su cuenta está pendiente de validación por un administrador.',
+      generic: 'Se ha producido un error',
+    },
+    success: {
+      resetSent: 'Si la cuenta existe, se ha enviado un email de restablecimiento.',
+      registered: 'Registro enviado. Un administrador debe validar su cuenta antes de que pueda iniciar sesión.',
+    },
+    passwordRules: 'Mín. 10 caracteres, con mayúsculas, minúsculas, números y caracteres especiales.',
   },
 };
 
@@ -246,6 +280,12 @@ export default function Login() {
           style={lang === 'en' ? langButtonActiveStyle : langButtonStyle}
         >
           EN
+        </button>
+        <button
+          onClick={() => switchLang('es')}
+          style={lang === 'es' ? langButtonActiveStyle : langButtonStyle}
+        >
+          ES
         </button>
       </div>
 

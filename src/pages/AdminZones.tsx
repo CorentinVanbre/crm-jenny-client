@@ -439,6 +439,7 @@ export default function AdminZones() {
               >
                 <option value="fr">Français</option>
                 <option value="en">English</option>
+                <option value="es">Español</option>
               </select>
             </div>
             <button

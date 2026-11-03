@@ -8,7 +8,7 @@ export default function LanguageSync({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const applyLang = (lang?: string) => {
-      const lng = lang === 'en' ? 'en' : 'fr';
+      const lng = lang === 'en' || lang === 'es' ? lang : 'fr';
       i18n.changeLanguage(lng);
       i18nInstance.changeLanguage(lng);
       localStorage.setItem('lang', lng);
