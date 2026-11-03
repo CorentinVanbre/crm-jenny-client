@@ -111,7 +111,8 @@ export default function AdminZones() {
       try {
         const info = await getUserInfo(selectedUserId);
         setUserLangue(info.langue);
-      } catch {
+      } catch (err) {
+        console.error('Lecture de la langue impossible:', err);
         setUserLangue('fr');
       }
       setAccountMsg(null);
