@@ -11,16 +11,27 @@ async function callAdminUserActions(payload: {
   if (!session?.access_token) {
     throw new Error('Non connecté.');
   }
-  const functionUrl =
-    (import.meta.env.VITE_SUPABASE_URL || '') + '/functions/v1/admin-user-actions';
-  const res = await fetch(functionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const baseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+  if (!baseUrl) {
+    throw new Error('VITE_SUPABASE_URL non défini : edge function injoignable.');
+  }
+  const functionUrl = baseUrl + '/functions/v1/admin-user-actions';
+  let res: Response;
+  try {
+    res = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_KEY || '',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(
+      'Edge function injoignable (réseau/CORS). Vérifiez qu\'elle est déployée : supabase functions deploy admin-user-actions'
+    );
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error((data as { error?: string }).error || `Erreur ${res.status}`);
