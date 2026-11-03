@@ -34,7 +34,9 @@
     "subtitle": "Your essential partner to optimize commercial performance.",
     "organizeTitle": "Organize, plan, perform",
     "organizeText1": "Structure your tasks, prioritize your actions and plan your visits efficiently.",
-    "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead."
+    "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
+    "recentTitle": "Recently added features:",
+    "recentSeeAll": "See all recently added features (Help page)"
   },
   "sites": {
     "loading": "Loading sites...",
@@ -534,7 +536,7 @@
             "features": [
               "List of site and group suggestions with search and \"Pending only\" filter.",
               "Display in batches of 50 suggestions, full loading beyond 1000 rows.",
-              "\"Information search / commercial watch\" section on existing sites (AI feature coming soon)."
+              "Two tabs: \"Site prospecting\" and \"Information search / commercial watch\" on existing sites (upcoming AI feature)."
             ]
           },
           {
@@ -614,6 +616,13 @@
             ]
           },
           {
+            "title": "User account",
+            "features": [
+              "Generate a temporary password if the user lost theirs (to be given to the user).",
+              "Change the user's preferred language (French / English)."
+            ]
+          },
+          {
             "title": "Impact of zones",
             "features": [
               "These zones determine which contacts and emails each user can see in the Emails and Contacts pages."
@@ -643,6 +652,9 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Hamburger menu in the header: groups the Zone management, Emails, Help and My account pages",
+      "Zone management page (admin): generate a temporary password for a user (if they lost it) and change their preferred language",
+      "Prospecting page: two tabs \"Site prospecting\" and \"Information search / commercial watch\"",
       "Dark mode: choose light, dark or automatic mode (based on device settings) in \\\"My account\\\"",
       "\"Delete\" button: fixed deletion being a no-op (0 rows) when blocked by RLS, now shows an explicit error",
       "\"Delete\" button on the SiteDetail page: site deletion restricted to the site owner, with confirmation prompt",

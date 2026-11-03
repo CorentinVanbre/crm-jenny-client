@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { CONTINENTS } from '../lib/countries';
 import { useIsMobile } from '../lib/useIsMobile';
 import ZonesMap from '../components/ZonesMap';
+import { getUserInfo, generateTemporaryPassword, setUserLanguage } from '../lib/adminUserActions';
 
 interface Profile {
   id: string;
@@ -36,6 +37,12 @@ export default function AdminZones() {
   const [pending, setPending] = useState<PendingRegistration[]>([]);
   const isMobile = useIsMobile();
   const [loadingPending, setLoadingPending] = useState(false);
+
+  // Compte de l'utilisateur sélectionné (langue + mot de passe provisoire)
+  const [userLangue, setUserLangue] = useState('fr');
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountMsg, setAccountMsg] = useState<{ text: string; isSuccess: boolean } | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   // Charger la liste des utilisateurs (non admin)
   useEffect(() => {
@@ -85,6 +92,9 @@ export default function AdminZones() {
       setInitialMapLat('');
       setInitialMapLng('');
       setMsg(null);
+      setAccountMsg(null);
+      setTempPassword(null);
+      setUserLangue('fr');
       return;
     }
     (async () => {
@@ -96,6 +106,16 @@ export default function AdminZones() {
           .eq('id', selectedUserId)
           .maybeSingle(),
       ]);
+
+      // Langue préférée actuelle du compte (via l'edge function admin)
+      try {
+        const info = await getUserInfo(selectedUserId);
+        setUserLangue(info.langue);
+      } catch {
+        setUserLangue('fr');
+      }
+      setAccountMsg(null);
+      setTempPassword(null);
 
       if (zonesRes.error) {
         setMsg({ text: `Erreur zones: ${zonesRes.error.message}`, isSuccess: false });
@@ -241,6 +261,42 @@ export default function AdminZones() {
     setMsg(null);
   };
 
+  // Générer un mot de passe provisoire pour l'utilisateur sélectionné
+  const handleGenerateTempPassword = async () => {
+    if (!selectedUserId || accountBusy) return;
+    setAccountBusy(true);
+    setAccountMsg(null);
+    try {
+      const password = await generateTemporaryPassword(selectedUserId);
+      setTempPassword(password);
+      setAccountMsg({
+        text: 'Mot de passe provisoire généré. Transmettez-le à l’utilisateur par un canal sécurisé : il lui permettra de se connecter et de choisir un nouveau mot de passe.',
+        isSuccess: true,
+      });
+    } catch (err: any) {
+      setTempPassword(null);
+      setAccountMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  // Modifier la langue préférée de l'utilisateur sélectionné
+  const handleSaveLangue = async () => {
+    if (!selectedUserId || accountBusy) return;
+    setAccountBusy(true);
+    setAccountMsg(null);
+    try {
+      const saved = await setUserLanguage(selectedUserId, userLangue);
+      setUserLangue(saved);
+      setAccountMsg({ text: 'Langue enregistrée avec succès.', isSuccess: true });
+    } catch (err: any) {
+      setAccountMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
   // Valider une inscription : approuver le profil + marquer la demande approved
   const handleApprove = async (reg: PendingRegistration) => {
     if (!reg.user_id) {
@@ -365,6 +421,52 @@ export default function AdminZones() {
           </div>
         )}
       </div>
+
+      {/* Compte de l'utilisateur sélectionné : langue + mot de passe provisoire */}
+      {selectedUserId && (
+        <div style={cardStyle}>
+          <h2 style={sectionTitleStyle}>Compte de l&apos;utilisateur</h2>
+          {accountMsg && <div style={messageStyle(accountMsg.isSuccess)}>{accountMsg.text}</div>}
+
+          <div style={{ ...coordsRowStyle, flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'flex-end' }}>
+            <div style={coordFieldStyle}>
+              <label style={labelStyle}>Langue préférée</label>
+              <select
+                value={userLangue}
+                onChange={e => setUserLangue(e.target.value)}
+                style={inputStyle}
+                disabled={accountBusy}
+              >
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <button
+              onClick={handleSaveLangue}
+              disabled={accountBusy}
+              style={accountBusy ? disabledButtonStyle : buttonStyle}
+            >
+              Enregistrer la langue
+            </button>
+          </div>
+
+          <div style={{ marginTop: '15px' }}>
+            <button
+              onClick={handleGenerateTempPassword}
+              disabled={accountBusy}
+              style={accountBusy ? disabledButtonStyle : buttonStyle}
+            >
+              {accountBusy ? 'Génération...' : 'Générer un mot de passe provisoire'}
+            </button>
+            {tempPassword && (
+              <div style={tempPasswordBoxStyle}>
+                <span style={mutedStyle}>Mot de passe provisoire (à communiquer à l&apos;utilisateur) :</span>
+                <code style={tempPasswordCodeStyle}>{tempPassword}</code>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {msg && <div style={messageStyle(msg.isSuccess)}>{msg.text}</div>}
 
@@ -616,6 +718,23 @@ const pendingItemStyle: React.CSSProperties = {
   border: '1px solid #eee',
   borderRadius: '6px',
   backgroundColor: '#fafafa',
+};
+
+const tempPasswordBoxStyle: React.CSSProperties = {
+  marginTop: '10px',
+  padding: '10px',
+  border: '1px dashed var(--border-strong)',
+  borderRadius: '4px',
+  backgroundColor: 'var(--bg-surface-alt)',
+};
+
+const tempPasswordCodeStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'monospace',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  wordBreak: 'break-all',
+  userSelect: 'all',
 };
 
 const messageStyle = (isSuccess: boolean): React.CSSProperties => ({

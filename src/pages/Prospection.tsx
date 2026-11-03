@@ -44,6 +44,7 @@ export default function Prospection() {
   const [message, setMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
   const PAGE_SIZE = 50;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [activeTab, setActiveTab] = useState<'sites' | 'watch'>('sites');
 
   // --- Modale d'analyse (création de site, identique à Contacts) ---
   const [editingSuggestion, setEditingSuggestion] = useState<Suggestion | null>(null);
@@ -333,6 +334,26 @@ export default function Prospection() {
         {t('prospection.subtitle')}
       </p>
 
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab('sites')}
+          style={activeTab === 'sites' ? activeTabStyle : tabStyle}
+        >
+          {t('prospection.sitesSection')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('watch')}
+          style={activeTab === 'watch' ? activeTabStyle : tabStyle}
+        >
+          {t('prospection.watchSection')}
+        </button>
+      </div>
+
+      {activeTab === 'sites' && (
+      <>
       {/* Barre de recherche + filtres */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '10px', marginBottom: '15px' }}>
         <input
@@ -542,9 +563,12 @@ export default function Prospection() {
           </>
         )}
       </section>
+      </>
+      )}
 
-      {/* --- Section 2 : Recherche d'information / veille commerciale (IA à venir) --- */}
-      <section style={{ marginTop: '40px' }}>
+      {/* --- Onglet : Recherche d'information / veille commerciale (IA à venir) --- */}
+      {activeTab === 'watch' && (
+      <section>
         <h3 style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '17px', marginBottom: '10px' }}>
           {t('prospection.watchSection')}
         </h3>
@@ -563,6 +587,7 @@ export default function Prospection() {
           </span>
         </div>
       </section>
+      )}
 
       {/* Modale d'analyse (création de site, identique à Contacts) */}
       {showModal && (
@@ -780,6 +805,24 @@ const listHeaderStyle: React.CSSProperties = {
   fontWeight: 'bold',
   fontSize: '13px',
   color: 'var(--text-primary)',
+};
+
+const tabStyle: React.CSSProperties = {
+  padding: '10px 20px',
+  border: '1px solid var(--border-strong)',
+  borderRadius: '4px',
+  backgroundColor: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
+  cursor: 'pointer',
+  fontFamily: 'Barlow, sans-serif',
+  fontWeight: 200,
+  fontSize: '14px',
+};
+
+const activeTabStyle: React.CSSProperties = {
+  ...tabStyle,
+  backgroundColor: 'var(--accent-primary)',
+  fontWeight: 'bold',
 };
 
 const modalTitleStyle: React.CSSProperties = {
