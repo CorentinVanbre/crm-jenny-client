@@ -8,13 +8,11 @@ const MOBILE_BREAKPOINT = 900;
 export default function Header() {
   const { t } = useTranslation();
   const [user, setUser] = useState(null);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < MOBILE_BREAKPOINT : false
   );
-  const profileMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const hamburgerMenuRef = useRef(null);
   const navigate = useNavigate();
@@ -38,7 +36,7 @@ export default function Header() {
     const handleResize = () => {
       const mobile = window.innerWidth < MOBILE_BREAKPOINT;
       setIsMobile(mobile);
-      if (!mobile) { setShowMobileMenu(false); setShowProfileMenu(false); }
+      if (!mobile) { setShowMobileMenu(false); }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -46,7 +44,6 @@ export default function Header() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) setShowProfileMenu(false);
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) setShowMobileMenu(false);
       if (hamburgerMenuRef.current && !hamburgerMenuRef.current.contains(event.target)) setShowHamburgerMenu(false);
     };
@@ -57,11 +54,16 @@ export default function Header() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setShowMobileMenu(false);
-    setShowProfileMenu(false);
+    setShowHamburgerMenu(false);
     navigate('/');
   };
 
-  const closeMobileMenu = () => { setShowMobileMenu(false); setShowProfileMenu(false); setShowHamburgerMenu(false); };
+  const handleHamburgerLogout = async () => {
+    if (!window.confirm(t('header.confirmLogout'))) return;
+    await handleLogout();
+  };
+
+  const closeMobileMenu = () => { setShowMobileMenu(false); setShowHamburgerMenu(false); };
 
   const navLinks = (
     <>
@@ -131,6 +133,15 @@ export default function Header() {
           {t('header.account')}
         </Link>
       )}
+      {user && (
+        <button
+          type="button"
+          onClick={handleHamburgerLogout}
+          style={(isMobile ? mobileLogoutStyle : dropdownLogoutStyle) as React.CSSProperties}
+        >
+          {t('header.logout')}
+        </button>
+      )}
     </>
   );
 
@@ -146,41 +157,12 @@ export default function Header() {
             <div style={mobileDropdownStyle}>
               {navLinks}
               {hamburgerLinks}
-              {user && (
-                <div ref={profileMenuRef} style={{ borderTop: '1px solid #000', marginTop: '5px', paddingTop: '5px' }}>
-                  <Link to="/profile" style={mobileLinkStyle} onClick={closeMobileMenu}>
-                    {t('header.editProfile')}
-                  </Link>
-                  <button onClick={handleLogout} style={mobileLogoutStyle}>
-                    {t('header.logout')}
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
       ) : (
         <nav style={navStyle}>
           {navLinks}
-          {user && (
-            <div ref={profileMenuRef} style={{ position: 'relative' }}>
-              <button onClick={() => setShowProfileMenu(!showProfileMenu)} style={accountButtonStyle}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                {t('header.account')}
-              </button>
-              {showProfileMenu && (
-                <div style={dropdownStyle}>
-                  <Link to="/profile" style={dropdownLinkStyle} onClick={() => setShowProfileMenu(false)}>
-                    {t('header.editProfile')}
-                  </Link>
-                  <button onClick={handleLogout} style={dropdownLogoutStyle}>
-                    {t('header.logout')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
           <div ref={hamburgerMenuRef} style={{ position: 'relative' }}>
             <button onClick={() => setShowHamburgerMenu(!showHamburgerMenu)} style={accountButtonStyle} aria-label={t('header.menu')}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}

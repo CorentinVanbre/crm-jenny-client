@@ -27,7 +27,8 @@
     "zones": "Zone management",
     "prospection": "Prospecting",
     "visite": "Visit",
-    "help": "Help"
+    "help": "Help",
+    "confirmLogout": "Are you sure you want to log out?"
   },
   "home": {
     "welcome": "Welcome to",
@@ -653,6 +654,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Spanish available as preferred language (My profile and Zone management pages)",
       "Hamburger menu in the header: groups the Zone management, Emails, Help and My account pages",
       "Zone management page (admin): generate a temporary password for a user (if they lost it) and change their preferred language",
       "Prospecting page: two tabs \"Site prospecting\" and \"Information search / commercial watch\"",

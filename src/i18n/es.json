@@ -27,7 +27,8 @@
     "zones": "Gestión de zonas",
     "prospection": "Prospección",
     "visite": "Visita",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "confirmLogout": "¿Seguro que quieres cerrar la sesión?"
   },
   "home": {
     "welcome": "Bienvenido a",
@@ -644,6 +645,7 @@
     ],
     "recentTitle": "Funcionalidades añadidas recientemente:",
     "recentItems": [
+      "Español disponible como idioma preferido (páginas Mi perfil y Gestión de zonas)",
       "Modo oscuro: elija el modo claro, oscuro o automático (según los ajustes del dispositivo) en «Mi cuenta»",
       "Español: nuevo idioma del sitio, seleccionable en «Mi cuenta» además de francés e inglés",
       "Página «Ayuda»: accesible solo para usuarios conectados",

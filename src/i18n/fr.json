@@ -27,7 +27,8 @@
     "zones": "Gestion des zones",
     "prospection": "Prospection",
     "visite": "Visite",
-    "help": "Aide"
+    "help": "Aide",
+    "confirmLogout": "Voulez-vous vraiment vous déconnecter ?"
   },
   "home": {
     "welcome": "Bienvenue sur",
@@ -653,6 +654,7 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Espagnol disponible comme langue préférée (pages Mon profil et Gestion des zones)",
       "Menu hamburger dans le header : regroupe les pages Gestion des zones, Emails, Aide et Mon compte",
       "Page Gestion des zones (admin) : génération d'un mot de passe provisoire pour un utilisateur (en cas de perte) et modification de sa langue préférée",
       "Page Prospection : deux onglets « Prospection des sites » et « Recherche d'information / veille commerciale »",

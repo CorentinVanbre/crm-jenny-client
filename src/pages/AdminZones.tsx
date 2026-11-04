@@ -289,8 +289,17 @@ export default function AdminZones() {
     setAccountMsg(null);
     try {
       const saved = await setUserLanguage(selectedUserId, userLangue);
-      setUserLangue(saved);
-      setAccountMsg({ text: 'Langue enregistrée avec succès.', isSuccess: true });
+      // Relit la valeur réellement persistée pour confirmer l'enregistrement
+      const check = await getUserInfo(selectedUserId);
+      setUserLangue(check.langue);
+      if (check.langue !== saved) {
+        setAccountMsg({
+          text: `Enregistrement non confirmé : valeur relue « ${check.langue} » au lieu de « ${saved} ». L'edge function est peut-être encore l'ancienne version (pensez à : supabase functions deploy admin-user-actions).`,
+          isSuccess: false,
+        });
+      } else {
+        setAccountMsg({ text: 'Langue enregistrée avec succès.', isSuccess: true });
+      }
     } catch (err: any) {
       setAccountMsg({ text: `Erreur: ${err.message}`, isSuccess: false });
     } finally {

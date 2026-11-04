@@ -28,7 +28,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-const ALLOWED_LANGUAGES = ["fr", "en"] as const;
+const ALLOWED_LANGUAGES = ["fr", "en", "es"] as const;
 type AllowedLanguage = (typeof ALLOWED_LANGUAGES)[number];
 
 const CORS_HEADERS: Record<string, string> = {
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
   if (action === "set_language") {
     const langue = payload.langue;
     if (!langue || !ALLOWED_LANGUAGES.includes(langue as AllowedLanguage)) {
-      return jsonResponse({ error: "langue invalide (fr ou en attendu)" }, 400);
+      return jsonResponse({ error: "langue invalide (fr, en ou es attendu)" }, 400);
     }
     const mergedMetadata = { ...(target.user_metadata as Record<string, unknown> | undefined), langue };
     // GoTrueAdminApi: la métadonnée utilisateur se transmet via `user_metadata`
