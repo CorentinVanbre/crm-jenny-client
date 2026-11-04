@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import ZonesMap from '../components/ZonesMap';
+import { useIsMobile } from '../lib/useIsMobile';
 import i18n from '../i18n';
 import { useTheme, type ThemePreference } from '../lib/theme';
 
 export default function Profile() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -87,7 +89,7 @@ export default function Profile() {
   if (!user) return <div style={{ padding: '20px', textAlign: 'center' }}>{t('common.notConnected')}</div>;
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle(isMobile)}>
       <h1 style={titleStyle}>{t('profile.title')}</h1>
 
       <div style={cardStyle}>
@@ -170,9 +172,18 @@ export default function Profile() {
 }
 
 // Styles (inchangés)
-const containerStyle: React.CSSProperties = { padding: '10px', maxWidth: '600px', margin: '0 auto', fontFamily: 'Barlow, sans-serif' };
-const titleStyle: React.CSSProperties = { fontWeight: 'bold', fontSize: '24px', marginBottom: '20px', textAlign: 'center' };
-const cardStyle: React.CSSProperties = { backgroundColor: 'var(--bg-surface)', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
+const containerStyle = (isMobile: boolean): React.CSSProperties => ({
+  padding: '10px',
+  maxWidth: isMobile ? '100%' : '66%',
+  margin: '0 auto',
+  fontFamily: 'Barlow, sans-serif',
+  display: 'grid',
+  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
+  gap: '20px',
+  alignItems: 'start',
+});
+const titleStyle: React.CSSProperties = { fontWeight: 'bold', fontSize: '24px', marginBottom: '0', textAlign: 'center', gridColumn: '1 / -1' };
+const cardStyle: React.CSSProperties = { backgroundColor: 'var(--bg-surface)', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
 const sectionTitleStyle: React.CSSProperties = { fontWeight: 'bold', fontSize: '18px', marginBottom: '15px' };
 const textStyle: React.CSSProperties = { fontSize: '14px', fontWeight: 200, margin: '5px 0' };
 const zonesListStyle: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px' };

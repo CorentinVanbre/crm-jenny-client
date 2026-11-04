@@ -74,6 +74,8 @@ export default function Contacts() {
   const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const [imageError, setImageError] = useState('');
+  const [cardImage, setCardImage] = useState<string | null>(null);
+  const [cardCopied, setCardCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const [confirmationMessage, setConfirmationMessage] = useState<{ text: string; isSuccess: boolean } | null>(null);
@@ -305,7 +307,29 @@ export default function Contacts() {
       setImageError(t('contacts.imageAnalyzeError'));
       return;
     }
+    setCardImage(dataUri);
     applyExtractedContact(extracted);
+  };
+
+  // Clic sur la carte de visite : copie les données du formulaire au presse-papiers
+  // suivant le modèle : Prénom NOM / Fonction / Groupe / Site / Mobile / Fixe / Email
+  const handleCopyCard = async () => {
+    const lines = [
+      `${(formData.prenom || '').trim()} ${(formData.noms || '').trim().toUpperCase()}`.trim(),
+      `Fonction: ${formData.fonction || ''}`,
+      `Groupe: ${formData.groupe || ''}`,
+      `Site: ${formData.site || ''}`,
+      `Mobile: ${formData.num_mobile || ''}`,
+      `Fixe: ${formData.num_fixe || ''}`,
+      `Email: ${formData.email || ''}`,
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setCardCopied(true);
+      setTimeout(() => setCardCopied(false), 2000);
+    } catch {
+      setImageError(t('contacts.copyError'));
+    }
   };
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -799,6 +823,22 @@ export default function Contacts() {
             <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: 'var(--text-secondary)' }}>
               {t('contacts.cardScanHint')}
             </span>
+            {cardImage && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <img
+                  src={cardImage}
+                  alt={t('contacts.copyCard')}
+                  title={t('contacts.copyCard')}
+                  onClick={handleCopyCard}
+                  style={{ height: '48px', borderRadius: '4px', border: '1px solid var(--border-strong)', cursor: 'pointer' }}
+                />
+                {cardCopied && (
+                  <span style={{ fontFamily: 'Barlow, sans-serif', fontWeight: 200, fontSize: '12px', color: 'var(--success-text)' }}>
+                    {t('contacts.cardCopied')}
+                  </span>
+                )}
+              </span>
+            )}
             {imageError && <span style={errorStyle}>{imageError}</span>}
           </div>
         )}

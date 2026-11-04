@@ -35,9 +35,7 @@
     "subtitle": "Votre partenaire essentiel pour optimiser la performance commerciale.",
     "organizeTitle": "Organisez, planifiez, performez",
     "organizeText1": "Structurez vos tâches, priorisez vos actions et planifiez vos visites de manière efficace.",
-    "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance.",
-    "recentTitle": "Fonctionnalités ajoutées récemment :",
-    "recentSeeAll": "Voir toutes les fonctionnalités ajoutées récemment (page Aide)"
+    "organizeText2": "vous accompagne 24h/24 et 7j/7 pour rester concentré, organisé et toujours un coup d'avance."
   },
   "sites": {
     "loading": "Chargement des sites...",
@@ -226,7 +224,10 @@
       "Français": "Français",
       "Anglais": "Anglais",
       "Espagnol": "Espagnol"
-    }
+    },
+    "copyCard": "Copier la carte de visite dans le presse-papiers",
+    "cardCopied": "Données copiées !",
+    "copyError": "Erreur lors de la copie dans le presse-papiers"
   },
   "profile": {
     "title": "Mon profil",
@@ -654,6 +655,9 @@
     ],
     "recentTitle": "Fonctionnalités ajoutées récemment :",
     "recentItems": [
+      "Page Home : la section « Fonctionnalités ajoutées récemment » est déplacée vers la page Aide",
+      "Mode sombre : fenêtre d'info de la carte, tags « Visités il y a +18 mois / A visiter / Fermés », boutons de la page Prospection et texte de la barre de recherche rendus lisibles/assombris",
+      "Page Sites : cliquer sur une carte de la liste ouvre le site dans un nouvel onglet ; Contacts : cliquer sur la carte de visite scannée copie les données formatées ; Mon compte : tuiles réparties sur les 2/3 centraux de l'écran",
       "Espagnol disponible comme langue préférée (pages Mon profil et Gestion des zones)",
       "Menu hamburger dans le header : regroupe les pages Gestion des zones, Emails, Aide et Mon compte",
       "Page Gestion des zones (admin) : génération d'un mot de passe provisoire pour un utilisateur (en cas de perte) et modification de sa langue préférée",

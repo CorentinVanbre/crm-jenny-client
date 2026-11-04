@@ -506,7 +506,7 @@ export default function Prospection() {
                       disabled={!!s.approved}
                       style={{
                         height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
-                        backgroundColor: s.approved === 'refused' ? '#b30000' : '#ff4444', color: '#fff',
+                        backgroundColor: s.approved === 'refused' ? 'var(--btn-danger-strong)' : 'var(--btn-danger)', color: '#fff',
                         cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
                         fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
                       }}
@@ -519,7 +519,7 @@ export default function Prospection() {
                       disabled={!!s.approved}
                       style={{
                         height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
-                        backgroundColor: s.approved === 'existing' ? '#996600' : '#ffcc00', color: 'var(--text-primary)',
+                        backgroundColor: s.approved === 'existing' ? 'var(--btn-warning-strong)' : 'var(--btn-warning)', color: 'var(--text-primary)',
                         cursor: s.approved ? 'not-allowed' : 'pointer', opacity: s.approved ? 0.6 : 1,
                         fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
                       }}
@@ -532,7 +532,7 @@ export default function Prospection() {
                       disabled={s.approved === 'approved'}
                       style={{
                         height: '30px', padding: '0 10px', border: '1px solid #000', borderRadius: '4px',
-                        backgroundColor: s.approved === 'approved' ? '#007700' : '#00b35a', color: '#fff',
+                        backgroundColor: s.approved === 'approved' ? 'var(--btn-success-strong)' : 'var(--btn-success)', color: '#fff',
                         cursor: s.approved === 'approved' ? 'not-allowed' : 'pointer', opacity: s.approved === 'approved' ? 0.6 : 1,
                         fontFamily: 'Barlow, sans-serif', fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap',
                       }}

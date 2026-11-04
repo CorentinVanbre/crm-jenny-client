@@ -224,7 +224,10 @@
       "Français": "Francés",
       "Anglais": "Inglés",
       "Espagnol": "Español"
-    }
+    },
+    "copyCard": "Copiar la tarjeta de visita al portapapeles",
+    "cardCopied": "¡Datos copiados!",
+    "copyError": "Error al copiar al portapapeles"
   },
   "profile": {
     "title": "Mi perfil",
@@ -645,6 +648,9 @@
     ],
     "recentTitle": "Funcionalidades añadidas recientemente:",
     "recentItems": [
+      "Página Inicio: la sección « Funciones añadidas recientemente » se traslada a la página Ayuda",
+      "Modo oscuro: ventana de información del mapa, etiquetas « Visitados hace +18 meses / Por visitar / Cerrados », botones de la página Prospección y texto de la barra de búsqueda más legibles/atenuados",
+      "Página Sitios: hacer clic en una tarjeta de la lista abre el sitio en una pestaña nueva ; Contactos: hacer clic en la tarjeta de visita escaneada copia los datos formateados ; Mi cuenta: tarjetas repartidas sobre los 2/3 centrales de la pantalla",
       "Español disponible como idioma preferido (páginas Mi perfil y Gestión de zonas)",
       "Modo oscuro: elija el modo claro, oscuro o automático (según los ajustes del dispositivo) en «Mi cuenta»",
       "Español: nuevo idioma del sitio, seleccionable en «Mi cuenta» además de francés e inglés",

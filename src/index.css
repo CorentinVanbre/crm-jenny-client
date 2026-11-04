@@ -21,6 +21,15 @@
   --error-border: #f5c6cb;
   --warning-bg: #fff3cd;
   --link-color: #0000ff;
+  --tag-jaune: #FFA500;
+  --tag-rouge: #FF0000;
+  --tag-bleu: #0000FF;
+  --btn-danger: #ff4444;
+  --btn-danger-strong: #b30000;
+  --btn-warning: #ffcc00;
+  --btn-warning-strong: #996600;
+  --btn-success: #00b35a;
+  --btn-success-strong: #007700;
   color-scheme: light;
 }
 
@@ -44,6 +53,15 @@ html.dark {
   --error-border: #6e2e2c;
   --warning-bg: #4a3d1e;
   --link-color: #8ab4ff;
+  --tag-jaune: #a86f00;
+  --tag-rouge: #b02a2a;
+  --tag-bleu: #2a2ab0;
+  --btn-danger: #c23b3b;
+  --btn-danger-strong: #8f2626;
+  --btn-warning: #cfa93a;
+  --btn-warning-strong: #8a6d1f;
+  --btn-success: #0a9150;
+  --btn-success-strong: #076b3b;
   color-scheme: dark;
 }
 
@@ -73,6 +91,13 @@ h1, h2, h3, h4, h5, h6 {
 /* Boutons en Barlow Bold (weight 700) */
 button {
   font-weight: 700;
+}
+
+/* Placeholder des champs : lisible aussi en mode sombre */
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 /* Force la racine à prendre 100% de la largeur */

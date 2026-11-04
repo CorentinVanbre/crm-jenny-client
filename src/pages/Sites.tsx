@@ -43,9 +43,9 @@ interface Groupe {
 const colorTagColors: Record<string, { background: string; text: string }> = {
   'Non visités': { background: '#000000', text: '#FFFFFF' },
   'Visités': { background: '#008000', text: '#FFFFFF' },
-  'Visités il y a +18mois': { background: '#FFA500', text: 'var(--text-primary)' },
-  'A visiter': { background: '#FF0000', text: '#FFFFFF' },
-  'Fermés': { background: '#0000FF', text: '#FFFFFF' },
+  'Visités il y a +18mois': { background: 'var(--tag-jaune)', text: 'var(--text-primary)' },
+  'A visiter': { background: 'var(--tag-rouge)', text: '#FFFFFF' },
+  'Fermés': { background: 'var(--tag-bleu)', text: '#FFFFFF' },
 };
 
 // Formatage de date
@@ -728,13 +728,13 @@ export default function Sites() {
 
   // InfoWindow
   const getInfoWindowContent = (site: Site) => (
-    <div style={{ fontFamily: 'Barlow, sans-serif', lineHeight: '1.2', padding: '0px', maxWidth: '300px' }}>
+    <div style={{ fontFamily: 'Barlow, sans-serif', lineHeight: '1.2', padding: '4px', maxWidth: '300px', color: '#1a1a1a', backgroundColor: '#ffffff', borderRadius: '4px' }}>
       <div style={{ fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>
         {site.groupe} - {site.noms}
       </div>
       <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{getSiteContactCount(site)} {t(getSiteContactCount(site) > 1 ? 'sites.contactsCountPlural' : 'sites.contactsCount')}</div>
       <div style={{ textAlign: 'center', fontSize: '13px', margin: '2px 0' }}>{t('sites.lastVisit')}: {formatDate(site.datevisite) || t('common.never')}</div>
-      <div style={{ textAlign: 'center', marginTop: '4px' }}><a href={`/sites/${site.id}`} target="_blank" style={{ fontSize: '13px' }}>{t('sites.seeMore')}</a></div>
+      <div style={{ textAlign: 'center', marginTop: '4px' }}><a href={`/sites/${site.id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '13px', color: '#0000ff' }}>{t('sites.seeMore')}</a></div>
     </div>
   );
 
@@ -1105,6 +1105,7 @@ export default function Sites() {
                 transition: 'transform 0.2s ease',
                 cursor: 'pointer'
               }}
+              onClick={() => window.open(`/sites/${site.id}`, '_blank', 'noopener,noreferrer')}
               onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.05)'}
               onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
             >
@@ -1129,6 +1130,7 @@ export default function Sites() {
                   to={`/sites/${site.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   style={{
                     ...buttonStyle,
                     height: '25px',

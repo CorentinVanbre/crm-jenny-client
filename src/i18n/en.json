@@ -35,9 +35,7 @@
     "subtitle": "Your essential partner to optimize commercial performance.",
     "organizeTitle": "Organize, plan, perform",
     "organizeText1": "Structure your tasks, prioritize your actions and plan your visits efficiently.",
-    "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead.",
-    "recentTitle": "Recently added features:",
-    "recentSeeAll": "See all recently added features (Help page)"
+    "organizeText2": "supports you 24/7 to stay focused, organized and always one step ahead."
   },
   "sites": {
     "loading": "Loading sites...",
@@ -226,7 +224,10 @@
       "Français": "French",
       "Anglais": "English",
       "Espagnol": "Spanish"
-    }
+    },
+    "copyCard": "Copy business card to clipboard",
+    "cardCopied": "Data copied!",
+    "copyError": "Error copying to clipboard"
   },
   "profile": {
     "title": "My profile",
@@ -654,6 +655,9 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Home page: the \"Recently added features\" section moved to the Help page",
+      "Dark mode: map info window, \"Visited +18 months ago / To visit / Closed\" tags, Prospecting page buttons and search bar placeholder made readable/dimmed",
+      "Sites page: clicking a card in the list opens the site in a new tab ; Contacts: clicking the scanned business card copies the formatted data ; My account: tiles spread over the central 2/3 of the screen",
       "Spanish available as preferred language (My profile and Zone management pages)",
       "Hamburger menu in the header: groups the Zone management, Emails, Help and My account pages",
       "Zone management page (admin): generate a temporary password for a user (if they lost it) and change their preferred language",
