@@ -67,11 +67,13 @@ export default function SiteDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkOwnership = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsOwner(!!user && !!site && site.owner === user.id);
+      setIsAdmin((user?.user_metadata as Record<string, unknown> | undefined)?.role === 'admin');
     };
     checkOwnership();
   }, [site]);
@@ -723,7 +725,7 @@ export default function SiteDetail() {
         .delete({ count: 'exact' })
         .eq('id', site.id);
       if (deleteError) throw deleteError;
-      if (count === 0) throw new Error(t('siteDetail.deleteBlocked'));
+      if (count === 0) throw new Error(isAdmin ? t('siteDetail.deleteBlocked') : t('siteDetail.deleteDailyLimit'));
       navigate('/sites');
     } catch (err: any) {
       setSaveMessage({ text: `Erreur: ${err.message}`, isSuccess: false });

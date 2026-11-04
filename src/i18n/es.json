@@ -161,7 +161,8 @@
     },
     "delete": "Eliminar",
     "confirmDelete": "¿Seguro que desea eliminar definitivamente este sitio? Esta acción no se puede deshacer.",
-    "deleteBlocked": "Fallo al eliminar: usted no es el propietario de este sitio, o la eliminación está bloqueada por la seguridad de la base de datos."
+    "deleteBlocked": "Fallo al eliminar: usted no es el propietario de este sitio, o la eliminación está bloqueada por la seguridad de la base de datos.",
+    "deleteDailyLimit": "Eliminación bloqueada: límite de 5 eliminaciones de sitios al día alcanzado (los administradores no tienen límite)."
   },
   "contacts": {
     "addTitle": "Añadir un contacto",
@@ -648,6 +649,7 @@
     ],
     "recentTitle": "Funcionalidades añadidas recientemente:",
     "recentItems": [
+      "Límite de 5 eliminaciones de sitios al día para no administradores (registrado en la base, aplicado por RLS)",
       "Página Detalle del sitio: botones reorganizados arriba a la derecha (Eliminar encima, Editar a la izquierda de Guardar)",
       "Página Inicio: la sección « Funciones añadidas recientemente » se traslada a la página Ayuda",
       "Modo oscuro: ventana de información del mapa, etiquetas « Visitados hace +18 meses / Por visitar / Cerrados », botones de la página Prospección y texto de la barra de búsqueda más legibles/atenuados",

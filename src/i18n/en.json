@@ -161,7 +161,8 @@
     },
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to permanently delete this site? This action cannot be undone.",
-    "deleteBlocked": "Deletion failed: you do not own this site, or the deletion is blocked by database security."
+    "deleteBlocked": "Deletion failed: you do not own this site, or the deletion is blocked by database security.",
+    "deleteDailyLimit": "Deletion blocked: daily limit of 5 site deletions reached (admins are not limited)."
   },
   "contacts": {
     "addTitle": "Add a contact",
@@ -655,6 +656,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Limit of 5 site deletions per day for non-admins (logged in DB, enforced by RLS)",
       "Site detail page: buttons rearranged top right (Delete above, Edit to the left of Save)",
       "Home page: the \"Recently added features\" section moved to the Help page",
       "Dark mode: map info window, \"Visited +18 months ago / To visit / Closed\" tags, Prospecting page buttons and search bar placeholder made readable/dimmed",
