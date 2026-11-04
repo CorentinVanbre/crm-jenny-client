@@ -1058,28 +1058,30 @@ export default function SiteDetail() {
           <h1 style={{ ...titleStyle, fontSize: isMobile ? '18px' : '24px', whiteSpace: isMobile ? undefined : 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{site.groupe} - {site.noms}</h1>
         </div>
 
-        <div style={{ ...buttonContainerStyle, flexDirection: isMobile ? 'row' : 'column', alignItems: 'center', justifyContent: 'center', flex: isMobile ? undefined : 1 }}>
-          {isEditing ? (
-            <button onClick={handleCancelEdit} style={buttonStyle}>
-              {t('siteDetail.cancel')}
-            </button>
-          ) : (
-            <button onClick={handleEdit} style={buttonStyle}>
-              {t('siteDetail.edit')}
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={!isModified}
-            style={isModified ? buttonStyle : disabledButtonStyle}
-          >
-            {t('siteDetail.save')}
-          </button>
+        <div style={{ ...buttonContainerStyle, alignItems: isMobile ? 'center' : 'flex-end', justifyContent: 'center', flex: isMobile ? undefined : 1 }}>
           {!isEditing && isOwner && (
             <button onClick={handleDelete} style={deleteButtonStyle}>
               {t('siteDetail.delete')}
             </button>
           )}
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '10px', alignItems: 'center' }}>
+            {isEditing ? (
+              <button onClick={handleCancelEdit} style={buttonStyle}>
+                {t('siteDetail.cancel')}
+              </button>
+            ) : (
+              <button onClick={handleEdit} style={buttonStyle}>
+                {t('siteDetail.edit')}
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={!isModified}
+              style={isModified ? buttonStyle : disabledButtonStyle}
+            >
+              {t('siteDetail.save')}
+            </button>
+          </div>
         </div>
       </div>
 

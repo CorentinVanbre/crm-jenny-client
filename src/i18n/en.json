@@ -655,6 +655,7 @@
     ],
     "recentTitle": "Recently added features:",
     "recentItems": [
+      "Site detail page: buttons rearranged top right (Delete above, Edit to the left of Save)",
       "Home page: the \"Recently added features\" section moved to the Help page",
       "Dark mode: map info window, \"Visited +18 months ago / To visit / Closed\" tags, Prospecting page buttons and search bar placeholder made readable/dimmed",
       "Sites page: clicking a card in the list opens the site in a new tab ; Contacts: clicking the scanned business card copies the formatted data ; My account: tiles spread over the central 2/3 of the screen",
